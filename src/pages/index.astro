@@ -7,7 +7,6 @@ import Footer from "@/components/Footer.astro";
 import Header from "@/components/Header.astro";
 import Hero from "@/components/Hero.astro";
 import MarketingBehavior from "@/components/MarketingBehavior.astro";
-import PageLoader from "@/components/PageLoader.astro";
 import SectionAnatomy from "@/components/SectionAnatomy.astro";
 import SectionFrame from "@/components/SectionFrame.astro";
 import { sectors } from "@/data/site";
@@ -19,8 +18,19 @@ const latestArticles = newsArticles.slice(1, 4);
 <BaseLayout
   title="NNCO | Production AI for regulated institutions"
   description="NNCO designs and implements production AI for banks, insurers, and healthcare providers."
+  preloadImages={[
+    {
+      href: "/assets/hero-sequence/mobile/frame-01.webp",
+      media: "(max-width: 767px)",
+      type: "image/webp",
+    },
+    {
+      href: "/assets/hero-sequence/desktop/frame-01.webp",
+      media: "(min-width: 768px)",
+      type: "image/webp",
+    },
+  ]}
 >
-  <PageLoader />
   <MarketingBehavior />
   <Header overHero />
 

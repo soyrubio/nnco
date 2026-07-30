@@ -20,11 +20,9 @@ export function DiscoveryBrandLogo({
   const [activeFrame, setActiveFrame] = useState(0);
   const [isAnimating, setIsAnimating] = useState(false);
   const frameTimerRef = useRef<number | null>(null);
-  const introFrameRef = useRef<number | null>(null);
   const mountedRef = useRef(false);
   const motionAllowedRef = useRef(false);
   const runningRef = useRef(false);
-  const introPendingRef = useRef(true);
   const queuedInteractionRef = useRef(false);
   const hoveredRef = useRef(false);
   const focusedRef = useRef(false);
@@ -87,7 +85,7 @@ export function DiscoveryBrandLogo({
   function requestInteraction() {
     if (variant !== "primary" || !motionAllowedRef.current) return;
 
-    if (introPendingRef.current || runningRef.current) {
+    if (runningRef.current) {
       queuedInteractionRef.current = true;
       return;
     }
@@ -112,7 +110,6 @@ export function DiscoveryBrandLogo({
       "(prefers-reduced-motion: reduce)",
     );
     mountedRef.current = true;
-    introPendingRef.current = variant === "primary";
     queuedInteractionRef.current = false;
 
     const syncMotionPreference = () => {
@@ -125,31 +122,14 @@ export function DiscoveryBrandLogo({
 
     syncMotionPreference();
     reducedMotion.addEventListener("change", syncMotionPreference);
-
-    if (variant === "primary") {
-      introFrameRef.current = window.requestAnimationFrame(() => {
-        introFrameRef.current = null;
-        introPendingRef.current = false;
-
-        if (motionAllowedRef.current) runSequence();
-        else queuedInteractionRef.current = false;
-      });
-    } else {
-      introPendingRef.current = false;
-      resetVisual();
-    }
+    resetVisual();
 
     return () => {
       mountedRef.current = false;
       reducedMotion.removeEventListener("change", syncMotionPreference);
-      if (introFrameRef.current !== null) {
-        window.cancelAnimationFrame(introFrameRef.current);
-        introFrameRef.current = null;
-      }
       resetVisual(false);
       hoveredRef.current = false;
       focusedRef.current = false;
-      introPendingRef.current = true;
       queuedInteractionRef.current = false;
     };
   }, [variant]);

@@ -57,9 +57,24 @@ The handoff endpoint preserves:
 Rate limiting is process-local. Replace it with a shared store before relying
 on it across multiple production instances.
 
-## Report generation
+## Voice transcription
 
-The two-page sample remains at `public/sample-report.pdf`. The deterministic
-ReportLab source is `scripts/generate_sample_report.py`; it writes both the
-versioned output copy and the public asset. The runtime endpoint returns the
-structured full report, while browser PDF export remains a client concern.
+Voice input is optional and disabled in the interface when
+`PUBLIC_TRANSCRIPTION_ENABLED=false`. To enable it, configure:
+
+```dotenv
+PUBLIC_TRANSCRIPTION_ENABLED=true
+OPENAI_API_KEY=server-only-value
+OPENAI_TRANSCRIPTION_MODEL=gpt-transcribe
+OPENAI_API_BASE_URL=https://api.openai.com
+```
+
+`OPENAI_API_KEY` is server-only. The transcription endpoint accepts same-origin
+audio uploads up to 4 MB, applies process-local rate limiting, and does not
+store recordings or transcript text.
+
+## Report export
+
+Browser print is the only PDF path. It exports two preview pages before contact
+and four pages after the complete diagnostic is unlocked. No report-generation
+service or static sample PDF is deployed.

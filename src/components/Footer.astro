@@ -13,10 +13,11 @@ import { siteNavigation } from "@/data/site";
     <nav aria-label="Footer navigation">
       <a href="/">Home</a>
       {
-        siteNavigation.map((item) => (
+        siteNavigation.filter((item) => item.href !== "/").map((item) => (
           <a href={item.href}>{item.label}</a>
         ))
       }
+      <a href="/team">Team</a>
       <a href="/discovery">Start diagnostic</a>
     </nav>
 
