@@ -1,4 +1,5 @@
 import {
+  type CSSProperties,
   type KeyboardEvent,
   type SyntheticEvent,
   useCallback,
@@ -14,6 +15,7 @@ import { DiscoveryBlockLoader as BlockLoader } from "./discovery/DiscoveryBlockL
 import {
   buildReportPreview,
   calculateCoverage,
+  calculateJourneyProgress,
   containsSensitiveDataCue,
   createInitialSnapshot,
   discoveryReducer,
@@ -60,13 +62,13 @@ const analysisLines = [
 const chapterMilestones = ["context", "workflow", "review"] as const;
 const REVIEW_CHAPTER = 2;
 const questionNavigationLabels: Record<string, string> = {
-  "workflow.scope": "Workflow",
-  "workflow.volumeBand": "Volume",
-  "workflow.effortBand": "Effort",
-  "friction.repetition": "Friction",
-  "workflow.inputs": "Systems",
-  "goal.outcome": "Outcome",
-  "readiness.constraints": "Controls",
+  "workflow.scope": "Workflow scope",
+  "workflow.volumeBand": "Operating volume",
+  "workflow.effortBand": "Human effort",
+  "friction.repetition": "Operational friction",
+  "workflow.inputs": "Systems and data",
+  "goal.outcome": "Target outcome",
+  "readiness.constraints": "Control requirements",
 };
 
 function getDiagnosticQuestionIds(questions: DiscoveryQuestion[]) {
@@ -735,6 +737,11 @@ export function DiscoveryCockpit() {
         ? diagnosticQuestionIds
         : [];
   const activeQuestion = questionById.get(activeIds[questionIndex] ?? "");
+  const journeyProgress = calculateJourneyProgress(
+    snapshot,
+    activeQuestion?.id,
+    chapter === REVIEW_CHAPTER,
+  );
 
   useEffect(() => {
     if (
@@ -2024,6 +2031,31 @@ export function DiscoveryCockpit() {
                 </div>
               </div>
             ) : null}
+          </div>
+        </div>
+        <div
+          className="discovery-progress"
+          style={
+            {
+              "--discovery-progress": `${journeyProgress}%`,
+            } as CSSProperties
+          }
+        >
+          <div className="discovery-progress-labels">
+            <span id="discovery-progress-label">
+              Progress {Math.round(journeyProgress)}%
+            </span>
+          </div>
+          <div
+            className="discovery-progress-track"
+            role="progressbar"
+            aria-labelledby="discovery-progress-label"
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={journeyProgress}
+            aria-valuetext={`${journeyProgress}% complete`}
+          >
+            <span aria-hidden="true" />
           </div>
         </div>
       </section>
