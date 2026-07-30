@@ -1,0 +1,68 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import CompanyAccordion from "@/components/CompanyAccordion.astro";
+import Footer from "@/components/Footer.astro";
+import Header from "@/components/Header.astro";
+import PageHero from "@/components/PageHero.astro";
+import SectionAnatomy from "@/components/SectionAnatomy.astro";
+import SectionFrame from "@/components/SectionFrame.astro";
+import { team } from "@/data/site";
+---
+
+<BaseLayout
+  title="Company | NNCO"
+  description="NNCO is an implementation-focused regional team deploying AI for regulated institutions."
+>
+  <Header />
+  <main>
+    <PageHero title="Builders for work that carries weight." />
+
+    <SectionFrame labelledBy="about-title" class="company-about">
+      <SectionAnatomy title="About" titleId="about-title">
+        <div class="company-about__layout">
+          <img
+            src="/assets/nnco-operational-field.png"
+            alt=""
+            width="1536"
+            height="1024"
+            loading="lazy"
+          />
+          <p>
+            NNCO brings together engineering, product, and institutional
+            operations at the point where AI, compliance, and implementation
+            meet.
+          </p>
+        </div>
+      </SectionAnatomy>
+    </SectionFrame>
+
+    <SectionFrame
+      tone="surface"
+      labelledBy="team-title"
+      class="team-section"
+    >
+      <SectionAnatomy title="Team" titleId="team-title">
+        <div class="team-grid">
+          {
+            team.map((person) => (
+              <article>
+                <h3>{person.name}</h3>
+                <p>{person.role}</p>
+              </article>
+            ))
+          }
+        </div>
+      </SectionAnatomy>
+    </SectionFrame>
+
+    <SectionFrame
+      labelledBy="work-title"
+      class="company-work"
+    >
+      <SectionAnatomy title="How We Work" titleId="work-title">
+        <CompanyAccordion />
+      </SectionAnatomy>
+    </SectionFrame>
+  </main>
+  <Footer />
+</BaseLayout>

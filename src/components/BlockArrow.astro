@@ -1,0 +1,12 @@
+---
+interface Props {
+  direction?: "left" | "right";
+}
+
+const { direction = "right" } = Astro.props;
+---
+
+<span
+  class:list={["block-arrow", `block-arrow--${direction}`]}
+  aria-hidden="true"
+></span>
