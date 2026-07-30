@@ -59,6 +59,15 @@ const analysisLines = [
 ] as const;
 const chapterMilestones = ["context", "workflow", "review"] as const;
 const REVIEW_CHAPTER = 2;
+const questionNavigationLabels: Record<string, string> = {
+  "workflow.scope": "Workflow",
+  "workflow.volumeBand": "Volume",
+  "workflow.effortBand": "Effort",
+  "friction.repetition": "Friction",
+  "workflow.inputs": "Systems",
+  "goal.outcome": "Outcome",
+  "readiness.constraints": "Controls",
+};
 
 function getDiagnosticQuestionIds(questions: DiscoveryQuestion[]) {
   return questions
@@ -1831,13 +1840,34 @@ export function DiscoveryCockpit() {
       <section className="discovery-canvas">
         <div className="discovery-interaction">
           <aside className="discovery-section-index" aria-label="Discovery sections">
-            <p>
-              {chapter === 0
-                ? "Sector"
-                : chapter === REVIEW_CHAPTER
-                  ? "Review"
-                  : `Question ${questionIndex + 1} of ${diagnosticQuestionIds.length}`}
-            </p>
+            <ol>
+              <li
+                className={chapter === 0 ? "is-active" : undefined}
+                aria-current={chapter === 0 ? "step" : undefined}
+              >
+                Sector
+              </li>
+              {diagnosticQuestionIds.map((questionId, index) => (
+                <li
+                  key={questionId}
+                  className={
+                    chapter === 1 && questionIndex === index
+                      ? "is-active"
+                      : undefined
+                  }
+                  aria-current={
+                    chapter === 1 && questionIndex === index ? "step" : undefined
+                  }
+                >
+                  {questionNavigationLabels[questionId] ?? "Question"}
+                </li>
+              ))}
+              {chapter === REVIEW_CHAPTER ? (
+                <li className="is-active" aria-current="step">
+                  Review
+                </li>
+              ) : null}
+            </ol>
           </aside>
 
           <div className="discovery-form-column">
