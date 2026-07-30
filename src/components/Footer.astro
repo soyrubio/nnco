@@ -1,0 +1,27 @@
+---
+import BrandLogo from "./BrandLogo.astro";
+import { siteNavigation } from "@/data/site";
+---
+
+<footer class="site-footer">
+  <div class="content-rail site-footer__inner">
+    <div class="site-footer__identity">
+      <BrandLogo />
+      <p>Production AI for regulated institutions.</p>
+    </div>
+
+    <nav aria-label="Footer navigation">
+      <a href="/">Home</a>
+      {
+        siteNavigation.map((item) => (
+          <a href={item.href}>{item.label}</a>
+        ))
+      }
+      <a href="/discovery">Start diagnostic</a>
+    </nav>
+
+    <p class="site-footer__copyright">
+      © {new Date().getFullYear()} NNCO
+    </p>
+  </div>
+</footer>

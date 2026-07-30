@@ -1,0 +1,51 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import ContactForm from "@/components/ContactForm.astro";
+import Footer from "@/components/Footer.astro";
+import Header from "@/components/Header.astro";
+import PageHero from "@/components/PageHero.astro";
+import SectionAnatomy from "@/components/SectionAnatomy.astro";
+import SectionFrame from "@/components/SectionFrame.astro";
+---
+
+<BaseLayout
+  title="Contact | NNCO"
+  description="Tell NNCO which workflow, regulatory boundary, or infrastructure decision you are working through."
+>
+  <Header />
+  <main>
+    <PageHero title="Start with the difficult constraint." />
+
+    <SectionFrame labelledBy="contact-form-title" class="contact-section">
+      <SectionAnatomy
+        title="Working Session"
+        titleId="contact-form-title"
+      >
+        <ContactForm />
+      </SectionAnatomy>
+    </SectionFrame>
+
+    <SectionFrame
+      tone="surface"
+      labelledBy="alternate-title"
+      class="alternate-contacts"
+    >
+      <SectionAnatomy title="Contacts" titleId="alternate-title">
+        <p class="section-note">
+          Placeholder addresses. Final contact details are not yet published.
+        </p>
+        <div class="alternate-contact-grid">
+          <article>
+            <h3>General</h3>
+            <span>general@example.invalid</span>
+          </article>
+          <article>
+            <h3>Security</h3>
+            <span>security@example.invalid</span>
+          </article>
+        </div>
+      </SectionAnatomy>
+    </SectionFrame>
+  </main>
+  <Footer />
+</BaseLayout>

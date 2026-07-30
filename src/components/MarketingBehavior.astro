@@ -1,0 +1,109 @@
+<script>
+  const readyEvent = "nnco:page-ready";
+  const staggerMs = 50;
+  const root = document.documentElement;
+  const header = document.querySelector<HTMLElement>(
+    '[data-site-header="hero"]',
+  );
+  const hero = document.querySelector<HTMLElement>("[data-marketing-hero]");
+  const darkSection =
+    document.querySelector<HTMLElement>(".private-ai-section");
+  const revealElements = Array.from(
+    document.querySelectorAll<HTMLElement>("[data-reveal]"),
+  );
+  const reducedMotion = window.matchMedia(
+    "(prefers-reduced-motion: reduce)",
+  ).matches;
+
+  document
+    .querySelectorAll<HTMLElement>("[data-reveal-group]")
+    .forEach((group) => {
+      Array.from(group.querySelectorAll<HTMLElement>("[data-reveal]")).forEach(
+        (element, index) => {
+          element.style.setProperty(
+            "--reveal-delay",
+            `${index * staggerMs}ms`,
+          );
+        },
+      );
+    });
+
+  if (!reducedMotion) {
+    root.classList.add("nnco-motion-ready");
+
+    const heroElements = revealElements.filter(
+      (element) => element.dataset.reveal === "ready",
+    );
+    const viewportElements = revealElements.filter(
+      (element) => element.dataset.reveal !== "ready",
+    );
+
+    const revealHero = () => {
+      heroElements.forEach((element) => element.classList.add("is-revealed"));
+    };
+
+    window.addEventListener(readyEvent, revealHero, { once: true });
+
+    if (
+      !document.querySelector("[data-page-loader]") ||
+      document.querySelector("[data-page-loader].is-leaving")
+    ) {
+      revealHero();
+    }
+
+    const revealObserver = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (!entry.isIntersecting) return;
+          const element = entry.target as HTMLElement;
+          element.classList.add("is-revealed");
+          revealObserver.unobserve(element);
+        });
+      },
+      {
+        rootMargin: "0px 0px -12% 0px",
+        threshold: 0.15,
+      },
+    );
+
+    viewportElements.forEach((element) => revealObserver.observe(element));
+  } else {
+    revealElements.forEach((element) => element.classList.add("is-revealed"));
+  }
+
+  if (header && hero) {
+    const headerObserver = new IntersectionObserver(
+      ([entry]) => {
+        const heroHasPassed =
+          !entry.isIntersecting &&
+          hero.getBoundingClientRect().bottom <= header.offsetHeight;
+        header.classList.toggle("is-scrolled", heroHasPassed);
+      },
+      {
+        rootMargin: `-${header.offsetHeight}px 0px 0px 0px`,
+        threshold: 0,
+      },
+    );
+
+    headerObserver.observe(hero);
+
+    if (darkSection) {
+      const topStripHeight = Math.max(
+        1,
+        Math.min(header.offsetHeight, window.innerHeight),
+      );
+      const bottomInset = Math.max(0, window.innerHeight - topStripHeight);
+      const darkSectionObserver = new IntersectionObserver(
+        ([entry]) => {
+          header.classList.toggle("is-over-dark", entry.isIntersecting);
+        },
+        {
+          rootMargin: `0px 0px -${bottomInset}px 0px`,
+          threshold: 0,
+        },
+      );
+
+      darkSectionObserver.observe(darkSection);
+    }
+  }
+</script>

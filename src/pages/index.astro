@@ -1,0 +1,137 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import BlockArrow from "@/components/BlockArrow.astro";
+import Button from "@/components/Button.astro";
+import CardAffordance from "@/components/CardAffordance.astro";
+import Footer from "@/components/Footer.astro";
+import Header from "@/components/Header.astro";
+import Hero from "@/components/Hero.astro";
+import MarketingBehavior from "@/components/MarketingBehavior.astro";
+import PageLoader from "@/components/PageLoader.astro";
+import SectionAnatomy from "@/components/SectionAnatomy.astro";
+import SectionFrame from "@/components/SectionFrame.astro";
+import { sectors } from "@/data/site";
+import { newsArticles } from "@/data/news";
+
+const latestArticles = newsArticles.slice(1, 4);
+---
+
+<BaseLayout
+  title="NNCO | Production AI for regulated institutions"
+  description="NNCO designs and implements production AI for banks, insurers, and healthcare providers."
+>
+  <PageLoader />
+  <MarketingBehavior />
+  <Header overHero />
+
+  <main>
+    <Hero />
+
+    <SectionFrame
+      id="sectors"
+      labelledBy="sectors-title"
+      class="home-sectors"
+    >
+      <SectionAnatomy title="Sectors" titleId="sectors-title">
+        <div class="sector-panel-grid">
+          {
+            sectors.map((sector) => (
+              <a class="sector-panel" href="/what-we-do">
+                <h3>{sector.name}</h3>
+                <p>{sector.description}</p>
+                <CardAffordance />
+              </a>
+            ))
+          }
+        </div>
+      </SectionAnatomy>
+    </SectionFrame>
+
+    <SectionFrame
+      tone="dark"
+      labelledBy="private-ai-title"
+      class="private-ai-section"
+    >
+      <SectionAnatomy title="Private AI" titleId="private-ai-title">
+        <div class="infrastructure-plate">
+          <div class="infrastructure-plate__content">
+            <div class="infrastructure-plate__copy">
+              <p>
+                Models, retrieval, access controls, and monitoring deployed
+                inside the institution's chosen boundary.
+              </p>
+              <Button href="/what-we-do#infrastructure" variant="secondary">
+                Explore Infrastructure
+                <BlockArrow />
+              </Button>
+            </div>
+          </div>
+          <img
+            class="infrastructure-plate__image"
+            src="/assets/nnco-private-ai-pixelated.png"
+            alt=""
+            width="1248"
+            height="1248"
+            loading="lazy"
+          />
+        </div>
+      </SectionAnatomy>
+    </SectionFrame>
+
+    <SectionFrame labelledBy="approach-title" class="approach-section">
+      <SectionAnatomy title="Approach" titleId="approach-title">
+        <div class="approach-layout">
+          <div>
+            <p class="approach-statement">
+              We begin with the institution's problem, not a demonstration.
+            </p>
+            <Button href="/contact" variant="secondary">
+              Work With Us
+              <BlockArrow />
+            </Button>
+          </div>
+          <img
+            src="/assets/nnco-approach-frosted-figure-pixelated.png"
+            alt=""
+            width="1536"
+            height="1024"
+            loading="lazy"
+          />
+        </div>
+      </SectionAnatomy>
+    </SectionFrame>
+
+    <SectionFrame labelledBy="latest-news-title" class="home-latest-news">
+      <SectionAnatomy title="Latest News" titleId="latest-news-title">
+        <div class="home-news-card-grid">
+          {
+            latestArticles.map((article) => (
+              <a class="home-news-card" href={`/news/${article.slug}`}>
+                <h3>{article.title}</h3>
+                <p>{article.summary}</p>
+                <time datetime={article.publishedAt}>
+                  {article.publishedLabel}
+                </time>
+                <CardAffordance />
+              </a>
+            ))
+          }
+        </div>
+      </SectionAnatomy>
+    </SectionFrame>
+
+    <SectionFrame tone="surface" labelledBy="closing-title">
+      <SectionAnatomy title="Next step" titleId="closing-title">
+        <div class="closing-callout">
+          <h3>Bring us the workflow that cannot become a black box.</h3>
+          <Button href="/contact">
+            Request Briefing
+            <BlockArrow />
+          </Button>
+        </div>
+      </SectionAnatomy>
+    </SectionFrame>
+  </main>
+
+  <Footer />
+</BaseLayout>
