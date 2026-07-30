@@ -4,6 +4,7 @@ import test from "node:test";
 import {
   buildReportPreview,
   calculateCoverage,
+  calculateJourneyProgress,
   containsSensitiveDataCue,
   createInitialSnapshot,
   discoveryReducer,
@@ -86,6 +87,141 @@ test("changing sector clears sector-dependent workflow input evidence", () => {
     snapshot.evidence.some((item) => item.questionId === "workflow.inputs"),
     false,
   );
+});
+
+test("back within a chapter clears the destination and every downstream answer", () => {
+  let snapshot = createInitialSnapshot("2026-07-29T12:00:00.000Z");
+  for (const [questionId, value] of [
+    ["context.sector", "finance"],
+    ["context.organisationType", "financial-institution"],
+    ["context.role", "operations"],
+    ["context.focusArea", "Monthly close"],
+    ["context.sizeBand", "101-500"],
+    ["workflow.scope", "A report arrives and the approved close completes."],
+    ["workflow.inputs", ["email", "spreadsheet"]],
+  ]) {
+    snapshot = answer(snapshot, questionId, value);
+  }
+  snapshot = discoveryReducer(snapshot, {
+    type: "APPLY_CHAT_PROPOSAL",
+    answers: [],
+    observations: [
+      {
+        questionId: "workflow.inputs",
+        statement: "Two shared inboxes feed the workflow.",
+        confidence: 0.7,
+      },
+    ],
+    occurredAt: "2026-07-29T12:00:01.000Z",
+  });
+
+  snapshot = discoveryReducer(snapshot, {
+    type: "TRUNCATE_FROM_QUESTION",
+    questionId: "workflow.scope",
+    milestone: "workflow",
+    occurredAt: "2026-07-29T12:00:02.000Z",
+  });
+
+  assert.equal(snapshot.answers["context.focusArea"].value, "Monthly close");
+  assert.equal(snapshot.answers["workflow.scope"], undefined);
+  assert.equal(snapshot.answers["workflow.inputs"], undefined);
+  assert.equal(snapshot.observations.length, 0);
+  assert.equal(snapshot.evidence.some((item) => item.questionId === "workflow.inputs"), false);
+  assert.equal(snapshot.activeMilestone, "workflow");
+});
+
+test("back across a chapter boundary clears the destination and later chapters", () => {
+  let snapshot = createInitialSnapshot("2026-07-29T12:00:00.000Z");
+  for (const [questionId, value] of [
+    ["context.sector", "insurance"],
+    ["workflow.scope", "A claim arrives and closes after approval."],
+    ["workflow.inputs", ["messages", "claims-policy"]],
+    ["readiness.systems", "Claims system"],
+    ["workflow.handoffs", "Claims to underwriting"],
+    ["friction.repetition", "Policy data is copied by hand."],
+    ["friction.exceptions", "Missing documents delay review."],
+  ]) {
+    snapshot = answer(snapshot, questionId, value);
+  }
+
+  snapshot = discoveryReducer(snapshot, {
+    type: "TRUNCATE_FROM_QUESTION",
+    questionId: "workflow.handoffs",
+    milestone: "workflow",
+    occurredAt: "2026-07-29T12:00:03.000Z",
+  });
+
+  assert.equal(snapshot.answers["readiness.systems"].value, "Claims system");
+  assert.equal(snapshot.answers["workflow.handoffs"], undefined);
+  assert.equal(snapshot.answers["friction.repetition"], undefined);
+  assert.equal(snapshot.answers["friction.exceptions"], undefined);
+  assert.equal(snapshot.painPoints.length, 0);
+  assert.equal(snapshot.activeMilestone, "workflow");
+});
+
+test("journey progress follows question position, rewinds after truncation, and completes on review", () => {
+  let snapshot = createInitialSnapshot("2026-07-29T12:00:00.000Z");
+  assert.equal(calculateJourneyProgress(snapshot, "context.sector"), 10);
+
+  for (const [questionId, value] of [
+    ["context.sector", "finance"],
+    ["context.organisationType", "financial-institution"],
+    ["context.role", "operations"],
+    ["context.focusArea", "Monthly close"],
+    ["context.sizeBand", "101-500"],
+    ["workflow.scope", "A report arrives and the approved close completes."],
+    ["workflow.inputs", ["email", "spreadsheet"]],
+  ]) {
+    snapshot = answer(snapshot, questionId, value);
+  }
+
+  const forwardProgress = calculateJourneyProgress(
+    snapshot,
+    "readiness.systems",
+  );
+  snapshot = discoveryReducer(snapshot, {
+    type: "TRUNCATE_FROM_QUESTION",
+    questionId: "workflow.scope",
+    milestone: "workflow",
+    occurredAt: "2026-07-29T12:00:02.000Z",
+  });
+  const rewoundProgress = calculateJourneyProgress(
+    snapshot,
+    "workflow.scope",
+  );
+
+  assert.ok(forwardProgress > rewoundProgress);
+  assert.ok(rewoundProgress >= 10);
+  assert.equal(calculateJourneyProgress(snapshot, undefined, true), 100);
+});
+
+test("insurance is a first-class persisted sector with its own input pack", () => {
+  const snapshot = answer(
+    createInitialSnapshot("2026-07-29T12:00:00.000Z"),
+    "context.sector",
+    "insurance",
+  );
+  const inputs = getQuestions(snapshot).find(
+    (question) => question.id === "workflow.inputs",
+  );
+
+  assert.equal(snapshot.profile.sector, "insurance");
+  assert.equal(isDiscoverySnapshot(snapshot), true);
+  assert.equal(inputs?.sector, "insurance");
+  assert.ok(
+    inputs?.options?.some((option) => option.value === "claims-policy"),
+  );
+  assert.ok(inputs?.options?.some((option) => option.value === "crm-case"));
+});
+
+test("organisation size is optional and does not reduce required coverage", () => {
+  const snapshot = createInitialSnapshot();
+  const size = getQuestions(snapshot).find(
+    (question) => question.id === "context.sizeBand",
+  );
+
+  assert.equal(size?.required, false);
+  assert.equal(calculateCoverage(snapshot).total, 12);
 });
 
 test("server-confirmed lead handoff is canonical and survives report editing", () => {
@@ -233,4 +369,26 @@ test("mixed chat proposes structured options and preserves residual context", ()
   );
   assert.deepEqual(inputs?.value, ["email", "pdf"]);
   assert.match(String(observation?.value), /analysts copy totals manually/i);
+});
+
+test("an explicit current systems question maps even inside the workflow chapter", () => {
+  let snapshot = answer(createInitialSnapshot(), "context.sector", "insurance");
+  snapshot = discoveryReducer(snapshot, {
+    type: "SET_MILESTONE",
+    milestone: "workflow",
+    occurredAt: "2026-07-29T12:00:01.000Z",
+  });
+  const systems = getQuestions(snapshot).find(
+    (question) => question.id === "readiness.systems",
+  );
+  assert.ok(systems);
+
+  const patches = proposeChatPatches({
+    message: "The work moves through the claims system and a shared case queue.",
+    questions: [systems],
+    snapshot,
+  });
+
+  assert.equal(patches[0]?.questionId, "readiness.systems");
+  assert.match(String(patches[0]?.value), /claims system/i);
 });

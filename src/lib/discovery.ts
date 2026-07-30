@@ -7,7 +7,9 @@
  * later moved to a persistence adapter without changing the product model.
  */
 
-export type Segment = "finance" | "healthcare" | "other";
+import { getRapidDiscoveryQuestions } from "./rapid-discovery";
+
+export type Segment = "finance" | "insurance" | "healthcare" | "other";
 
 type MilestoneId = "context" | "workflow" | "friction" | "readiness" | "review";
 type DiscoveryStatus =
@@ -58,6 +60,7 @@ export interface DiscoveryQuestion {
     | "long_text"
     | "number";
   options?: QuestionOption[];
+  maxSelections?: number;
   required: boolean;
   allowUnknown: boolean;
   placeholder?: string;
@@ -254,6 +257,11 @@ export type DiscoveryAction = (
         confidence: number;
       }>;
     }
+  | {
+      type: "TRUNCATE_FROM_QUESTION";
+      questionId: string;
+      milestone: MilestoneId;
+    }
   | { type: "SET_MILESTONE"; milestone: MilestoneId }
   | { type: "SET_STATUS"; status: DiscoveryStatus }
   | {
@@ -313,7 +321,7 @@ const SEGMENT_QUESTIONS: readonly DiscoveryQuestion[] = [
     id: "context.organisationType",
     milestone: "context",
     sector: "all",
-    prompt: "What kind of organisation are we mapping?",
+    prompt: "Which type of organisation do you represent?",
     shortLabel: "Organisation",
     fieldType: "single_select",
     options: [
@@ -340,21 +348,26 @@ const SEGMENT_QUESTIONS: readonly DiscoveryQuestion[] = [
       { value: "501-2000", label: "501-2,000" },
       { value: "2000+", label: "2,000+" },
     ],
-    required: true,
+    required: false,
     allowUnknown: true,
   },
   {
     id: "context.sector",
     milestone: "context",
     sector: "all",
-    prompt: "Which operational module should we load?",
+    prompt: "Which area best describes your work?",
     shortLabel: "Sector",
     fieldType: "single_select",
     options: [
       {
         value: "finance",
-        label: "Finance",
+        label: "Banking",
         description: "Reconciliation, lending, reporting and compliance.",
+      },
+      {
+        value: "insurance",
+        label: "Insurance",
+        description: "Claims, policies, underwriting and case handling.",
       },
       {
         value: "healthcare",
@@ -364,7 +377,7 @@ const SEGMENT_QUESTIONS: readonly DiscoveryQuestion[] = [
       {
         value: "other",
         label: "Other",
-        description: "A general workflow and exception diagnostic.",
+        description: "A workflow outside the sectors above.",
       },
     ],
     required: true,
@@ -397,7 +410,7 @@ const SEGMENT_QUESTIONS: readonly DiscoveryQuestion[] = [
     fieldType: "short_text",
     required: true,
     allowUnknown: true,
-    placeholder: "For example: monthly reporting or patient intake",
+    placeholder: "e.g. monthly reporting or patient intake",
   },
 ];
 
@@ -408,11 +421,10 @@ const COMMON_DISCOVERY: readonly DiscoveryQuestion[] = [
     sector: "all",
     prompt: "Where does this workflow start, and what marks it as complete?",
     shortLabel: "Start and finish",
-    help: "Approximate answers are enough. Map one workflow first.",
     fieldType: "long_text",
     required: true,
     allowUnknown: true,
-    placeholder: "It starts when… It is complete when…",
+    placeholder: "Approximate answers are enough. Map one workflow first.",
   },
   {
     id: "workflow.handoffs",
@@ -591,6 +603,27 @@ const HEALTHCARE_INPUTS: DiscoveryQuestion = {
   allowUnknown: true,
 };
 
+const INSURANCE_INPUTS: DiscoveryQuestion = {
+  id: "workflow.inputs",
+  milestone: "workflow",
+  sector: "insurance",
+  prompt: "Which sources feed this insurance workflow?",
+  shortLabel: "Sources",
+  help: "Select categories only. Do not enter claim or policy records.",
+  fieldType: "multi_select",
+  options: [
+    { value: "messages", label: "Email or messages" },
+    { value: "documents", label: "Documents or PDF" },
+    { value: "claims-policy", label: "Claims or policy system" },
+    { value: "crm-case", label: "CRM or case system" },
+    { value: "spreadsheet", label: "Spreadsheets" },
+    { value: "portal", label: "External portals" },
+    { value: "warehouse", label: "Database or warehouse" },
+  ],
+  required: true,
+  allowUnknown: true,
+};
+
 const OTHER_INPUTS: DiscoveryQuestion = {
   id: "workflow.inputs",
   milestone: "workflow",
@@ -613,6 +646,7 @@ const OTHER_INPUTS: DiscoveryQuestion = {
 
 const SECTOR_QUESTION_PACKS: Record<Segment, readonly DiscoveryQuestion[]> = {
   finance: [FINANCE_INPUTS],
+  insurance: [INSURANCE_INPUTS],
   healthcare: [HEALTHCARE_INPUTS],
   other: [OTHER_INPUTS],
 };
@@ -630,6 +664,8 @@ const SEMANTIC_BUCKET_BY_QUESTION: Record<
   "workflows" | "systems" | "dataAssets" | "painPoints" | "constraints" | "goals"
 > = {
   "workflow.scope": "workflows",
+  "workflow.volumeBand": "workflows",
+  "workflow.effortBand": "workflows",
   "workflow.handoffs": "workflows",
   "workflow.inputs": "dataAssets",
   "friction.repetition": "painPoints",
@@ -641,6 +677,57 @@ const SEMANTIC_BUCKET_BY_QUESTION: Record<
   "goal.horizon": "goals",
   "goal.investmentPosture": "goals",
 };
+
+const DISCOVERY_JOURNEY_QUESTION_IDS = [
+  "context.sector",
+  "workflow.scope",
+  "workflow.volumeBand",
+  "workflow.effortBand",
+  "friction.repetition",
+  "workflow.inputs",
+  "goal.outcome",
+  "readiness.constraints",
+] as const;
+
+export function calculateJourneyProgress(
+  snapshot: DiscoverySnapshot,
+  activeQuestionId: string | undefined,
+  isReview = false,
+): number {
+  if (isReview) return 100;
+
+  const journeyQuestionIds = getQuestions(snapshot).map(
+    (question) => question.id,
+  );
+  const activeIndex = activeQuestionId
+    ? journeyQuestionIds.indexOf(activeQuestionId)
+    : 0;
+  const safeIndex = Math.max(0, activeIndex);
+  const currentQuestionComplete =
+    activeQuestionId &&
+    hasCapturedValue(snapshot.answers[activeQuestionId]?.value)
+      ? 1
+      : 0;
+  const completedPosition = safeIndex + currentQuestionComplete;
+  const percentage = Math.round(
+    (completedPosition / journeyQuestionIds.length) * 100,
+  );
+
+  return Math.min(100, Math.max(10, percentage));
+}
+
+export function getDiscoveryQuestionIdsFrom(
+  questionId: string,
+  snapshot?: DiscoverySnapshot,
+): string[] {
+  const journeyQuestionIds = snapshot
+    ? getQuestions(snapshot).map((question) => question.id)
+    : [...DISCOVERY_JOURNEY_QUESTION_IDS];
+  const boundaryIndex = journeyQuestionIds.indexOf(questionId);
+  return boundaryIndex < 0
+    ? []
+    : journeyQuestionIds.slice(boundaryIndex);
+}
 
 export function createInitialSnapshot(
   occurredAt: string = new Date().toISOString(),
@@ -686,15 +773,12 @@ export function createInitialSnapshot(
 }
 
 export function getQuestions(snapshot: DiscoverySnapshot): DiscoveryQuestion[] {
-  const sector = snapshot.profile.sector || "other";
-  const sectorQuestions = SECTOR_QUESTION_PACKS[sector];
-
-  return [
-    ...SEGMENT_QUESTIONS.map(cloneQuestion),
-    cloneQuestion(COMMON_DISCOVERY[0]),
-    ...sectorQuestions.map(cloneQuestion),
-    ...COMMON_DISCOVERY.slice(1).map(cloneQuestion),
-  ];
+  const sectorQuestion = SEGMENT_QUESTIONS.find(
+    (question) => question.id === "context.sector",
+  );
+  return sectorQuestion
+    ? [cloneQuestion(sectorQuestion), ...getRapidDiscoveryQuestions(snapshot)]
+    : getRapidDiscoveryQuestions(snapshot);
 }
 
 export function proposeChatPatches({
@@ -708,9 +792,11 @@ export function proposeChatPatches({
 }): ChatEvidencePatch[] {
   const normalized = message.toLocaleLowerCase("en");
   const correctionIntent = /\b(correct|change|update|actually)\b/.test(normalized);
+  const explicitEligibleList = questions.length === 1;
   const active = questions.filter(
     (question) =>
-      question.milestone === snapshot.activeMilestone &&
+      (explicitEligibleList ||
+        question.milestone === snapshot.activeMilestone) &&
       (correctionIntent ||
         !hasMeaningfulValue(snapshot.answers[question.id]?.value)),
   );
@@ -865,11 +951,9 @@ export function calculateCoverage(snapshot: DiscoverySnapshot): Coverage {
     estimatedMinutesRemaining,
     knownCoreSignals,
     validationSignals,
-    readyForPreview:
-      hasCapturedValue(snapshot.answers["workflow.scope"]?.value) &&
-      hasCapturedValue(snapshot.answers["friction.repetition"]?.value) &&
-      hasCapturedValue(snapshot.answers["friction.exceptions"]?.value) &&
-      hasCapturedValue(snapshot.answers["goal.outcome"]?.value),
+    readyForPreview: requiredQuestions.every((question) =>
+      hasCapturedValue(snapshot.answers[question.id]?.value),
+    ),
   };
 }
 
@@ -963,6 +1047,53 @@ export function discoveryReducer(
       return deriveSemanticState({
         ...next,
         observations: [...next.observations, ...observations],
+        revision: nextRevision,
+        updatedAt,
+      });
+    }
+    case "TRUNCATE_FROM_QUESTION": {
+      const clearedQuestionIds = new Set(
+        getDiscoveryQuestionIdsFrom(action.questionId, snapshot),
+      );
+      if (clearedQuestionIds.size === 0) return snapshot;
+
+      const answers = Object.fromEntries(
+        Object.entries(snapshot.answers).filter(
+          ([questionId]) => !clearedQuestionIds.has(questionId),
+        ),
+      );
+      const profile: Profile = {
+        organisationType: valueToText(
+          answers["context.organisationType"]?.value ?? null,
+        ),
+        sizeBand: valueToText(answers["context.sizeBand"]?.value ?? null),
+        sector: normalizeSegment(answers["context.sector"]?.value ?? null),
+        role: valueToText(answers["context.role"]?.value ?? null),
+        focusArea: valueToText(answers["context.focusArea"]?.value ?? null),
+      };
+      const clearsWorkflowState = clearedQuestionIds.has("workflow.scope");
+
+      return deriveSemanticState({
+        ...snapshot,
+        status:
+          action.milestone === "context"
+            ? "segmenting"
+            : action.milestone === "review"
+              ? "review"
+              : "discovering",
+        activeMilestone: action.milestone,
+        leadRequestStatus: "not_started",
+        leadConfirmation: null,
+        profile,
+        answers,
+        observations: snapshot.observations.filter(
+          (observation) => !clearedQuestionIds.has(observation.questionId),
+        ),
+        workflows: clearsWorkflowState
+          ? snapshot.workflows.filter(
+              (fact) => !fact.id.startsWith("workflow-manual-"),
+            )
+          : snapshot.workflows,
         revision: nextRevision,
         updatedAt,
       });
@@ -1063,7 +1194,7 @@ export function buildReportPreview(snapshot: DiscoverySnapshot): ReportPreview {
   const organisation =
     labelForOption("context.organisationType", snapshot.profile.organisationType, snapshot) ||
     "Organisation not specified";
-  const sectorLabel = titleCase(sector);
+  const sectorLabel = sector === "finance" ? "Banking" : titleCase(sector);
   const summary = buildSummary(snapshot, problems, sectorLabel, focus);
   const generatedAt = snapshot.updatedAt;
 
@@ -1168,9 +1299,12 @@ function applyAnswer(
   const answers = { ...snapshot.answers };
   if (sectorChanged) {
     const sectorQuestionIds = new Set(
-      Object.values(SECTOR_QUESTION_PACKS)
-        .flat()
-        .map((question) => question.id),
+      [
+        "workflow.scope",
+        ...Object.values(SECTOR_QUESTION_PACKS)
+          .flat()
+          .map((question) => question.id),
+      ],
     );
     for (const sectorQuestionId of sectorQuestionIds) {
       delete answers[sectorQuestionId];
@@ -1186,12 +1320,7 @@ function applyAnswer(
       }
     : snapshot.profile;
   const status =
-    snapshot.status === "segmenting" &&
-    profile.organisationType &&
-    profile.sizeBand &&
-    profile.sector &&
-    profile.role &&
-    profile.focusArea
+    snapshot.status === "segmenting" && profile.sector
       ? "discovering"
       : snapshot.status;
 
@@ -1533,7 +1662,12 @@ function normalizeValue(value: DiscoveryValue): DiscoveryValue {
 
 function normalizeSegment(value: DiscoveryValue): Segment | "" {
   const text = valueToText(value);
-  return text === "finance" || text === "healthcare" || text === "other" ? text : "";
+  return text === "finance" ||
+    text === "insurance" ||
+    text === "healthcare" ||
+    text === "other"
+    ? text
+    : "";
 }
 
 function valueToText(value: DiscoveryValue): string {
@@ -1668,6 +1802,7 @@ export function isDiscoverySnapshot(value: unknown): value is DiscoverySnapshot 
     typeof profile.sizeBand === "string" &&
     (profile.sector === "" ||
       profile.sector === "finance" ||
+      profile.sector === "insurance" ||
       profile.sector === "healthcare" ||
       profile.sector === "other") &&
     typeof profile.role === "string" &&
@@ -1792,4 +1927,3 @@ export function containsSensitiveDataCue(message: string): boolean {
     /(?:\d[\s-]*){13,19}/.test(message)
   );
 }
-

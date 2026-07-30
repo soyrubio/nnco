@@ -7,59 +7,77 @@ import { siteNavigation } from "@/data/site";
 interface Props {
   currentPath?: string;
   overHero?: boolean;
+  variant?: "default" | "discovery";
 }
 
-const { currentPath = Astro.url.pathname, overHero = false } = Astro.props;
+const {
+  currentPath = Astro.url.pathname,
+  overHero = false,
+  variant = "default",
+} = Astro.props;
+const isDiscovery = variant === "discovery";
+const isCurrentPage = (href: string) =>
+  href === "/"
+    ? currentPath === "/"
+    : currentPath === href ||
+      currentPath === `${href}/` ||
+      currentPath.startsWith(`${href}/`);
 
 ---
 
 <header
-  class:list={["site-header", { "site-header--over-hero": overHero }]}
-  data-site-header={overHero ? "hero" : "solid"}
+  class:list={[
+    "site-header",
+    {
+      "site-header--over-hero": overHero,
+      "site-header--discovery": isDiscovery,
+    },
+  ]}
+  data-site-header={isDiscovery ? "discovery" : overHero ? "hero" : "solid"}
 >
-  <div class="content-rail site-header__inner">
+  <div class="nnco-navbar-rail site-header__inner">
     <BrandLogo eager />
 
-    <nav class="site-nav" aria-label="Primary navigation">
-      {
-        siteNavigation.map((item) => (
-          <a
-            href={item.href}
-            aria-current={
-              currentPath === item.href || currentPath === `${item.href}/`
-                ? "page"
-                : undefined
-            }
-          >
-            {item.label}
-          </a>
-        ))
-      }
-    </nav>
+    {
+      isDiscovery ? (
+        <Button href="/" size="small">
+          Back to NNCO
+          <BlockArrow />
+        </Button>
+      ) : (
+        <>
+          <nav class="site-nav" aria-label="Primary navigation">
+            {siteNavigation.map((item) => (
+              <a
+                href={item.href}
+                aria-current={isCurrentPage(item.href) ? "page" : undefined}
+              >
+                {item.label}
+              </a>
+            ))}
+          </nav>
 
-    <details class="site-menu">
-      <summary>Menu</summary>
-      <nav class="site-menu__panel" aria-label="Mobile primary navigation">
-        {
-          siteNavigation.map((item) => (
-            <a
-              href={item.href}
-              aria-current={
-                currentPath === item.href || currentPath === `${item.href}/`
-                  ? "page"
-                  : undefined
-              }
-            >
-              {item.label}
-            </a>
-          ))
-        }
-      </nav>
-    </details>
+          <details class="site-menu">
+            <summary>Menu</summary>
+            <nav class="site-menu__panel" aria-label="Mobile primary navigation">
+              {siteNavigation.map((item) => (
+                <a
+                  href={item.href}
+                  aria-current={isCurrentPage(item.href) ? "page" : undefined}
+                >
+                  {item.label}
+                </a>
+              ))}
+            </nav>
+          </details>
 
-    <Button href="/discovery" size="small">
-      Start diagnostic
-      <BlockArrow />
-    </Button>
+          <Button href="/discovery" size="small">
+            Start diagnostic
+            <BlockArrow />
+          </Button>
+        </>
+      )
+    }
   </div>
+  <div class="nnco-header-rule" aria-hidden="true"></div>
 </header>

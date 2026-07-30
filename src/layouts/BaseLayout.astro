@@ -1,17 +1,31 @@
 ---
+import PageLoader from "@/components/PageLoader.astro";
 import "@/styles/global.css";
+
+interface PreloadImage {
+  href: string;
+  media?: string;
+  type?: string;
+}
 
 interface Props {
   title?: string;
   description?: string;
   image?: string;
+  themeColor?: string;
+  preloadImages?: PreloadImage[];
 }
 
 const {
   title = "NNCO | Production AI for regulated institutions",
   description = "NNCO designs and implements production AI for banks, insurers, and healthcare providers.",
   image = "/assets/nnco-hero-mosaic-hifi.png",
+  themeColor = "#f5f5f5",
+  preloadImages = [],
 } = Astro.props;
+
+const loaderTone =
+  themeColor.trim().toLowerCase() === "#111111" ? "dark" : "light";
 ---
 
 <!doctype html>
@@ -21,7 +35,7 @@ const {
     <meta name="viewport" content="width=device-width" />
     <meta name="generator" content={Astro.generator} />
     <meta name="description" content={description} />
-    <meta name="theme-color" content="#f5f5f5" />
+    <meta name="theme-color" content={themeColor} />
     <meta property="og:type" content="website" />
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
@@ -36,9 +50,36 @@ const {
       href="https://fonts.googleapis.com/css2?family=Geist:ital,wght@0,100..900;1,100..900&display=swap"
       rel="stylesheet"
     />
+    {
+      preloadImages.map(({ href, media, type }) => (
+        <link
+          rel="preload"
+          as="image"
+          href={href}
+          media={media}
+          type={type}
+          fetchpriority="high"
+        />
+      ))
+    }
     <title>{title}</title>
+    <noscript>
+      <style>
+        .page-loader {
+          display: none !important;
+        }
+      </style>
+    </noscript>
   </head>
-  <body>
-    <slot />
+  <body class="is-page-loading">
+    <PageLoader tone={loaderTone} />
+    <div data-page-content>
+      <slot />
+    </div>
+    <script is:inline>
+      document
+        .querySelector("[data-page-content]")
+        ?.setAttribute("inert", "");
+    </script>
   </body>
 </html>

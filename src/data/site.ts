@@ -1,4 +1,5 @@
 export const siteNavigation = [
+  { href: "/", label: "Home" },
   { href: "/what-we-do", label: "What We Do" },
   { href: "/company", label: "Company" },
   { href: "/news", label: "News" },
