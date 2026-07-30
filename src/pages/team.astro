@@ -1,0 +1,63 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import CardAffordance from "@/components/CardAffordance.astro";
+import Footer from "@/components/Footer.astro";
+import Header from "@/components/Header.astro";
+import PageHero from "@/components/PageHero.astro";
+import SectionAnatomy from "@/components/SectionAnatomy.astro";
+import SectionFrame from "@/components/SectionFrame.astro";
+---
+
+<BaseLayout
+  title="Team | NNCO"
+  description="A sample profile showing how NNCO will present the people behind its work."
+>
+  <Header />
+  <main>
+    <PageHero title="The people behind the work." />
+
+    <SectionFrame labelledBy="team-profiles-title" class="team-page">
+      <SectionAnatomy title="Team" titleId="team-profiles-title">
+        <div class="team-profile-grid">
+          <a
+            class="team-profile-card"
+            href="/contact"
+          >
+            <div class="team-profile-card__portrait" aria-hidden="true">
+              <img
+                class="team-profile-card__image team-profile-card__image--light"
+                src="/assets/team-sample-light.webp"
+                alt=""
+                width="1200"
+                height="1500"
+                loading="lazy"
+                decoding="async"
+              />
+              <img
+                class="team-profile-card__image team-profile-card__image--dark"
+                src="/assets/team-sample-dark.webp"
+                alt=""
+                width="1200"
+                height="1500"
+                loading="lazy"
+                decoding="async"
+              />
+            </div>
+
+            <div class="team-profile-card__body">
+              <p class="team-profile-card__label">Sample profile</p>
+              <h2>Klára Novotná</h2>
+              <p class="team-profile-card__role">Applied AI Engineer</p>
+              <p class="team-profile-card__summary">
+                Builds secure workflows that move AI from evaluation into
+                daily institutional use.
+              </p>
+              <CardAffordance />
+            </div>
+          </a>
+        </div>
+      </SectionAnatomy>
+    </SectionFrame>
+  </main>
+  <Footer />
+</BaseLayout>

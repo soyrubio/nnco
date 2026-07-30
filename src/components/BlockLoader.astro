@@ -1,28 +1,33 @@
 ---
+import { LOADER_FRAME_CADENCE_MS, LOADER_FRAMES } from "@/lib/loader";
+
 interface Props {
   size?: "compact" | "large";
+  tone?: "light" | "dark";
 }
 
-const { size = "compact" } = Astro.props;
-
-const frames = [
-  "/assets/loader-frame-01.svg",
-  "/assets/loader-frame-02.svg",
-  "/assets/loader-frame-03.svg",
-];
+const { size = "compact", tone = "light" } = Astro.props;
 ---
 
 <nnco-block-loader
-  class:list={["block-loader", `block-loader--${size}`]}
+  class:list={[
+    "nnco-loader-mark",
+    `nnco-loader-mark--${size}`,
+    { "nnco-loader-mark--on-dark": tone === "dark" },
+  ]}
+  data-frame-cadence={LOADER_FRAME_CADENCE_MS}
   aria-hidden="true"
 >
   {
-    frames.map((src, index) => (
+    LOADER_FRAMES.map((src, index) => (
       <img
-        class:list={["block-loader__frame", { "is-active": index === 0 }]}
+        class:list={[
+          "nnco-loader-mark__frame",
+          { "is-active": index === 0 },
+        ]}
         src={src}
         alt=""
-        width="400"
+        width="300"
         height="300"
         loading={size === "large" ? "eager" : "lazy"}
         fetchpriority={size === "large" ? "high" : "auto"}
@@ -32,8 +37,6 @@ const frames = [
 </nnco-block-loader>
 
 <script>
-  const frameCadenceMs = 240;
-
   class NncoBlockLoader extends HTMLElement {
     private activeFrame = 0;
     private frameTimer = 0;
@@ -57,13 +60,13 @@ const frames = [
         this.frameTimer = window.setInterval(() => {
           this.activeFrame = (this.activeFrame + 1) % this.frames.length;
           this.showFrame(this.activeFrame);
-        }, frameCadenceMs);
+        }, Number(this.dataset.frameCadence));
       }
     };
 
     connectedCallback() {
       this.frames = Array.from(
-        this.querySelectorAll<HTMLElement>(".block-loader__frame"),
+        this.querySelectorAll<HTMLElement>(".nnco-loader-mark__frame"),
       );
       this.syncMotionPreference();
       this.motionPreference.addEventListener(

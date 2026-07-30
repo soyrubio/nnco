@@ -79,7 +79,7 @@ function localReply(
     return "That is a valid answer. I’ll keep it as a validation item rather than force a guess.";
   }
   if (!segment) {
-    return "I can route this through finance, healthcare or a general operations module. Which sector best matches the workflow?";
+    return "Choose Banking, Insurance, Healthcare or Other so the questions match the workflow.";
   }
   if (
     segment === "healthcare" &&
@@ -96,25 +96,25 @@ function localReply(
   if (/\b(manual|copy|paste|repeat|re-key|rekey)\b/.test(normalized)) {
     return mapped
       ? "I mapped that as proposed manual-work evidence. Review it before accepting, then add how often it occurs or what happens when it is missed."
-      : "I could not map that safely. Use Guided mode or name the manual step and its consequence.";
+      : "I could not map that safely. Name the manual step and its consequence.";
   }
   if (/\b(error|exception|delay|bottleneck|fail)\b/.test(normalized)) {
     return mapped
       ? "I mapped that as proposed friction evidence. Review it before accepting; who detects it and where is it recorded?"
-      : "That sounds relevant, but I could not assign it to a field safely. Use Guided mode or name the exception and consequence.";
+      : "That sounds relevant, but I could not assign it safely. Name the exception and consequence.";
   }
   const next = unanswered[0];
   if (next) {
     return mapped
       ? `Mapped into proposed evidence. Review it before accepting. To strengthen the diagnostic: ${next.prompt}`
-      : `I did not record that as evidence. Try answering this directly: ${next.prompt}`;
+      : `I did not record that. Try answering this directly: ${next.prompt}`;
   }
   if (calculateCoverage(snapshot).readyForPreview) {
     return "The evidence is sufficient for a first diagnostic preview. Unknowns will stay clearly marked for validation.";
   }
   return mapped
-    ? "Mapped into proposed evidence. Review each item before accepting it."
-    : "I did not record that as evidence. Rephrase it or use Guided mode.";
+    ? "Mapped into proposed details. Review each item before accepting it."
+    : "I did not record that. Rephrase it or answer the question directly.";
 }
 
 export const localDiscoveryAgent: DiscoveryAgent = {
