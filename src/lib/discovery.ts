@@ -60,7 +60,6 @@ export interface DiscoveryQuestion {
     | "long_text"
     | "number";
   options?: QuestionOption[];
-  maxSelections?: number;
   required: boolean;
   allowUnknown: boolean;
   placeholder?: string;
