@@ -1,0 +1,51 @@
+---
+import BlockArrow from "./BlockArrow.astro";
+import Button from "./Button.astro";
+
+interface Props {
+  image?: string;
+}
+
+const {
+  image = "/assets/nnco-hero-mosaic-hifi.png",
+} = Astro.props;
+---
+
+<section class="hero" aria-labelledby="hero-title" data-marketing-hero>
+  <div class="content-rail hero__inner">
+    <div class="hero__copy" data-reveal-group>
+      <h1 id="hero-title" data-reveal="ready">
+        <span class="hero__headline-line">
+          <strong class="hero__headline-emphasis">We build production AI</strong>
+        </span>
+        <span class="hero__headline-line">for regulated institutions.</span>
+      </h1>
+      <div class="hero__actions">
+        <Button href="/contact">
+          Talk to Our Team
+          <BlockArrow />
+        </Button>
+        <Button
+          href="/what-we-do"
+          variant="secondary"
+        >
+          Work With Us
+          <BlockArrow />
+        </Button>
+      </div>
+    </div>
+  </div>
+
+  <div class="hero__media" aria-hidden="true">
+    <img
+      class="hero__image"
+      src={image}
+      alt=""
+      width="1536"
+      height="1024"
+      loading="eager"
+      fetchpriority="high"
+    />
+  </div>
+  <div class="hero__scrim" aria-hidden="true"></div>
+</section>

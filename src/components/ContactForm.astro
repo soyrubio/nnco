@@ -1,0 +1,159 @@
+---
+import Button from "./Button.astro";
+---
+
+<contact-form class="contact-form-shell">
+  <form class="contact-form" data-contact-form novalidate>
+    <div class="contact-form__grid">
+      <label class="field">
+        <span>Name</span>
+        <input name="name" autocomplete="name" required />
+        <small data-error-for="name"></small>
+      </label>
+
+      <label class="field">
+        <span>Work email</span>
+        <input
+          name="email"
+          type="email"
+          autocomplete="email"
+          inputmode="email"
+          required
+        />
+        <small data-error-for="email"></small>
+      </label>
+
+      <label class="field">
+        <span>Institution</span>
+        <input name="institution" autocomplete="organization" required />
+        <small data-error-for="institution"></small>
+      </label>
+
+      <label class="field">
+        <span>Sector</span>
+        <select name="sector" required>
+          <option value="">Select sector</option>
+          <option>Banking</option>
+          <option>Insurance</option>
+          <option>Healthcare</option>
+          <option>Other regulated industry</option>
+        </select>
+        <small data-error-for="sector"></small>
+      </label>
+
+      <label class="field">
+        <span>Area of interest</span>
+        <select name="area" required>
+          <option value="">Select area</option>
+          <option>Transformation</option>
+          <option>Use case</option>
+          <option>Infrastructure</option>
+          <option>Ongoing operation</option>
+        </select>
+        <small data-error-for="area"></small>
+      </label>
+
+      <label class="field contact-form__message">
+        <span>Message</span>
+        <textarea
+          name="message"
+          rows="6"
+          minlength="10"
+          required
+        ></textarea>
+        <small data-error-for="message"></small>
+      </label>
+    </div>
+
+    <div class="contact-form__footer">
+      <Button type="submit">Request a Working Session</Button>
+      <p data-form-status role="status" aria-live="polite"></p>
+    </div>
+  </form>
+</contact-form>
+
+<script>
+  class NncoContactForm extends HTMLElement {
+    connectedCallback() {
+      const form = this.querySelector<HTMLFormElement>("[data-contact-form]");
+      const status = this.querySelector<HTMLElement>("[data-form-status]");
+      const submit = form?.querySelector<HTMLButtonElement>(
+        'button[type="submit"]',
+      );
+
+      if (!form || !status || !submit) return;
+
+      const clearErrors = () => {
+        form.querySelectorAll<HTMLElement>("[data-error-for]").forEach((item) => {
+          item.textContent = "";
+        });
+        form
+          .querySelectorAll<HTMLElement>("[aria-invalid]")
+          .forEach((field) => field.removeAttribute("aria-invalid"));
+      };
+
+      const showError = (field: HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement) => {
+        field.setAttribute("aria-invalid", "true");
+        const target = form.querySelector<HTMLElement>(
+          `[data-error-for="${field.name}"]`,
+        );
+        if (!target) return;
+        target.textContent =
+          field.validity.typeMismatch
+            ? "Enter a valid work email."
+            : field.validity.tooShort
+              ? "Add at least 10 characters."
+            : "This field is required.";
+      };
+
+      form.addEventListener("submit", (event) => {
+        event.preventDefault();
+        clearErrors();
+        status.className = "";
+        status.textContent = "";
+
+        const invalidFields = Array.from(
+          form.querySelectorAll<
+            HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+          >(":invalid"),
+        );
+
+        if (invalidFields.length > 0) {
+          invalidFields.forEach(showError);
+          invalidFields[0].focus();
+          status.className = "is-error";
+          status.textContent = "Check the highlighted fields.";
+          return;
+        }
+
+        const data = new FormData(form);
+        const email = String(data.get("email") ?? "");
+        submit.disabled = true;
+        submit.textContent = "Requesting...";
+        status.className = "is-loading";
+        status.textContent = "Preparing your request.";
+
+        window.setTimeout(() => {
+          submit.disabled = false;
+          submit.textContent = "Request a Working Session";
+
+          if (email.endsWith("@example.invalid")) {
+            status.className = "is-error";
+            status.textContent =
+              "The local simulation could not complete. Try another address.";
+            return;
+          }
+
+          form.reset();
+          status.className = "is-success";
+          status.textContent =
+            "Request recorded locally. No message has been sent.";
+        }, 900);
+      });
+    }
+  }
+
+  if (!customElements.get("contact-form")) {
+    customElements.define("contact-form", NncoContactForm);
+  }
+</script>

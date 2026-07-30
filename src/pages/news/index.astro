@@ -1,0 +1,63 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import CardAffordance from "@/components/CardAffordance.astro";
+import Footer from "@/components/Footer.astro";
+import Header from "@/components/Header.astro";
+import PageHero from "@/components/PageHero.astro";
+import SectionAnatomy from "@/components/SectionAnatomy.astro";
+import SectionFrame from "@/components/SectionFrame.astro";
+import { newsArticles } from "@/data/news";
+
+const [feature, ...articles] = newsArticles;
+---
+
+<BaseLayout
+  title="News | NNCO"
+  description="Perspectives on applied AI, regulation, infrastructure, healthcare, and the work required to put institutional systems into operation."
+>
+  <Header currentPath="/news" />
+  <main class="news-index">
+    <PageHero title="News" />
+
+    <SectionFrame labelledBy="featured-news-title" class="news-feed">
+      <SectionAnatomy
+        title="Featured News"
+        titleId="featured-news-title"
+      >
+        <a class="news-feature" href={`/news/${feature.slug}`}>
+          <div class="news-feature__copy">
+            <div class="news-meta">
+              <span>{feature.category}</span>
+              <time datetime={feature.publishedAt}>{feature.publishedLabel}</time>
+            </div>
+            <h3>{feature.title}</h3>
+            <p>{feature.summary}</p>
+            <CardAffordance />
+          </div>
+        </a>
+
+        <div class="news-list" aria-label="More NNCO news">
+          {
+            articles.map((article, index) => (
+              <a class="news-row" href={`/news/${article.slug}`}>
+                <div class="news-row__meta">
+                  <span>{String(index + 2).padStart(2, "0")}</span>
+                  <span>{article.category}</span>
+                  <time datetime={article.publishedAt}>
+                    {article.publishedLabel}
+                  </time>
+                </div>
+                <div>
+                  <h3>{article.title}</h3>
+                  <p>{article.summary}</p>
+                </div>
+                <CardAffordance />
+              </a>
+            ))
+          }
+        </div>
+      </SectionAnatomy>
+    </SectionFrame>
+  </main>
+  <Footer />
+</BaseLayout>

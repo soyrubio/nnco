@@ -1,0 +1,61 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import CardAffordance from "@/components/CardAffordance.astro";
+import Footer from "@/components/Footer.astro";
+import Header from "@/components/Header.astro";
+import PageHero from "@/components/PageHero.astro";
+import SectionAnatomy from "@/components/SectionAnatomy.astro";
+import SectionFrame from "@/components/SectionFrame.astro";
+import { engagements } from "@/data/site";
+---
+
+<BaseLayout
+  title="What We Do | NNCO"
+  description="NNCO builds the capability, infrastructure, and controls required to put AI into regulated production."
+>
+  <Header />
+  <main>
+    <PageHero title="From institutional ambition to operating system." />
+
+    <SectionFrame
+      labelledBy="engagements-title"
+      class="engagements-section"
+    >
+      <SectionAnatomy title="Engagements" titleId="engagements-title">
+        <div class="engagement-card-grid">
+          {
+            engagements.map((engagement, index) => (
+              <a
+                id={index === 2 ? "infrastructure" : undefined}
+                class="engagement-card"
+                href="/contact"
+              >
+                <span>{String(index + 1).padStart(2, "0")}</span>
+                <h3>{engagement.title}</h3>
+                <p>{engagement.description}</p>
+                <CardAffordance />
+              </a>
+            ))
+          }
+        </div>
+      </SectionAnatomy>
+    </SectionFrame>
+
+    <SectionFrame
+      tone="surface"
+      labelledBy="healthcare-title"
+      class="trust-boundary"
+    >
+      <SectionAnatomy
+        title="Healthcare boundary"
+        titleId="healthcare-title"
+      >
+        <p class="trust-statement">
+          NNCO focuses on administrative and operational healthcare workflows.
+          Clinical diagnostics remain outside our initial scope.
+        </p>
+      </SectionAnatomy>
+    </SectionFrame>
+  </main>
+  <Footer />
+</BaseLayout>

@@ -1,0 +1,87 @@
+---
+interface Props {
+  size?: "compact" | "large";
+}
+
+const { size = "compact" } = Astro.props;
+
+const frames = [
+  "/assets/loader-frame-01.svg",
+  "/assets/loader-frame-02.svg",
+  "/assets/loader-frame-03.svg",
+];
+---
+
+<nnco-block-loader
+  class:list={["block-loader", `block-loader--${size}`]}
+  aria-hidden="true"
+>
+  {
+    frames.map((src, index) => (
+      <img
+        class:list={["block-loader__frame", { "is-active": index === 0 }]}
+        src={src}
+        alt=""
+        width="400"
+        height="300"
+        loading={size === "large" ? "eager" : "lazy"}
+        fetchpriority={size === "large" ? "high" : "auto"}
+      />
+    ))
+  }
+</nnco-block-loader>
+
+<script>
+  const frameCadenceMs = 240;
+
+  class NncoBlockLoader extends HTMLElement {
+    private activeFrame = 0;
+    private frameTimer = 0;
+    private frames: HTMLElement[] = [];
+    private motionPreference = window.matchMedia(
+      "(prefers-reduced-motion: reduce)",
+    );
+
+    private showFrame = (index: number) => {
+      this.frames.forEach((frame, frameIndex) => {
+        frame.classList.toggle("is-active", frameIndex === index);
+      });
+    };
+
+    private syncMotionPreference = () => {
+      window.clearInterval(this.frameTimer);
+      this.activeFrame = 0;
+      this.showFrame(this.activeFrame);
+
+      if (!this.motionPreference.matches) {
+        this.frameTimer = window.setInterval(() => {
+          this.activeFrame = (this.activeFrame + 1) % this.frames.length;
+          this.showFrame(this.activeFrame);
+        }, frameCadenceMs);
+      }
+    };
+
+    connectedCallback() {
+      this.frames = Array.from(
+        this.querySelectorAll<HTMLElement>(".block-loader__frame"),
+      );
+      this.syncMotionPreference();
+      this.motionPreference.addEventListener(
+        "change",
+        this.syncMotionPreference,
+      );
+    }
+
+    disconnectedCallback() {
+      window.clearInterval(this.frameTimer);
+      this.motionPreference.removeEventListener(
+        "change",
+        this.syncMotionPreference,
+      );
+    }
+  }
+
+  if (!customElements.get("nnco-block-loader")) {
+    customElements.define("nnco-block-loader", NncoBlockLoader);
+  }
+</script>
