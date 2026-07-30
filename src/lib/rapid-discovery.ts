@@ -143,26 +143,22 @@ export function getRapidDiscoveryQuestions(
         ["4h-plus", "More than 4 hours"],
       ]),
     }),
-    {
-      ...choice({
-        id: "friction.repetition",
-        milestone: "friction",
-        sector: "all",
-        prompt: "Where does the workflow lose the most capacity?",
-        shortLabel: "Primary friction",
-        help: "Select up to two.",
-        fieldType: "multi_select",
-        options: options([
-          ["manual-entry", "Manual data entry"],
-          ["document-review", "Document review"],
-          ["missing-inputs", "Missing or inconsistent inputs"],
-          ["handoffs", "Handoffs and approvals"],
-          ["exceptions", "Exceptions and rework"],
-          ["reconciliation", "Reconciliation and checking"],
-        ]),
-      }),
-      maxSelections: 2,
-    },
+    choice({
+      id: "friction.repetition",
+      milestone: "friction",
+      sector: "all",
+      prompt: "Where does the workflow lose the most capacity?",
+      shortLabel: "Primary friction",
+      fieldType: "multi_select",
+      options: options([
+        ["manual-entry", "Manual data entry"],
+        ["document-review", "Document review"],
+        ["missing-inputs", "Missing or inconsistent inputs"],
+        ["handoffs", "Handoffs and approvals"],
+        ["exceptions", "Exceptions and rework"],
+        ["reconciliation", "Reconciliation and checking"],
+      ]),
+    }),
     choice({
       id: "workflow.inputs",
       milestone: "readiness",
@@ -213,4 +209,3 @@ export function getRapidDiscoveryQuestions(
 
   return questions;
 }
-

@@ -282,7 +282,6 @@ function QuestionField({
 
   if (question.fieldType === "multi_select") {
     const selected = Array.isArray(value) ? value : [];
-    const selectionLimit = question.maxSelections ?? Number.POSITIVE_INFINITY;
     return (
       <div
         className="discovery-options discovery-options--multi"
@@ -294,14 +293,11 @@ function QuestionField({
       >
         {question.options?.map((option) => {
           const active = selected.includes(option.value);
-          const atSelectionLimit =
-            !active && selected.length >= selectionLimit;
           return (
             <button
               type="button"
               aria-pressed={active}
               className={active ? "is-selected" : ""}
-              disabled={atSelectionLimit}
               key={option.value}
               onClick={() =>
                 onAnswer(
