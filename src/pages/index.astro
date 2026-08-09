@@ -1,23 +1,50 @@
 ---
 import BaseLayout from "@/layouts/BaseLayout.astro";
 import BlockArrow from "@/components/BlockArrow.astro";
+import BlogPostList from "@/components/BlogPostList.astro";
 import Button from "@/components/Button.astro";
-import CardAffordance from "@/components/CardAffordance.astro";
+import ClosingSection from "@/components/ClosingSection.astro";
+import EditorialCard from "@/components/EditorialCard.astro";
+import FaqSection from "@/components/FaqSection.astro";
 import Footer from "@/components/Footer.astro";
 import Header from "@/components/Header.astro";
 import Hero from "@/components/Hero.astro";
 import MarketingBehavior from "@/components/MarketingBehavior.astro";
 import SectionAnatomy from "@/components/SectionAnatomy.astro";
 import SectionFrame from "@/components/SectionFrame.astro";
+import { faqByPage } from "@/data/faq";
+import { posts } from "@/data/posts";
+import { homePhases } from "@/data/programme";
 import { sectors } from "@/data/site";
-import { newsArticles } from "@/data/news";
 
-const latestArticles = newsArticles.slice(1, 4);
+export const prerender = true;
+
+const faq = faqByPage.home;
+const latestPosts = posts.slice(0, 3);
+const websiteSchema = {
+  "@type": "WebSite",
+  "@id": "https://nnco.ai/#website",
+  url: "https://nnco.ai",
+  name: "NNCO",
+  publisher: { "@id": "https://nnco.ai/#organization" },
+  inLanguage: "en",
+};
+const faqSchema = {
+  "@type": "FAQPage",
+  "@id": "https://nnco.ai/#faq",
+  mainEntity: faq.map((item) => ({
+    "@type": "Question",
+    name: item.question,
+    acceptedAnswer: { "@type": "Answer", text: item.answer },
+  })),
+};
 ---
 
 <BaseLayout
-  title="NNCO | Production AI for regulated institutions"
-  description="NNCO designs and implements production AI for banks, insurers, and healthcare providers."
+  title="AI consulting and development for large institutions | NNCO"
+  description="NNCO designs, integrates and operates AI systems for banks, insurers and healthcare providers. We start with an AI audit and take the first use case into production."
+  canonicalPath="/"
+  schemas={[websiteSchema, faqSchema]}
   preloadImages={[
     {
       href: "/assets/hero-sequence/mobile/frame-01.webp",
@@ -37,42 +64,64 @@ const latestArticles = newsArticles.slice(1, 4);
   <main>
     <Hero />
 
-    <SectionFrame
-      id="sectors"
-      labelledBy="sectors-title"
-      class="home-sectors"
-    >
-      <SectionAnatomy title="Sectors" titleId="sectors-title">
-        <div class="sector-panel-grid">
-          {
-            sectors.map((sector) => (
-              <a class="sector-panel" href="/what-we-do">
-                <h3>{sector.name}</h3>
-                <p>{sector.description}</p>
-                <CardAffordance />
-              </a>
-            ))
-          }
+    <SectionFrame labelledBy="audit-title" class="editorial-section">
+      <SectionAnatomy title="AI audit" titleId="audit-title">
+        <p class="editorial-section__body">
+          The audit goes through your operations and returns a map: what to
+          build, in what order, and what each one is worth. It states where
+          your data and your regulator allow deployment and where they do not.
+          The first use case goes straight into a pilot.
+        </p>
+        <div class="editorial-links">
+          <Button href="/ai-first-enterprise/ai-audit" variant="secondary">
+            How the audit works <BlockArrow />
+          </Button>
         </div>
       </SectionAnatomy>
     </SectionFrame>
 
-    <SectionFrame
-      tone="dark"
-      labelledBy="private-ai-title"
-      class="private-ai-section"
-    >
+    <SectionFrame tone="surface" labelledBy="build-title" class="editorial-section">
+      <SectionAnatomy title="What we build" titleId="build-title">
+        <div class="editorial-card-grid editorial-card-grid--3">
+          <EditorialCard
+            title="Agents that run whole workflows"
+            text="An agent takes a process end to end: onboarding checks, document review, preparing a case for a human decision. It works inside your systems, not next to them."
+          />
+          <EditorialCard
+            title="Documents and case files"
+            text="It reads contracts, statements and case files, pulls out the data and drafts the output. This is the work whole departments sit on today."
+          />
+          <EditorialCard
+            title="Data that sits unused"
+            text="Data your teams never had time to use becomes an answer in seconds, with a link back to the record it came from."
+          />
+        </div>
+      </SectionAnatomy>
+    </SectionFrame>
+
+    <SectionFrame labelledBy="gain-title" class="editorial-section">
+      <SectionAnatomy title="Operational capacity" titleId="gain-title">
+        <p class="editorial-section__body">
+          Work that takes people hours or days runs in minutes. Onboarding,
+          document handling, reporting, internal operations. This is capacity
+          you would otherwise have to hire for.
+        </p>
+      </SectionAnatomy>
+    </SectionFrame>
+
+    <SectionFrame tone="dark" labelledBy="private-ai-title" class="private-ai-section">
       <SectionAnatomy title="Private AI" titleId="private-ai-title">
         <div class="infrastructure-plate">
           <div class="infrastructure-plate__content">
             <div class="infrastructure-plate__copy">
               <p>
-                Models, retrieval, access controls, and monitoring deployed
-                inside the institution's chosen boundary.
+                Models, retrieval, access control and monitoring run inside the
+                environment you govern. On-premise when data residency or
+                regulation requires it. When it is not required, we do not
+                deploy it.
               </p>
-              <Button href="/what-we-do#infrastructure" variant="secondary">
-                Explore Infrastructure
-                <BlockArrow />
+              <Button href="/ai-first-enterprise/private-ai" variant="secondary">
+                Private AI <BlockArrow />
               </Button>
             </div>
           </div>
@@ -88,16 +137,35 @@ const latestArticles = newsArticles.slice(1, 4);
       </SectionAnatomy>
     </SectionFrame>
 
-    <SectionFrame labelledBy="approach-title" class="approach-section">
-      <SectionAnatomy title="Approach" titleId="approach-title">
+    <SectionFrame id="industries" labelledBy="industries-title" class="home-sectors">
+      <SectionAnatomy title="Industries" titleId="industries-title">
+        <div class="sector-panel-grid">
+          {
+            sectors.map((sector) => (
+              <EditorialCard
+                title={sector.name}
+                text={sector.description}
+                href={sector.href}
+                variant="sector"
+              />
+            ))
+          }
+        </div>
+      </SectionAnatomy>
+    </SectionFrame>
+
+    <SectionFrame tone="surface" labelledBy="production-title" class="approach-section">
+      <SectionAnatomy title="From pilot to production" titleId="production-title">
         <div class="approach-layout">
           <div>
-            <p class="approach-statement">
-              We begin with the institution's problem, not a demonstration.
+            <p class="editorial-section__body">
+              We build the part that gets it past the pilot: integration into
+              the systems people already use, evidence behind every step, and a
+              named owner after launch. Where data has to stay inside, it stays
+              inside.
             </p>
-            <Button href="/contact" variant="secondary">
-              Work With Us
-              <BlockArrow />
+            <Button href="/ai-first-enterprise" variant="secondary">
+              How we work <BlockArrow />
             </Button>
           </div>
           <img
@@ -111,36 +179,47 @@ const latestArticles = newsArticles.slice(1, 4);
       </SectionAnatomy>
     </SectionFrame>
 
-    <SectionFrame labelledBy="latest-news-title" class="home-latest-news">
-      <SectionAnatomy title="Latest News" titleId="latest-news-title">
-        <div class="home-news-card-grid">
+    <SectionFrame labelledBy="discretion-title" class="editorial-section">
+      <SectionAnatomy title="Client confidentiality" titleId="discretion-title">
+        <p class="editorial-section__body">
+          What we build for one institution is not visible to another. Whether
+          to speak about the work publicly is the client's decision, and the
+          answer is usually no.
+        </p>
+      </SectionAnatomy>
+    </SectionFrame>
+
+    <SectionFrame tone="surface" labelledBy="sequence-title" class="editorial-section">
+      <SectionAnatomy title="From audit to operation" titleId="sequence-title">
+        <div class="editorial-card-grid editorial-card-grid--4">
           {
-            latestArticles.map((article) => (
-              <a class="home-news-card" href={`/news/${article.slug}`}>
-                <h3>{article.title}</h3>
-                <p>{article.summary}</p>
-                <time datetime={article.publishedAt}>
-                  {article.publishedLabel}
-                </time>
-                <CardAffordance />
-              </a>
+            homePhases.map((phase) => (
+              <EditorialCard
+                title={phase.title}
+                text={phase.text}
+                href={"href" in phase ? phase.href : undefined}
+              />
             ))
           }
         </div>
       </SectionAnatomy>
     </SectionFrame>
 
-    <SectionFrame tone="surface" labelledBy="closing-title">
-      <SectionAnatomy title="Next step" titleId="closing-title">
-        <div class="closing-callout">
-          <h3>Bring us the workflow that cannot become a black box.</h3>
-          <Button href="/contact">
-            Request Briefing
-            <BlockArrow />
-          </Button>
+    <SectionFrame labelledBy="blog-title" class="home-latest-news">
+      <SectionAnatomy title="In practice" titleId="blog-title">
+        <BlogPostList posts={latestPosts} ariaLabel="Latest NNCO blog posts" />
+        <div class="editorial-links">
+          <Button href="/blog" variant="secondary">All posts <BlockArrow /></Button>
         </div>
       </SectionAnatomy>
     </SectionFrame>
+
+    <ClosingSection
+      description="No slides. We go through where AI would pay off first in your operation, what it would take to run it, and what your data and your regulator allow."
+      actions={[{ href: "/contact", label: "Book a 30-minute call" }]}
+    />
+
+    <FaqSection items={faq} />
   </main>
 
   <Footer />

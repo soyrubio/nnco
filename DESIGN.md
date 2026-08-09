@@ -1,7 +1,7 @@
 # NNCO Astro design system
 
 This is the canonical visual and interaction system for the NNCO Astro site.
-It governs the marketing pages, editorial News surface, discovery canvas, and
+It governs the marketing pages, editorial Blog surface, discovery canvas, and
 print report.
 
 ## Design read
@@ -58,6 +58,17 @@ introduce a serif, monospace display face or ornamental font.
   sits below the navigation with the header's existing breathing room. It is
   never a viewport-edge border or a separate thin divider.
 - Section spacing is generous. Use borders and whitespace before adding cards.
+- Do not use eyebrow or overline labels above page or section titles. Each
+  approved title must carry the section meaning on its own.
+- `PageHero` has no bottom divider; whitespace creates the transition into the
+  first content section. Its content is anchored to the bottom of the shared
+  hero height with a restrained responsive inset.
+- Every `SectionAnatomy` begins with the shared strong 6px rule. The rule is
+  structural and cannot be disabled by individual pages.
+- Decorative card and article numbering is not used. Numbers remain only when
+  they communicate real order, progress or report structure.
+- Page and section titles are concise labels, not sentences. Do not use
+  trailing punctuation.
 
 ## Shape rule
 
@@ -92,26 +103,37 @@ The structure is deliberately blocky:
   encode image bytes in JavaScript.
 - `SectionFrame`: full-width background plus the shared content rail.
 - `Footer`: shared rail and restrained identity/navigation groups.
-- `DiscoveryCockpit`: one React island containing the complete six-chapter
+- `DiscoveryLauncher`: server-renders the indexable diagnostic entry screen and
+  loads `DiscoveryCockpit` only after Start. The cockpit contains the five-step
   diagnostic, shared form/chat reducer, browser persistence, report preview,
   lead handoff and print export.
-- `PageHero`: shared introduction for What We Do, Company and Contact.
+- `PageHero`: shared introduction for every non-home page. It uses a consistent
+  `clamp(34rem, 60dvh, 44rem)` minimum height and contains a title,
+  introduction and optional actions. Its content is bottom-aligned.
+- `EditorialCard`: shared text card for standard content and large industry
+  panels. Titles and descriptions align to the top. An optional `href` changes
+  the semantic root from `article` to `a` and pins the affordance to the bottom
+  without shifting the copy.
+- `FaqSection`: the only public question-and-answer section. It composes the
+  standard section frame with one native disclosure list. Questions remain
+  unnumbered, only one answer opens at a time, and the same keyboard and focus
+  behaviour applies on every page.
 - `CompanyAccordion`: native accessible disclosure groups.
-- `ContactForm`: local validation, loading, failure and success simulation.
-- `News`: an editorial feature and ruled reading queue, followed by narrow
+- `ContactForm`: local validation and a same-origin handoff into the shared lead repository.
+- `Blog`: an editorial feature and ruled reading queue, followed by narrow
   article pages, a key statement, related reading and a closing action.
 - `Team`: sparse editorial profiles with matched light and dark monochrome
   portraits. Cards invert as one surface on hover and keyboard focus; images
-  swap opacity without scaling or shifting.
+  switch visibility instantly without scaling, shifting or fading.
 
 ## Discovery and report
 
 - Discovery is one calm diagnostic canvas, not a dashboard or cockpit.
 - The discovery workspace is canonical ink `#111111` with paper text
   `#f5f5f5`. Report pages remain paper artifacts on the dark workspace.
-- The six chapters are Sector, Context, Current work, Problems, Outcome and
-  boundaries, and Review. One dominant question is visible at a time.
-- Sector is the first action and routes Banking, Insurance, Healthcare and
+- The five steps are Context, Workflow, Friction, Constraints and Review. One
+  dominant question is visible at a time.
+- Sector is captured in Context and routes Banking, Insurance, Healthcare and
   general workflows into their relevant source options.
 - Every step contains exactly one answer surface: either one choice set or one
   text field. Optional questions are normal skippable steps, never disclosures
@@ -127,7 +149,7 @@ The structure is deliberately blocky:
   scrolling and never an internal vertical scrollbar. The compact
   talk-it-through field keeps its independent sizing.
 - Intake uses one top-anchored two-column composition inside the shared rail: a
-  non-interactive six-section orientation index on the left and the active
+  non-interactive five-section orientation index on the left and the active
   question on the right. Stable responsive top padding prevents questions of
   different heights from shifting the composition. The index is a loose
   vertical text list without numbering, dots, cards or rules. The active
@@ -144,19 +166,18 @@ The structure is deliberately blocky:
   truncated, and reaches 100% on Review. It rests at the viewport bottom when
   the question is short and follows genuinely long content without fixed
   positioning or overlap.
-- Session persistence remains invisible. Do not show save state, save toggles
-  or reset controls in the intake.
+- Browser persistence is confirmed with the approved saved-state microcopy. Do
+  not expose storage implementation details or reset controls in the intake.
 - Sector query parameters initialise a new case but never overwrite restored
   progress.
-- Analysis is a full black transition with the hard-cut block loader and three
-  plain processing statements.
-- The first two report pages are useful before contact: page one is the
-  operational diagnosis and page two contains three priorities. The lead form
-  sits inline after both pages.
-- The unlocked report adds two paper pages: compact solution routes, then the
-  recommended next step, delivery model and 90-day roadmap.
+- Analysis is a full black transition with the hard-cut block loader and the
+  approved completion statement.
+- The first two report pages are useful before contact: the workflow as
+  described and where the time goes. The lead form sits inline after both.
+- The unlocked report adds pages three to six: what AI could take over,
+  constraints, sequence, and what the analysis cannot tell the user.
 - Browser print is the only PDF exporter. Print CSS produces exactly two preview
-  pages or four unlocked pages and excludes intake and lead controls. Displayed
+  pages or six unlocked pages and excludes intake and lead controls. Displayed
   user copy is bounded for A4 without changing the underlying diagnostic.
 - Structural panels stay square. Interactive action buttons are the only
   rounded controls.
@@ -164,22 +185,22 @@ The structure is deliberately blocky:
 ## Motion and accessibility
 
 - Motion exists only for interaction feedback and state transitions.
-- Discovery questions use a keyed 300ms opacity and 8px horizontal entry:
-  forward arrives from the right and Back arrives from the left. There is no
+- Fades and crossfades are not used. Opacity, colour, background and surface
+  state changes are instant across every component.
+- Discovery questions use a keyed 300ms horizontal entry only: forward
+  arrives from the right and Back arrives from the left. There is no opacity,
   scale, bounce, stagger or option-selection motion.
-- Reveals travel 6px over 900ms with 50ms group staggering and
-  `cubic-bezier(.2, 0, 0, 1)`.
-- The hero header begins 16px above its resting position. Opacity and surface
-  changes take 560ms; its transform takes 760ms.
-- Ordinary link and BlockArrow feedback takes 260ms with 1px arrow travel.
-  General button and colour feedback takes 280ms.
+- The hero header changes state instantly.
+- BlockArrow feedback takes 260ms with 1px arrow travel. Button press feedback
+  may translate by 1px; colour feedback is instant.
 - The sector Group 82/83 arrows occupy one fixed box and hard-switch
   visibility. They never scale, crossfade or tween.
 - The primary logo plays Group 84 → 85 → 86 → 87 → 84 once at 240ms hard
   cuts on pointer hover or keyboard focus, then holds. It resets only after
   both pointer and focus leave.
-- The page loader remains an independent hard-cut sequence at 240ms per frame,
-  with a 3s minimum cover and 240ms overlay exit.
+- The page loader remains an independent hard-cut sequence at 240ms per frame.
+  It appears only once per browser session, with a 650ms minimum cover and an
+  immediate overlay exit.
 - The hero frame sequence plays once after the page cover exits. It holds its
   first state for 100ms, then uses eleven hard states over 1.2s with increasing
   intervals. It never loops, crossfades, pans or scales.

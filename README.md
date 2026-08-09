@@ -1,6 +1,6 @@
 # Installation
 
 ```bash
-npm install
-npm run dev
+pnpm install --ignore-scripts
+pnpm dev
 ```

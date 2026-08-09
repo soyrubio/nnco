@@ -1,24 +1,51 @@
 ---
 import BrandLogo from "./BrandLogo.astro";
-import { siteNavigation } from "@/data/site";
+import { programmeLinks, sectors } from "@/data/site";
+
+const footerGroups = [
+  {
+    label: "Company",
+    links: [
+      { href: "/company", label: "About" },
+      { href: "/blog", label: "Blog" },
+      { href: "/privacy", label: "Privacy" },
+      { href: "/security", label: "Security" },
+    ],
+  },
+  { label: "Programme", links: programmeLinks },
+  {
+    label: "Industries",
+    links: sectors.map(({ href, shortName }) => ({ href, label: shortName })),
+  },
+  {
+    label: "Contact",
+    links: [
+      { href: "/contact", label: "Book a call" },
+      { href: "/discovery", label: "Start the diagnostic" },
+      { href: "mailto:general@nnco.ai", label: "general@nnco.ai" },
+    ],
+  },
+] as const;
 ---
 
 <footer class="site-footer">
   <div class="content-rail site-footer__inner">
     <div class="site-footer__identity">
       <BrandLogo />
-      <p>Production AI for regulated institutions.</p>
+      <p>AI consulting and development for large institutions.</p>
     </div>
 
-    <nav aria-label="Footer navigation">
-      <a href="/">Home</a>
+    <nav class="site-footer__navigation" aria-label="Footer navigation">
       {
-        siteNavigation.filter((item) => item.href !== "/").map((item) => (
-          <a href={item.href}>{item.label}</a>
+        footerGroups.map((group) => (
+          <div>
+            <p>{group.label}</p>
+            {group.links.map((link) => (
+              <a href={link.href}>{link.label}</a>
+            ))}
+          </div>
         ))
       }
-      <a href="/team">Team</a>
-      <a href="/discovery">Start diagnostic</a>
     </nav>
 
     <p class="site-footer__copyright">

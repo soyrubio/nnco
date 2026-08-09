@@ -1,5 +1,7 @@
 ---
 import PageLoader from "@/components/PageLoader.astro";
+import Schema from "@/components/Schema.astro";
+import "@fontsource-variable/geist";
 import "@/styles/global.css";
 
 interface PreloadImage {
@@ -14,16 +16,50 @@ interface Props {
   image?: string;
   themeColor?: string;
   preloadImages?: PreloadImage[];
+  canonicalPath?: string;
+  schemas?: Record<string, unknown>[];
+  noindex?: boolean;
 }
 
 const {
-  title = "NNCO | Production AI for regulated institutions",
-  description = "NNCO designs and implements production AI for banks, insurers, and healthcare providers.",
+  title = "AI consulting and development for large institutions | NNCO",
+  description = "NNCO designs, integrates and operates AI systems for large institutions, from the initial AI audit through production operation.",
   image = "/assets/nnco-hero-mosaic-hifi.png",
   themeColor = "#f5f5f5",
   preloadImages = [],
+  canonicalPath = Astro.url.pathname,
+  schemas = [],
+  noindex = false,
 } = Astro.props;
 
+const siteOrigin = "https://nnco.ai";
+const canonicalUrl = new URL(canonicalPath, siteOrigin).toString();
+const imageUrl = new URL(image, siteOrigin).toString();
+const organisationSchema = {
+  "@type": "Organization",
+  "@id": `${siteOrigin}/#organization`,
+  name: "NNCO",
+  url: siteOrigin,
+  logo: `${siteOrigin}/assets/nnco-logo.svg`,
+  description:
+    "NNCO is an AI consulting and development company. It designs, integrates and operates AI systems for large institutions, from an initial AI audit to running the system in production.",
+  email: "general@nnco.ai",
+  address: {
+    "@type": "PostalAddress",
+    addressLocality: "Prague",
+    addressCountry: "CZ",
+  },
+  areaServed: "EU",
+  knowsAbout: [
+    "AI implementation",
+    "on-premise AI deployment",
+    "AI governance",
+    "KYC automation",
+    "claims processing automation",
+    "EU AI Act",
+  ],
+};
+const graph = [organisationSchema, ...schemas];
 const loaderTone =
   themeColor.trim().toLowerCase() === "#111111" ? "dark" : "light";
 ---
@@ -36,20 +72,19 @@ const loaderTone =
     <meta name="generator" content={Astro.generator} />
     <meta name="description" content={description} />
     <meta name="theme-color" content={themeColor} />
+    {noindex && <meta name="robots" content="noindex, nofollow" />}
+    <link rel="canonical" href={canonicalUrl} />
     <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="NNCO" />
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
-    <meta property="og:image" content={image} />
+    <meta property="og:url" content={canonicalUrl} />
+    <meta property="og:image" content={imageUrl} />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content={title} />
     <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={imageUrl} />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Geist:ital,wght@0,100..900;1,100..900&display=swap"
-      rel="stylesheet"
-    />
     {
       preloadImages.map(({ href, media, type }) => (
         <link
@@ -62,7 +97,15 @@ const loaderTone =
         />
       ))
     }
+    <Schema graph={graph} />
     <title>{title}</title>
+    <script is:inline>
+      try {
+        if (sessionStorage.getItem("nnco:cover-seen") === "true") {
+          document.documentElement.classList.add("skip-page-loader");
+        }
+      } catch {}
+    </script>
     <noscript>
       <style>
         .page-loader {
@@ -71,15 +114,17 @@ const loaderTone =
       </style>
     </noscript>
   </head>
-  <body class="is-page-loading">
+  <body>
     <PageLoader tone={loaderTone} />
     <div data-page-content>
       <slot />
     </div>
     <script is:inline>
-      document
-        .querySelector("[data-page-content]")
-        ?.setAttribute("inert", "");
+      if (!document.documentElement.classList.contains("skip-page-loader")) {
+        document
+          .querySelector("[data-page-content]")
+          ?.setAttribute("inert", "");
+      }
     </script>
   </body>
 </html>

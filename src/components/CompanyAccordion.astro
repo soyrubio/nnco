@@ -1,19 +1,11 @@
 ---
+import FaqList from "./FaqList.astro";
 import { waysOfWorking } from "@/data/site";
+
+const items = waysOfWorking.map(({ title, description }) => ({
+  question: title,
+  answer: description,
+}));
 ---
 
-<div class="company-accordion">
-  {
-    waysOfWorking.map((item, index) => (
-      <details name="company-approach" open={index === 0}>
-        <summary>
-          <span>{item.title}</span>
-          <span aria-hidden="true">+</span>
-        </summary>
-        <div>
-          <p>{item.description}</p>
-        </div>
-      </details>
-    ))
-  }
-</div>
+<FaqList items={items} groupName="company-approach" />

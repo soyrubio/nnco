@@ -5,6 +5,6 @@ export const LOADER_FRAMES = [
 ] as const;
 
 export const LOADER_FRAME_CADENCE_MS = 240;
-export const PAGE_LOADER_MINIMUM_MS = 3_000;
-export const PAGE_LOADER_EXIT_MS = 240;
-export const PAGE_LOADER_SAFETY_MS = 8_000;
+export const PAGE_LOADER_MINIMUM_MS = 650;
+export const PAGE_LOADER_EXIT_MS = 0;
+export const PAGE_LOADER_SAFETY_MS = 4_000;

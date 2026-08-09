@@ -22,11 +22,11 @@ const RATE_WINDOW_MS = 10 * 60 * 1_000;
 const RATE_LIMIT = 10;
 
 const globalRateStore = globalThis as typeof globalThis & {
-  __nncLeadRateLimits?: Map<string, number[]>;
+  __nncoLeadRateLimits?: Map<string, number[]>;
 };
 const rateLimits =
-  globalRateStore.__nncLeadRateLimits ?? new Map<string, number[]>();
-globalRateStore.__nncLeadRateLimits = rateLimits;
+  globalRateStore.__nncoLeadRateLimits ?? new Map<string, number[]>();
+globalRateStore.__nncoLeadRateLimits = rateLimits;
 
 export async function handleLeadRequest(
   request: Request,

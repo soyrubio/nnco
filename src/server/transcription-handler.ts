@@ -22,11 +22,11 @@ type TranscriptionHandlerOptions = {
 };
 
 const globalRateStore = globalThis as typeof globalThis & {
-  __nncTranscriptionRateLimits?: Map<string, number[]>;
+  __nncoTranscriptionRateLimits?: Map<string, number[]>;
 };
 const rateLimits =
-  globalRateStore.__nncTranscriptionRateLimits ?? new Map<string, number[]>();
-globalRateStore.__nncTranscriptionRateLimits = rateLimits;
+  globalRateStore.__nncoTranscriptionRateLimits ?? new Map<string, number[]>();
+globalRateStore.__nncoTranscriptionRateLimits = rateLimits;
 
 export async function handleTranscriptionRequest(
   request: Request,

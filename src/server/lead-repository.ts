@@ -37,12 +37,12 @@ export class LeadRepositoryError extends Error {
 }
 
 const globalLeadStore = globalThis as typeof globalThis & {
-  __nncEphemeralLeads?: Map<string, LeadRecord>;
+  __nncoEphemeralLeads?: Map<string, LeadRecord>;
 };
 
 const ephemeralLeads =
-  globalLeadStore.__nncEphemeralLeads ?? new Map<string, LeadRecord>();
-globalLeadStore.__nncEphemeralLeads = ephemeralLeads;
+  globalLeadStore.__nncoEphemeralLeads ?? new Map<string, LeadRecord>();
+globalLeadStore.__nncoEphemeralLeads = ephemeralLeads;
 
 export async function persistLead(record: LeadRecord): Promise<PersistedLead> {
   const mode = process.env.LEAD_HANDOFF_MODE ?? "local";

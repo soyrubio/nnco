@@ -2,25 +2,46 @@
 import BaseLayout from "@/layouts/BaseLayout.astro";
 import BlockArrow from "@/components/BlockArrow.astro";
 import Button from "@/components/Button.astro";
+import ClosingSection from "@/components/ClosingSection.astro";
 import CompanyAccordion from "@/components/CompanyAccordion.astro";
+import FaqSection from "@/components/FaqSection.astro";
 import Footer from "@/components/Footer.astro";
 import Header from "@/components/Header.astro";
 import PageHero from "@/components/PageHero.astro";
 import SectionAnatomy from "@/components/SectionAnatomy.astro";
 import SectionFrame from "@/components/SectionFrame.astro";
+import { faqByPage } from "@/data/faq";
 import { team } from "@/data/site";
+
+export const prerender = true;
+
+const faq = faqByPage.company;
+const faqSchema = {
+  "@type": "FAQPage",
+  "@id": "https://nnco.ai/company#faq",
+  mainEntity: faq.map((item) => ({
+    "@type": "Question",
+    name: item.question,
+    acceptedAnswer: { "@type": "Answer", text: item.answer },
+  })),
+};
 ---
 
 <BaseLayout
-  title="Company | NNCO"
-  description="NNCO is an implementation-focused regional team deploying AI for regulated institutions."
+  title="Company: who we are and how we work | NNCO"
+  description="NNCO is an AI consulting and development company. The people behind it have built, sold and operated software and regulated fintech businesses before starting it."
+  canonicalPath="/company"
+  schemas={[faqSchema]}
 >
   <Header />
-  <main>
-    <PageHero title="Builders for work that carries weight." />
+  <main class="editorial-page">
+    <PageHero
+      title="Company"
+      introduction="NNCO is an AI consulting and development company. The people behind it spent the last decade building software businesses, running a regulated fintech and shipping systems that other companies depend on. We started NNCO because the hard part of enterprise AI turned out to be the part we already knew."
+    />
 
-    <SectionFrame labelledBy="about-title" class="company-about">
-      <SectionAnatomy title="About" titleId="about-title">
+    <SectionFrame labelledBy="why-title" class="company-about">
+      <SectionAnatomy title="Implementation gap" titleId="why-title">
         <div class="company-about__layout">
           <img
             src="/assets/nnco-operational-field.png"
@@ -29,48 +50,117 @@ import { team } from "@/data/site";
             height="1024"
             loading="lazy"
           />
-          <p>
-            NNCO brings together engineering, product, and institutional
-            operations at the point where AI, compliance, and implementation
-            meet.
-          </p>
+          <div class="company-about__copy">
+            <p>
+              Large institutions have been running AI pilots for two years.
+              Very few of them run anything in production. The pattern is
+              consistent enough to be boring: a workshop picks a use case, an
+              agency builds a convincing demonstration, and then the project
+              meets the systems it would have to integrate with, the data it is
+              not allowed to move, the evidence somebody has to be able to
+              produce afterwards, and the question of who owns it once the
+              agency leaves. The demonstration was never wrong. It was just the
+              easy tenth of the work.
+            </p>
+            <p>
+              That gap is an implementation problem, and it looks exactly like
+              the problems we spent the last decade solving: integrating with
+              systems nobody wants to touch, shipping into an environment with
+              real users and real consequences, and staying responsible for it
+              afterwards. We had done that inside a licensed lending platform,
+              inside a software company delivering for banks and insurers, and
+              in security audits where being approximately right is the same as
+              being wrong.
+            </p>
+            <p>
+              So NNCO does the whole arc. We find where AI is worth building, we
+              build it, we deploy it inside your constraints, and we run it
+              after launch. Strategy without deployment is a document.
+              Deployment without an understanding of the rules is a pilot that
+              gets stopped.
+            </p>
+          </div>
         </div>
       </SectionAnatomy>
     </SectionFrame>
 
-    <SectionFrame
-      tone="surface"
-      labelledBy="team-title"
-      class="team-section"
-    >
+    <SectionFrame tone="surface" labelledBy="position-title" class="editorial-section">
+      <SectionAnatomy title="Our position" titleId="position-title">
+        <p class="editorial-section__body">
+          Consultancies produce the strategy and hand over the implementation.
+          Agencies produce the demonstration and hand over the problems. We
+          cover both halves and stay accountable for the result, which is a
+          smaller and less scalable business than either of them and the reason
+          the work reaches production.
+        </p>
+      </SectionAnatomy>
+    </SectionFrame>
+
+    <SectionFrame labelledBy="work-title" class="company-work">
+      <SectionAnatomy title="How we work" titleId="work-title">
+        <CompanyAccordion />
+      </SectionAnatomy>
+    </SectionFrame>
+
+    <SectionFrame id="team" tone="surface" labelledBy="team-title" class="team-section">
       <SectionAnatomy title="Team" titleId="team-title">
-        <div class="team-grid">
+        <p class="editorial-section__body">
+          We have built products together before, which is the difference
+          between a team and a group of contractors. Everyone listed here works
+          on client engagements.
+        </p>
+        <div class="team-grid team-grid--detailed">
           {
             team.map((person) => (
               <article>
                 <h3>{person.name}</h3>
-                <p>{person.role}</p>
+                <p class="team-grid__role">{person.role}</p>
+                <p>{person.bio}</p>
               </article>
             ))
           }
         </div>
-        <div class="team-section__action">
-          <Button href="/team" variant="secondary">
-            Meet the team
-            <BlockArrow />
-          </Button>
+      </SectionAnatomy>
+    </SectionFrame>
+
+    <SectionFrame labelledBy="discretion-title" class="editorial-section">
+      <SectionAnatomy title="Client confidentiality" titleId="discretion-title">
+        <p class="editorial-section__body">
+          We sign an NDA before you describe anything internal. What we build
+          for one institution is not visible to another, including the
+          architecture and the detail that came with it. Whether to speak about
+          the work publicly is the client's decision, and the answer is usually
+          no.
+        </p>
+        <p class="editorial-section__body">
+          We are precise about how we work and quiet about who we work for.
+          Architecture, method, evidence model and constraints are all on this
+          site in detail. Names, logos and case studies are not, and a reference
+          conversation happens one to one when you need it.
+        </p>
+      </SectionAnatomy>
+    </SectionFrame>
+
+    <SectionFrame tone="surface" labelledBy="where-title" class="editorial-section">
+      <SectionAnatomy title="European reach" titleId="where-title">
+        <p class="editorial-section__body">
+          Engagements run in Czech, Slovak and English. The regulatory context
+          we know best is the European one, which is where the constraints are
+          strictest and the implementations are hardest.
+        </p>
+        <div class="editorial-links">
+          <Button href="/ai-first-enterprise" variant="secondary">AI-First Enterprise <BlockArrow /></Button>
+          <Button href="/blog" variant="secondary">Read the blog <BlockArrow /></Button>
         </div>
       </SectionAnatomy>
     </SectionFrame>
 
-    <SectionFrame
-      labelledBy="work-title"
-      class="company-work"
-    >
-      <SectionAnatomy title="How We Work" titleId="work-title">
-        <CompanyAccordion />
-      </SectionAnatomy>
-    </SectionFrame>
+    <ClosingSection
+      description="No slides, and you talk to the people who would do the work. If it is not something we should build, you will hear that on the call rather than in a proposal."
+      actions={[{ href: "/contact", label: "Book a 30-minute call" }]}
+    />
+
+    <FaqSection items={faq} />
   </main>
   <Footer />
 </BaseLayout>

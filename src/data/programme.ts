@@ -15,7 +15,6 @@ export interface ContentGroup {
 }
 
 export interface ContentSection {
-  eyebrow?: string;
   title: string;
   paragraphs?: readonly string[];
   items?: readonly ContentItem[];
@@ -28,7 +27,6 @@ export interface MarketingPageData {
   path: string;
   metaTitle: string;
   metaDescription: string;
-  eyebrow: string;
   title: string;
   introduction: string;
   primaryAction?: ContentLink;
@@ -87,11 +85,10 @@ export const programmePhases = [
 
 export const programmePage: MarketingPageData = {
   path: "/ai-first-enterprise",
-  metaTitle: "AI-First Enterprise: the programme | NNC",
+  metaTitle: "AI-First Enterprise: the programme | NNCO",
   metaDescription:
     "The cross-industry programme that takes a large organisation from an AI audit to systems running in production: what gets built, in what order, on what infrastructure, and who runs it after launch.",
-  eyebrow: "AI-First Enterprise",
-  title: "The programme, from audit to operation.",
+  title: "AI-First Enterprise",
   introduction:
     "A large organisation does not become AI-first by buying a tool. It happens when a sequence of workflows moves into systems that run every day, on infrastructure that survives an audit, with someone accountable for each one. This is that sequence.",
   primaryAction: { href: "/contact", label: "Book a 30-minute call" },
@@ -101,25 +98,23 @@ export const programmePage: MarketingPageData = {
   },
   sections: [
     {
-      title: "What the programme covers.",
+      title: "Programme scope",
       paragraphs: [
         "The AI-First Enterprise programme takes an organisation from an initial audit of its operations to a portfolio of AI systems running in production. It covers what to build and in what order, the infrastructure those systems run on, the evidence and oversight around them, and who operates them after launch.",
       ],
     },
     {
-      title: "Large organisations, in any sector.",
+      title: "Who it is for",
       paragraphs: [
         "The pattern is the same whether you run a bank, a logistics operator or a manufacturer: high volumes of documents, processes that cross several systems, decisions that have to be attributable, and teams doing work that fills their day without using their judgement. Where a sector has rules specific enough to name, it has its own page.",
       ],
     },
     {
-      eyebrow: "Sequence",
-      title: "The programme has four phases.",
+      title: "Four phases",
       items: programmePhases,
     },
     {
-      eyebrow: "Capabilities",
-      title: "Three things AI does well inside a large organisation.",
+      title: "Core AI capabilities",
       paragraphs: [
         "Every use case is one of these, or a combination. If a request does not map onto them, we say so before it becomes a project.",
       ],
@@ -139,8 +134,7 @@ export const programmePage: MarketingPageData = {
       ],
     },
     {
-      eyebrow: "Where it usually starts",
-      title: "The same starting points recur across sectors.",
+      title: "Common starting points",
       items: [
         {
           title: "Inbound documents",
@@ -165,13 +159,13 @@ export const programmePage: MarketingPageData = {
       ],
     },
     {
-      title: "We are explicit about the boundary.",
+      title: "Decision boundaries",
       paragraphs: [
         "Before anything is built, we write down which decisions the system makes, which it prepares, and which stay entirely with a person. That boundary goes into the design, the interface and the evidence trail. It is the first thing a risk team asks about and the first thing we settle.",
       ],
     },
     {
-      title: "Where it runs is a design decision.",
+      title: "Deployment environment",
       paragraphs: [
         "Some of this runs on hosted models with the right controls. Some of it cannot, because of data classification, residency or a supervisory expectation. The audit says which is which per use case, and where private deployment is required we build it.",
       ],
@@ -180,12 +174,11 @@ export const programmePage: MarketingPageData = {
       ],
     },
     {
-      eyebrow: "How we work",
-      title: "How we work.",
+      title: "How we work",
       render: "ways-of-working",
     },
     {
-      title: "Going deeper by sector.",
+      title: "Sector detail",
       paragraphs: [
         "Where the workflows and the rules are specific enough to name, they have their own page.",
       ],
@@ -208,31 +201,29 @@ export const programmePage: MarketingPageData = {
 export const programmeSubpages = {
   "ai-audit": {
     path: "/ai-first-enterprise/ai-audit",
-    metaTitle: "AI audit for large institutions | NNC",
+    metaTitle: "AI audit for large institutions | NNCO",
     metaDescription:
       "An AI audit maps where AI is worth building in your operation, in what order, and where your data and your regulator allow it. Two to four weeks, ending in a pilot.",
-    eyebrow: "AI audit",
-    title: "Find where AI is worth building first.",
+    title: "AI audit",
     introduction:
       "An AI audit goes through your operations and returns a map: which workflows AI can take over, in what order, what each one is worth, and where your data and your regulator allow deployment. It ends with the first use case going into a pilot.",
     primaryAction: { href: "/contact", label: "Book a 30-minute call" },
     secondaryAction: { href: "/discovery", label: "Start the diagnostic" },
     sections: [
       {
-        title: "What an AI audit is.",
+        title: "Audit scope",
         paragraphs: [
           "An AI audit is a structured review of an organisation's operations that identifies which workflows can be handled by AI, ranks them by value and feasibility, and records the data, security and regulatory constraints each one has to satisfy. Its output is a ranked build plan and a first use case scoped tightly enough to start.",
         ],
       },
       {
-        title: "Most AI budgets are spent in the wrong place.",
+        title: "Use case selection",
         paragraphs: [
           "The usual pattern is a visible use case chosen in a workshop, built as a demo, and then stopped by something nobody looked at first: where the data actually lives, who is allowed to see it, or what has to be evidenced. The audit does that looking before the money is committed.",
         ],
       },
       {
-        eyebrow: "Scope",
-        title: "We examine the work and its constraints.",
+        title: "What we examine",
         items: [
           {
             title: "The work as it runs today",
@@ -253,8 +244,7 @@ export const programmeSubpages = {
         ],
       },
       {
-        eyebrow: "Output",
-        title: "A build plan, ranked.",
+        title: "Ranked build plan",
         paragraphs: [
           "The audit ends in a document and a working session where we argue the ranking with your team.",
         ],
@@ -282,8 +272,7 @@ export const programmeSubpages = {
         ],
       },
       {
-        eyebrow: "Sequence",
-        title: "The audit moves from access to a pilot.",
+        title: "Audit process",
         paragraphs: [
           "Two to four weeks, depending on the size of the operation and how many systems are in scope.",
         ],
@@ -315,13 +304,13 @@ export const programmeSubpages = {
         ],
       },
       {
-        title: "The audit needs four seats.",
+        title: "Four essential roles",
         paragraphs: [
           "The business owner of the workflow, someone from operations who does the work daily, someone from risk or compliance, and someone from IT or data. Missing the risk seat is the single most common reason an audit produces a plan that later gets blocked.",
         ],
       },
       {
-        title: "A shorter version, online.",
+        title: "Online diagnostic",
         paragraphs: [
           "The diagnostic maps one workflow, locates where it loses time and returns an evidence-linked preview of the same analysis. It takes about 15 minutes and does not require a call.",
         ],
@@ -347,22 +336,21 @@ export const programmeSubpages = {
   },
   "private-ai": {
     path: "/ai-first-enterprise/private-ai",
-    metaTitle: "On-premise and private AI deployment | NNC",
+    metaTitle: "On-premise and private AI deployment | NNCO",
     metaDescription:
       "Models, retrieval, access control and monitoring deployed inside the boundary you govern. On-premise or in your own tenancy, so sensitive data never leaves your network.",
-    eyebrow: "Private AI",
-    title: "Your models, inside your boundary.",
+    title: "Private AI",
     introduction:
       "Models, retrieval, access control, logging and monitoring deployed in an environment you govern. Sensitive data does not leave your network, and there is no call to an external service in the path of a decision.",
     sections: [
       {
-        title: "What private AI deployment means.",
+        title: "Private AI scope",
         paragraphs: [
           "Private AI deployment means running the model, the retrieval layer and the surrounding controls inside infrastructure the organisation governs, whether that is its own data centre or a dedicated cloud tenancy. The data used for inference, the prompts and the logs stay inside that boundary and are subject to the organisation's own access and retention rules.",
         ],
       },
       {
-        title: "We deploy this when the constraint requires it.",
+        title: "Deployment criteria",
         paragraphs: [
           "Private infrastructure adds cost and responsibility. It is the right answer when data classification, residency, contractual limits or a supervisory expectation puts a hosted model out of scope. When none of those apply, a hosted model with the right controls is faster and cheaper, and we say so.",
         ],
@@ -386,8 +374,7 @@ export const programmeSubpages = {
         ],
       },
       {
-        eyebrow: "Architecture",
-        title: "The complete system stays inside.",
+        title: "Inside the boundary",
         items: [
           {
             title: "Models",
@@ -412,13 +399,13 @@ export const programmeSubpages = {
         ],
       },
       {
-        title: "Someone has to operate it. We are explicit about who.",
+        title: "Operational ownership",
         paragraphs: [
           "Private infrastructure moves capacity planning, patching, model replacement, observability and incident handling to whoever owns it. We either run it under a support agreement, or we hand it over with the runbooks and the training your team needs to run it themselves. What does not work is leaving it undecided.",
         ],
       },
       {
-        title: "The boundary is usually not the whole estate.",
+        title: "Boundary scope",
         paragraphs: [
           "In most institutions only part of the data is genuinely restricted. A common design keeps restricted workflows entirely inside the boundary and lets the rest use hosted models, with a policy layer that decides which path a request takes. This is cheaper than running everything privately and easier to defend than running everything externally.",
         ],
@@ -443,29 +430,27 @@ export const programmeSubpages = {
   },
   operation: {
     path: "/ai-first-enterprise/operation",
-    metaTitle: "Running AI systems after launch | NNC",
+    metaTitle: "Running AI systems after launch | NNCO",
     metaDescription:
       "What happens to an AI system after it goes live: monitoring, quality checks, model replacement and changes when the process or the regulation changes.",
-    eyebrow: "Operation",
-    title: "Someone has to own it after launch.",
+    title: "AI operations",
     introduction:
       "An AI system in production is not finished software. Models change, data drifts, processes get reorganised and regulation moves. We either run it for you or hand it over with everything your team needs to run it themselves.",
     sections: [
       {
-        title: "What operating an AI system involves.",
+        title: "Operational scope",
         paragraphs: [
           "Operating an AI system in production means monitoring output quality and drift, handling exceptions and failures, replacing models as better ones become available, keeping the evidence trail intact, and adjusting the system when the underlying process or the applicable regulation changes.",
         ],
       },
       {
-        title: "Unowned systems degrade quietly.",
+        title: "Ownership risk",
         paragraphs: [
           "The failure is rarely dramatic. Quality slips, a source system changes a field, exceptions start piling into a queue nobody reads, and within a year people have gone back to doing it by hand while the system still appears in the architecture diagram.",
         ],
       },
       {
-        eyebrow: "Scope",
-        title: "We keep the workflow dependable.",
+        title: "Ongoing operation",
         items: [
           {
             title: "Quality and drift",
@@ -490,7 +475,7 @@ export const programmeSubpages = {
         ],
       },
       {
-        title: "Or your team runs it.",
+        title: "Internal ownership",
         paragraphs: [
           "Where you would rather own the operation internally, we hand over the runbooks, the acceptance criteria, the monitoring and the training. What we do not do is leave the question open, because that is how a system ends up with no owner at all.",
         ],
