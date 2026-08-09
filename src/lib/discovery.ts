@@ -7,8 +7,6 @@
  * later moved to a persistence adapter without changing the product model.
  */
 
-import { getRapidDiscoveryQuestions } from "./rapid-discovery";
-
 export type Segment = "finance" | "insurance" | "healthcare" | "other";
 
 type MilestoneId = "context" | "workflow" | "friction" | "readiness" | "review";
@@ -174,7 +172,6 @@ export interface ReportProblem {
 
 interface ReportPage {
   pageNumber: 1 | 2;
-  eyebrow: string;
   title: string;
   sections: Array<{
     label: string;
@@ -282,35 +279,35 @@ const MILESTONES: readonly Milestone[] = [
     id: "context",
     label: "Context",
     index: 1,
-    description: "Load the right operational module.",
-    estimatedMinutes: 1,
+    description: "Who you are and which part of the operation we are looking at.",
+    estimatedMinutes: 3,
   },
   {
     id: "workflow",
     label: "Workflow",
     index: 2,
-    description: "Map one workflow as it runs today.",
-    estimatedMinutes: 2,
+    description: "The process as it runs today, start to finish.",
+    estimatedMinutes: 4,
   },
   {
     id: "friction",
     label: "Friction",
     index: 3,
-    description: "Locate manual work, exceptions and impact.",
-    estimatedMinutes: 2,
+    description: "Where the manual work, the exceptions and the waiting are.",
+    estimatedMinutes: 3,
   },
   {
     id: "readiness",
-    label: "Readiness",
+    label: "Constraints",
     index: 4,
-    description: "Test systems, controls and delivery conditions.",
-    estimatedMinutes: 2,
+    description: "Systems, data boundaries and what has to be evidenced.",
+    estimatedMinutes: 4,
   },
   {
     id: "review",
     label: "Review",
     index: 5,
-    description: "Confirm the evidence before analysis.",
+    description: "Check what you told us before we analyse it.",
     estimatedMinutes: 1,
   },
 ];
@@ -672,6 +669,7 @@ const SEMANTIC_BUCKET_BY_QUESTION: Record<
   "friction.impact": "painPoints",
   "readiness.systems": "systems",
   "readiness.constraints": "constraints",
+  "readiness.specificConcern": "constraints",
   "goal.outcome": "goals",
   "goal.horizon": "goals",
   "goal.investmentPosture": "goals",
@@ -772,12 +770,24 @@ export function createInitialSnapshot(
 }
 
 export function getQuestions(snapshot: DiscoverySnapshot): DiscoveryQuestion[] {
-  const sectorQuestion = SEGMENT_QUESTIONS.find(
-    (question) => question.id === "context.sector",
+  const sector = snapshot.profile.sector || "other";
+  const workflowQuestions = COMMON_DISCOVERY.filter(
+    (question) => question.milestone === "workflow",
   );
-  return sectorQuestion
-    ? [cloneQuestion(sectorQuestion), ...getRapidDiscoveryQuestions(snapshot)]
-    : getRapidDiscoveryQuestions(snapshot);
+  const frictionQuestions = COMMON_DISCOVERY.filter(
+    (question) => question.milestone === "friction",
+  );
+  const constraintQuestions = COMMON_DISCOVERY.filter(
+    (question) => question.milestone === "readiness",
+  );
+
+  return [
+    ...SEGMENT_QUESTIONS,
+    ...workflowQuestions,
+    ...SECTOR_QUESTION_PACKS[sector],
+    ...frictionQuestions,
+    ...constraintQuestions,
+  ].map(cloneQuestion);
 }
 
 export function proposeChatPatches({
@@ -1180,8 +1190,18 @@ export function buildReportPreview(snapshot: DiscoverySnapshot): ReportPreview {
     "Workflow to be confirmed";
   const problems = buildProblems(snapshot);
   const readiness = buildReadiness(snapshot);
-  const keyEvidence = snapshot.evidence
-    .filter((item) => !item.questionId.startsWith("context."))
+  const reportEvidence = snapshot.evidence.filter(
+    (item) => !item.questionId.startsWith("context."),
+  );
+  const specificConcern = reportEvidence.find(
+    (item) => item.questionId === "readiness.specificConcern",
+  );
+  const keyEvidence = [
+    ...(specificConcern ? [specificConcern] : []),
+    ...reportEvidence.filter(
+      (item) => item.questionId !== "readiness.specificConcern",
+    ),
+  ]
     .slice(0, 6)
     .map((item) => ({
       id: item.id,
@@ -1222,7 +1242,6 @@ export function buildReportPreview(snapshot: DiscoverySnapshot): ReportPreview {
     pages: [
       {
         pageNumber: 1,
-        eyebrow: "Signal / Executive snapshot",
         title: "Where the operation loses signal",
         sections: [
           { label: "Situation", content: summary },
@@ -1245,7 +1264,6 @@ export function buildReportPreview(snapshot: DiscoverySnapshot): ReportPreview {
       },
       {
         pageNumber: 2,
-        eyebrow: "Signal / Priority field",
         title: "Three areas to validate first",
         sections: problems.map((problem) => ({
           label: `${problem.priority} · ${problem.impact} impact / ${problem.feasibility} feasibility`,
@@ -1254,10 +1272,10 @@ export function buildReportPreview(snapshot: DiscoverySnapshot): ReportPreview {
       },
     ],
     lockedSections: [
-      "Solution variants by priority",
-      "Data and integration requirements",
-      "Risk, timing and indicative ranges",
-      "90-day delivery path",
+      "What AI could take over",
+      "Constraints",
+      "Sequence",
+      "What this analysis cannot tell you",
     ],
     disclaimer:
       "This preview is an evidence-led diagnostic, not an offer. Findings are inferred from reported answers and require validation. Estimates are indicative and do not constitute an offer.",
@@ -1562,6 +1580,7 @@ function buildSummary(
 ): string {
   const scope = answerText(snapshot, "workflow.scope");
   const outcome = answerText(snapshot, "goal.outcome");
+  const specificConcern = answerText(snapshot, "readiness.specificConcern");
   const lead = `This ${sectorLabel.toLocaleLowerCase("en")} diagnostic examines the workflow around ${withoutTerminalPunctuation(focus).toLocaleLowerCase("en")}.`;
   const scopeStatement = scope
     ? sentence(scope)
@@ -1572,7 +1591,10 @@ function buildSummary(
   const target = outcome
     ? `The desired outcome was reported as: ${sentence(outcome)}`
     : "The desired outcome still requires confirmation.";
-  return `${lead} ${scopeStatement} ${finding} ${target}`;
+  const requestedExamination = specificConcern
+    ? `The user also asked us to examine: ${sentence(specificConcern)}`
+    : "";
+  return `${lead} ${scopeStatement} ${finding} ${target} ${requestedExamination}`.trim();
 }
 
 function evidenceConfidence(snapshot: DiscoverySnapshot, questionIds: string[]): number {

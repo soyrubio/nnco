@@ -1,0 +1,9 @@
+---
+import MarketingPage from "@/components/MarketingPage.astro";
+import { faqByPage } from "@/data/faq";
+import { industries } from "@/data/industries";
+
+export const prerender = true;
+---
+
+<MarketingPage page={industries.capitalMarkets} faq={faqByPage.capitalMarkets} industry />

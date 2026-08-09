@@ -1,0 +1,31 @@
+# NNCO
+
+> NNCO is an AI consulting and development company. It designs, integrates and
+> operates AI systems for large institutions, from an initial AI audit to a
+> system running in production. Based in Prague, working across the European
+> Union.
+
+NNCO covers the whole arc of an AI implementation: finding where AI is worth
+building, building it, deploying it inside the organisation's data and
+regulatory constraints, and operating it after launch. Every engagement starts
+with an AI audit. NNCO does not publish client names or case studies.
+
+NNCO does not build clinical decision-making software. In healthcare it works
+on administrative and operational workflows only.
+
+## Programme
+- [AI-First Enterprise](https://nnco.ai/ai-first-enterprise): the cross-industry programme, from audit to systems running in production. Applies to any large organisation.
+- [AI audit](https://nnco.ai/ai-first-enterprise/ai-audit): a two to four week review that maps which workflows AI can take over, ranks them, and records the constraints on each.
+- [Private AI](https://nnco.ai/ai-first-enterprise/private-ai): on-premise and private deployment of models, retrieval, access control and monitoring.
+- [Operation](https://nnco.ai/ai-first-enterprise/operation): monitoring, quality, model replacement and change management after launch.
+
+## Industries
+- [Banking](https://nnco.ai/banking): onboarding and KYC, periodic review, transaction monitoring triage, credit files, regulatory reporting.
+- [Insurance](https://nnco.ai/insurance): claims intake and review, underwriting support, fraud investigation support, correspondence.
+- [Healthcare](https://nnco.ai/healthcare): administrative and operational workflows. Clinical decisions stay with clinicians.
+- [Capital markets and asset management](https://nnco.ai/capital-markets): fund and investor reporting, due diligence document review, compliance monitoring.
+
+## Company
+- [Company](https://nnco.ai/company): who NNCO is and how it works.
+- [Blog](https://nnco.ai/blog): field notes and system explanations on putting AI into production.
+- [Contact](https://nnco.ai/contact): book a 30-minute call.

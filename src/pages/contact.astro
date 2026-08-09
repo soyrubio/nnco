@@ -1,51 +1,79 @@
 ---
 import BaseLayout from "@/layouts/BaseLayout.astro";
+import Button from "@/components/Button.astro";
 import ContactForm from "@/components/ContactForm.astro";
+import FaqSection from "@/components/FaqSection.astro";
 import Footer from "@/components/Footer.astro";
 import Header from "@/components/Header.astro";
 import PageHero from "@/components/PageHero.astro";
 import SectionAnatomy from "@/components/SectionAnatomy.astro";
 import SectionFrame from "@/components/SectionFrame.astro";
+import { faqByPage } from "@/data/faq";
+
+export const prerender = true;
+
+const faq = faqByPage.contact;
+const faqSchema = {
+  "@type": "FAQPage",
+  "@id": "https://nnco.ai/contact#faq",
+  mainEntity: faq.map((item) => ({
+    "@type": "Question",
+    name: item.question,
+    acceptedAnswer: { "@type": "Answer", text: item.answer },
+  })),
+};
 ---
 
 <BaseLayout
-  title="Contact | NNCO"
-  description="Tell NNCO which workflow, regulatory boundary, or infrastructure decision you are working through."
+  title="Book a 30-minute call | NNCO"
+  description="Tell us which workflow, data boundary or regulatory constraint you are working through. Thirty minutes, no slides, NDA ready before the call if you want one."
+  canonicalPath="/contact"
+  schemas={[faqSchema]}
 >
   <Header />
-  <main>
-    <PageHero title="Start with the difficult constraint." />
+  <main class="editorial-page">
+    <PageHero
+      title="Contact"
+      introduction="Thirty minutes, no slides. We go through the workflow you are working on, what AI could take out of it, and what your data and your regulator allow. If it is not something we should build, we will say that on the call."
+    />
 
     <SectionFrame labelledBy="contact-form-title" class="contact-section">
-      <SectionAnatomy
-        title="Working Session"
-        titleId="contact-form-title"
-      >
+      <SectionAnatomy title="Book a call" titleId="contact-form-title">
         <ContactForm />
       </SectionAnatomy>
     </SectionFrame>
 
-    <SectionFrame
-      tone="surface"
-      labelledBy="alternate-title"
-      class="alternate-contacts"
-    >
-      <SectionAnatomy title="Contacts" titleId="alternate-title">
-        <p class="section-note">
-          Placeholder addresses. Final contact details are not yet published.
-        </p>
+    <SectionFrame tone="surface" labelledBy="direct-title" class="alternate-contacts">
+      <SectionAnatomy title="Direct" titleId="direct-title">
         <div class="alternate-contact-grid">
           <article>
             <h3>General</h3>
-            <span>general@example.invalid</span>
+            <a href="mailto:general@nnco.ai">general@nnco.ai</a>
           </article>
           <article>
             <h3>Security</h3>
-            <span>security@example.invalid</span>
+            <a href="mailto:security@nnco.ai">security@nnco.ai</a>
+            <p>Vulnerability reports and security questions. See our <a href="/security">disclosure policy</a>.</p>
           </article>
         </div>
       </SectionAnatomy>
     </SectionFrame>
+
+    <SectionFrame labelledBy="nda-title" class="editorial-section">
+      <SectionAnatomy title="Mutual NDA" titleId="nda-title">
+        <p class="editorial-section__body">
+          We can sign a mutual NDA before the first call. It is not a condition
+          of talking to us, and most first conversations do not need one, but if
+          what you are working on is sensitive it is easier to have it in place
+          from the start.
+        </p>
+        <div class="editorial-links">
+          <Button href="mailto:general@nnco.ai?subject=NDA" variant="secondary">Request an NDA</Button>
+        </div>
+      </SectionAnatomy>
+    </SectionFrame>
+
+    <FaqSection items={faq} />
   </main>
   <Footer />
 </BaseLayout>

@@ -1,0 +1,9 @@
+---
+import MarketingPage from "@/components/MarketingPage.astro";
+import { faqByPage } from "@/data/faq";
+import { programmeSubpages } from "@/data/programme";
+
+export const prerender = true;
+---
+
+<MarketingPage page={programmeSubpages.operation} faq={faqByPage.operation} />

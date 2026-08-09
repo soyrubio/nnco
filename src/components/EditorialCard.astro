@@ -1,0 +1,26 @@
+---
+import CardAffordance from "./CardAffordance.astro";
+
+interface Props {
+  title: string;
+  text: string;
+  href?: string;
+  variant?: "standard" | "sector";
+}
+
+const {
+  title,
+  text,
+  href,
+  variant = "standard",
+} = Astro.props;
+
+const Element = href ? "a" : "article";
+const className = variant === "sector" ? "sector-panel" : "editorial-card";
+---
+
+<Element class={className} href={href}>
+  <h3>{title}</h3>
+  <p>{text}</p>
+  {href && <CardAffordance />}
+</Element>

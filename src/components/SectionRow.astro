@@ -1,0 +1,23 @@
+---
+interface Props {
+  title: string;
+  titleId?: string;
+  class?: string;
+}
+
+const {
+  title,
+  titleId,
+  class: className,
+} = Astro.props;
+---
+
+<div class:list={["section-row", className]}>
+  <div class="section-row__heading">
+    <h2 class="section-anatomy__title" id={titleId}>{title}</h2>
+    <slot name="heading-meta" />
+  </div>
+  <div class="section-anatomy__content">
+    <slot />
+  </div>
+</div>

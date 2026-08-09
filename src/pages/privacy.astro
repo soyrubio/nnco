@@ -1,0 +1,53 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import Footer from "@/components/Footer.astro";
+import Header from "@/components/Header.astro";
+import PageHero from "@/components/PageHero.astro";
+import SectionAnatomy from "@/components/SectionAnatomy.astro";
+import SectionFrame from "@/components/SectionFrame.astro";
+
+export const prerender = true;
+---
+
+<BaseLayout
+  title="Privacy | NNCO"
+  description="How the NNCO website handles contact enquiries and workflow diagnostic data."
+  canonicalPath="/privacy"
+  noindex
+>
+  <Header />
+  <main class="editorial-page">
+    <PageHero
+      title="Privacy"
+      introduction="This page describes what we collect through this website and what we do with it. It covers the website only. Data handled inside a client engagement is governed by the agreement and the data processing terms signed with that client."
+    />
+    <SectionFrame labelledBy="website-data-title" class="editorial-section">
+      <SectionAnatomy title="What this website collects" titleId="website-data-title">
+        <p class="editorial-section__body">
+          The contact form stores the details you submit so NNCO can respond to
+          your enquiry.
+        </p>
+      </SectionAnatomy>
+    </SectionFrame>
+    <SectionFrame tone="surface" labelledBy="diagnostic-data-title" class="editorial-section">
+      <SectionAnatomy title="The diagnostic" titleId="diagnostic-data-title">
+        <p class="editorial-section__body">
+          Answers you enter in the diagnostic are stored so that you can return
+          to an unfinished case and so that we can produce your report. If you
+          do not submit your contact details, the case stays in your browser and
+          we do not receive it.
+        </p>
+      </SectionAnatomy>
+    </SectionFrame>
+    <SectionFrame labelledBy="review-title" class="editorial-section">
+      <SectionAnatomy title="Legal review is still required" titleId="review-title">
+        <p class="editorial-section__body">
+          The legal entity details, retention periods, processor list, rights
+          wording and analytics choice must be completed and approved before
+          launch. This staging page is therefore excluded from search indexes.
+        </p>
+      </SectionAnatomy>
+    </SectionFrame>
+  </main>
+  <Footer />
+</BaseLayout>

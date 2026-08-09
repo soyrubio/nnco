@@ -1,31 +1,26 @@
 ---
 import Button from "./Button.astro";
+import { CONTACT_CONSENT_VERSION } from "@/lib/contact-contract";
 ---
 
-<contact-form class="contact-form-shell">
+<contact-form class="contact-form-shell" data-consent-version={CONTACT_CONSENT_VERSION}>
   <form class="contact-form" data-contact-form novalidate>
     <div class="contact-form__grid">
       <label class="field">
         <span>Name</span>
-        <input name="name" autocomplete="name" required />
+        <input name="name" autocomplete="name" required minlength="2" />
         <small data-error-for="name"></small>
       </label>
 
       <label class="field">
         <span>Work email</span>
-        <input
-          name="email"
-          type="email"
-          autocomplete="email"
-          inputmode="email"
-          required
-        />
+        <input name="email" type="email" autocomplete="email" inputmode="email" required />
         <small data-error-for="email"></small>
       </label>
 
       <label class="field">
-        <span>Institution</span>
-        <input name="institution" autocomplete="organization" required />
+        <span>Organisation</span>
+        <input name="institution" autocomplete="organization" required minlength="2" />
         <small data-error-for="institution"></small>
       </label>
 
@@ -36,37 +31,50 @@ import Button from "./Button.astro";
           <option>Banking</option>
           <option>Insurance</option>
           <option>Healthcare</option>
-          <option>Other regulated industry</option>
+          <option>Capital markets or asset management</option>
+          <option>Other</option>
         </select>
         <small data-error-for="sector"></small>
       </label>
 
       <label class="field">
-        <span>Area of interest</span>
+        <span>What is this about?</span>
         <select name="area" required>
-          <option value="">Select area</option>
-          <option>Transformation</option>
-          <option>Use case</option>
-          <option>Infrastructure</option>
-          <option>Ongoing operation</option>
+          <option value="">Select one</option>
+          <option>An AI audit</option>
+          <option>A specific workflow</option>
+          <option>Private or on-premise infrastructure</option>
+          <option>Running a system we already have</option>
+          <option>Something else</option>
         </select>
         <small data-error-for="area"></small>
       </label>
 
       <label class="field contact-form__message">
-        <span>Message</span>
+        <span>What are you working on?</span>
         <textarea
           name="message"
           rows="6"
           minlength="10"
+          maxlength="4000"
+          placeholder="The workflow, where it slows down, and any constraint you already know about."
           required
         ></textarea>
         <small data-error-for="message"></small>
       </label>
+
+      <label class="contact-form__consent">
+        <input name="consent" type="checkbox" required />
+        <span>I agree that NNCO may use these details to respond to my enquiry. <a href="/privacy">Privacy</a></span>
+        <small data-error-for="consent"></small>
+      </label>
     </div>
 
     <div class="contact-form__footer">
-      <Button type="submit">Request a Working Session</Button>
+      <div class="contact-form__submit">
+        <Button type="submit">Send</Button>
+        <p>We reply within one business day.</p>
+      </div>
       <p data-form-status role="status" aria-live="polite"></p>
     </div>
   </form>
@@ -77,47 +85,44 @@ import Button from "./Button.astro";
     connectedCallback() {
       const form = this.querySelector<HTMLFormElement>("[data-contact-form]");
       const status = this.querySelector<HTMLElement>("[data-form-status]");
-      const submit = form?.querySelector<HTMLButtonElement>(
-        'button[type="submit"]',
-      );
+      const submit = form?.querySelector<HTMLButtonElement>('button[type="submit"]');
+      const consentVersion = this.dataset.consentVersion;
+      let requestId = crypto.randomUUID();
 
-      if (!form || !status || !submit) return;
+      if (!form || !status || !submit || !consentVersion) return;
 
       const clearErrors = () => {
         form.querySelectorAll<HTMLElement>("[data-error-for]").forEach((item) => {
           item.textContent = "";
         });
-        form
-          .querySelectorAll<HTMLElement>("[aria-invalid]")
-          .forEach((field) => field.removeAttribute("aria-invalid"));
+        form.querySelectorAll<HTMLElement>("[aria-invalid]").forEach((field) =>
+          field.removeAttribute("aria-invalid"),
+        );
       };
 
       const showError = (field: HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement) => {
         field.setAttribute("aria-invalid", "true");
-        const target = form.querySelector<HTMLElement>(
-          `[data-error-for="${field.name}"]`,
-        );
+        const target = form.querySelector<HTMLElement>(`[data-error-for="${field.name}"]`);
         if (!target) return;
         target.textContent =
-          field.validity.typeMismatch
-            ? "Enter a valid work email."
-            : field.validity.tooShort
-              ? "Add at least 10 characters."
-            : "This field is required.";
+          field.name === "consent"
+            ? "We need this to be able to reply."
+            : field.validity.typeMismatch
+              ? "Enter a valid work email address."
+              : field.validity.tooShort && field.name === "message"
+                ? "Add a sentence or two so we can come prepared."
+                : "This field is required.";
       };
 
-      form.addEventListener("submit", (event) => {
+      form.addEventListener("submit", async (event) => {
         event.preventDefault();
         clearErrors();
         status.className = "";
         status.textContent = "";
 
         const invalidFields = Array.from(
-          form.querySelectorAll<
-            HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
-          >(":invalid"),
+          form.querySelectorAll<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>(":invalid"),
         );
-
         if (invalidFields.length > 0) {
           invalidFields.forEach(showError);
           invalidFields[0].focus();
@@ -127,28 +132,44 @@ import Button from "./Button.astro";
         }
 
         const data = new FormData(form);
-        const email = String(data.get("email") ?? "");
+        const payload = {
+          schemaVersion: 1,
+          requestId,
+          name: String(data.get("name") ?? ""),
+          workEmail: String(data.get("email") ?? ""),
+          organisation: String(data.get("institution") ?? ""),
+          sector: String(data.get("sector") ?? ""),
+          area: String(data.get("area") ?? ""),
+          message: String(data.get("message") ?? ""),
+          consent: { accepted: true, version: consentVersion },
+        };
+
         submit.disabled = true;
-        submit.textContent = "Requesting...";
+        submit.textContent = "Sending.";
         status.className = "is-loading";
-        status.textContent = "Preparing your request.";
+        status.textContent = "Sending.";
 
-        window.setTimeout(() => {
-          submit.disabled = false;
-          submit.textContent = "Request a Working Session";
-
-          if (email.endsWith("@example.invalid")) {
-            status.className = "is-error";
-            status.textContent =
-              "The local simulation could not complete. Try another address.";
-            return;
-          }
+        try {
+          const response = await fetch("/api/contact-requests", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          });
+          const result = await response.json().catch(() => null);
+          if (!response.ok || result?.ok !== true) throw new Error("handoff failed");
 
           form.reset();
+          requestId = crypto.randomUUID();
           status.className = "is-success";
+          status.textContent = "Received. We will reply within one business day.";
+        } catch {
+          status.className = "is-error";
           status.textContent =
-            "Request recorded locally. No message has been sent.";
-        }, 900);
+            "That did not send. Email us at general@nnco.ai and we will pick it up from there.";
+        } finally {
+          submit.disabled = false;
+          submit.textContent = "Send";
+        }
       });
     }
   }

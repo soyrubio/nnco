@@ -55,7 +55,13 @@ const { tone = "light" } = Astro.props;
 <script>
   const loader = document.querySelector<HTMLElement>("[data-page-loader]");
 
-  if (loader) {
+  if (loader && document.documentElement.classList.contains("skip-page-loader")) {
+    document
+      .querySelector<HTMLElement>("[data-page-content]")
+      ?.removeAttribute("inert");
+    loader.remove();
+    window.dispatchEvent(new Event("nnco:page-ready"));
+  } else if (loader) {
     const frameCadenceMs = Number(loader.dataset.frameCadence);
     const minimumVisibleMs = Number(loader.dataset.minimumVisible);
     const exitDurationMs = Number(loader.dataset.exitDuration);
@@ -119,6 +125,10 @@ const { tone = "light" } = Astro.props;
     const beginExit = () => {
       if (dismissed) return;
       dismissed = true;
+
+      try {
+        sessionStorage.setItem("nnco:cover-seen", "true");
+      } catch {}
 
       if (motionPreference.matches) {
         finishExit();

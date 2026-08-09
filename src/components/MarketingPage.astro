@@ -1,0 +1,182 @@
+---
+import BlockArrow from "./BlockArrow.astro";
+import Button from "./Button.astro";
+import ClosingSection from "./ClosingSection.astro";
+import CompanyAccordion from "./CompanyAccordion.astro";
+import EditorialCard from "./EditorialCard.astro";
+import FaqSection from "./FaqSection.astro";
+import Footer from "./Footer.astro";
+import Header from "./Header.astro";
+import PageHero from "./PageHero.astro";
+import SectionAnatomy from "./SectionAnatomy.astro";
+import SectionFrame from "./SectionFrame.astro";
+import type { LinkAction } from "./types";
+import type { FaqItem } from "@/data/faq";
+import type { MarketingPageData } from "@/data/programme";
+import BaseLayout from "@/layouts/BaseLayout.astro";
+
+interface Props {
+  page: MarketingPageData;
+  faq: readonly FaqItem[];
+  industry?: boolean;
+}
+
+const { page, faq, industry = false } = Astro.props;
+const usesPrivateAiPlate = page.path === "/ai-first-enterprise/private-ai";
+const visibleSections = usesPrivateAiPlate ? page.sections.slice(1) : page.sections;
+const sectionOffset = usesPrivateAiPlate ? 1 : 0;
+const heroActions: LinkAction[] = [];
+if (page.primaryAction) {
+  heroActions.push({ ...page.primaryAction, variant: "primary" });
+}
+if (page.secondaryAction) {
+  heroActions.push({ ...page.secondaryAction, variant: "secondary" });
+}
+const faqSchema = {
+  "@type": "FAQPage",
+  "@id": `https://nnco.ai${page.path}#faq`,
+  mainEntity: faq.map((item) => ({
+    "@type": "Question",
+    name: item.question,
+    acceptedAnswer: { "@type": "Answer", text: item.answer },
+  })),
+};
+const serviceSchema = page.service
+  ? {
+      "@type": "Service",
+      "@id": `https://nnco.ai${page.path}#service`,
+      name: page.service.name,
+      serviceType: page.service.serviceType,
+      description: page.service.description,
+      provider: { "@id": "https://nnco.ai/#organization" },
+      areaServed: "EU",
+    }
+  : undefined;
+const breadcrumbSchema = industry
+  ? {
+      "@type": "BreadcrumbList",
+      itemListElement: [
+        {
+          "@type": "ListItem",
+          position: 1,
+          name: "Home",
+          item: "https://nnco.ai/",
+        },
+        {
+          "@type": "ListItem",
+          position: 2,
+          name: "Industries",
+        },
+        {
+          "@type": "ListItem",
+          position: 3,
+          name: page.service?.name ?? page.title,
+          item: `https://nnco.ai${page.path}`,
+        },
+      ],
+    }
+  : undefined;
+const schemas = [serviceSchema, faqSchema, breadcrumbSchema].filter(
+  Boolean,
+) as Record<string, unknown>[];
+---
+
+<BaseLayout
+  title={page.metaTitle}
+  description={page.metaDescription}
+  canonicalPath={page.path}
+  schemas={schemas}
+>
+  <Header />
+  <main class="editorial-page">
+    <PageHero
+      title={page.title}
+      introduction={page.introduction}
+      actions={heroActions}
+    />
+
+    {
+      usesPrivateAiPlate && (
+        <SectionFrame tone="dark" labelledBy="private-ai-overview" class="private-ai-section">
+          <SectionAnatomy title={page.sections[0].title} titleId="private-ai-overview">
+            <div class="infrastructure-plate">
+              <div class="infrastructure-plate__content">
+                <div class="infrastructure-plate__copy">
+                  {page.sections[0].paragraphs?.map((paragraph) => <p>{paragraph}</p>)}
+                </div>
+              </div>
+              <img
+                class="infrastructure-plate__image"
+                src="/assets/nnco-private-ai-pixelated.png"
+                alt=""
+                width="1248"
+                height="1248"
+                loading="lazy"
+              />
+            </div>
+          </SectionAnatomy>
+        </SectionFrame>
+      )
+    }
+
+    {
+      visibleSections.map((section, index) => {
+        const titleId = `section-${index + 1 + sectionOffset}`;
+        return (
+          <SectionFrame
+            tone={index % 3 === 1 ? "surface" : "paper"}
+            labelledBy={titleId}
+            class="editorial-section"
+          >
+            <SectionAnatomy title={section.title} titleId={titleId}>
+              {section.paragraphs?.map((paragraph) => (
+                <p class="editorial-section__body">{paragraph}</p>
+              ))}
+              {section.render === "ways-of-working" && <CompanyAccordion />}
+              {section.groups && (
+                <div class="editorial-group-grid">
+                  {section.groups.map((group) => (
+                    <div class="editorial-group">
+                      <h3>{group.title}</h3>
+                      <ul>
+                        {group.items.map((item) => <li>{item}</li>)}
+                      </ul>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {section.items && (
+                <div class:list={["editorial-card-grid", `editorial-card-grid--${section.items.length}`]}>
+                  {section.items.map((item) => (
+                    <EditorialCard
+                      title={item.title}
+                      text={item.text}
+                      href={item.href}
+                    />
+                  ))}
+                </div>
+              )}
+              {section.links && (
+                <div class="editorial-links">
+                  {section.links.map((link) => (
+                    <Button href={link.href} variant="secondary">
+                      {link.label} <BlockArrow />
+                    </Button>
+                  ))}
+                </div>
+              )}
+            </SectionAnatomy>
+          </SectionFrame>
+        );
+      })
+    }
+
+    <ClosingSection
+      description={page.closing}
+      actions={[{ href: "/contact", label: "Book a 30-minute call" }]}
+    />
+
+    <FaqSection items={faq} />
+  </main>
+  <Footer />
+</BaseLayout>

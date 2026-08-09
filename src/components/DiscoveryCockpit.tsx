@@ -20,6 +20,7 @@ import {
   createInitialSnapshot,
   discoveryReducer,
   getDiscoveryQuestionIdsFrom,
+  getMilestones,
   getQuestions,
   isUnknownValue,
   type DiscoveryCommand,
@@ -37,11 +38,10 @@ import {
 import {
   LEAD_CONSENT_VERSION,
   type FullDiagnosticReport,
-  type IndicativeRange,
   type LeadResponse,
 } from "@/lib/lead-contract";
 
-const STORAGE_KEY = "nnc.signal.discovery.v2";
+const STORAGE_KEY = "nnco.signal.discovery.v2";
 const STORAGE_TTL_MS = 24 * 60 * 60 * 1_000;
 const MAX_TRANSCRIPTION_BYTES = 4 * 1024 * 1024;
 const MAX_RECORDING_MS = 60_000;
@@ -54,28 +54,16 @@ type VoiceState =
   | "transcribing"
   | "error";
 type JourneyDirection = "forward" | "back";
-const analysisLines = [
-  "Structuring the workflow",
-  "Testing impact",
-  "Preparing your preview",
+const analysisLines = ["That is everything we need. Building the analysis."] as const;
+const chapterMilestones = [
+  "context",
+  "workflow",
+  "friction",
+  "readiness",
+  "review",
 ] as const;
-const chapterMilestones = ["context", "workflow", "review"] as const;
-const REVIEW_CHAPTER = 2;
-const questionNavigationLabels: Record<string, string> = {
-  "workflow.scope": "Workflow scope",
-  "workflow.volumeBand": "Operating volume",
-  "workflow.effortBand": "Human effort",
-  "friction.repetition": "Operational friction",
-  "workflow.inputs": "Systems and data",
-  "goal.outcome": "Target outcome",
-  "readiness.constraints": "Control requirements",
-};
-
-function getDiagnosticQuestionIds(questions: DiscoveryQuestion[]) {
-  return questions
-    .filter((question) => question.id !== "context.sector")
-    .map((question) => question.id);
-}
+const REVIEW_CHAPTER = 4;
+const milestones = getMilestones();
 
 function answerFor(snapshot: DiscoverySnapshot, questionId: string) {
   return snapshot.answers[questionId]?.value;
@@ -85,17 +73,6 @@ function hasCaptured(value: DiscoveryValue | undefined) {
   if (Array.isArray(value)) return value.length > 0;
   if (typeof value === "string") return value.trim().length > 0;
   return value !== null && value !== undefined;
-}
-
-function formatRange(range: IndicativeRange) {
-  const amount = new Intl.NumberFormat("en", {
-    style: "currency",
-    currency: range.currency,
-    maximumFractionDigits: 0,
-  });
-  return `${amount.format(range.min)} to ${amount.format(range.max)} ${
-    range.unit === "monthly" ? "per month" : "one-off"
-  }`;
 }
 
 function displayValue(
@@ -145,22 +122,23 @@ function deriveJourneyPosition(
   snapshot: DiscoverySnapshot,
   questions: DiscoveryQuestion[],
 ) {
-  if (!hasCaptured(snapshot.answers["context.sector"]?.value)) {
-    return { chapter: 0, questionIndex: 0 };
-  }
   if (snapshot.activeMilestone === "review" || snapshot.status === "review") {
     return { chapter: REVIEW_CHAPTER, questionIndex: 0 };
   }
-  const byId = new Map(questions.map((question) => [question.id, question]));
-  const ids = getDiagnosticQuestionIds(questions);
-  const unanswered = ids.findIndex((id) => {
-    const question = byId.get(id);
-    return question?.required && !hasCaptured(answerFor(snapshot, id));
-  });
-  return {
-    chapter: 1,
-    questionIndex: unanswered >= 0 ? unanswered : 0,
-  };
+  for (let chapterIndex = 0; chapterIndex < REVIEW_CHAPTER; chapterIndex += 1) {
+    const milestone = chapterMilestones[chapterIndex];
+    const chapterQuestions = questions.filter(
+      (question) => question.milestone === milestone,
+    );
+    const unanswered = chapterQuestions.findIndex(
+      (question) =>
+        question.required && !hasCaptured(answerFor(snapshot, question.id)),
+    );
+    if (unanswered >= 0) {
+      return { chapter: chapterIndex, questionIndex: unanswered };
+    }
+  }
+  return { chapter: REVIEW_CHAPTER, questionIndex: 0 };
 }
 
 function validChatPatch(patch: ChatPatch, question?: DiscoveryQuestion) {
@@ -470,8 +448,10 @@ export function DiscoveryCockpit() {
   const [invalidQuestionId, setInvalidQuestionId] = useState<string | null>(null);
   const [textDrafts, setTextDrafts] = useState<Record<string, string>>({});
   const [editingFromReview, setEditingFromReview] = useState(false);
-  const [persistLocally, setPersistLocally] = useState(false);
-  const [, setSaveState] = useState("Saved in this tab");
+  const [persistLocally, setPersistLocally] = useState(true);
+  const [saveState, setSaveState] = useState(
+    "Saved in this browser. You can close this and come back.",
+  );
   const [saveConflict, setSaveConflict] = useState(false);
   const [talkOpen, setTalkOpen] = useState(false);
   const [chatInput, setChatInput] = useState("");
@@ -584,61 +564,78 @@ export function DiscoveryCockpit() {
   useEffect(() => {
     let cancelled = false;
     const start = async () => {
-      localRepositoryRef.current = createBrowserDiscoveryRepository(
-        window.localStorage,
-        STORAGE_KEY,
-        STORAGE_TTL_MS,
-      );
-      sessionRepositoryRef.current = createBrowserDiscoveryRepository(
-        window.sessionStorage,
-        STORAGE_KEY,
-        STORAGE_TTL_MS,
-      );
-      const [local, session] = await Promise.all([
-        localRepositoryRef.current.load(),
-        sessionRepositoryRef.current.load(),
-      ]);
-      if (cancelled) return;
-      persistedRevisionRef.current = {
-        local: local.ok ? local.revision : null,
-        session: session.ok ? session.revision : null,
-      };
-      const candidates = [
-        local.ok && local.value ? { source: "local", value: local.value } : null,
-        session.ok && session.value
-          ? { source: "session", value: session.value }
-          : null,
-      ]
-        .filter(
-          (
-            item,
-          ): item is { source: string; value: DiscoverySnapshot } => Boolean(item),
-        )
-        .sort(
-          (a, b) =>
-            Date.parse(b.value.updatedAt) - Date.parse(a.value.updatedAt) ||
-            b.value.revision - a.value.revision,
-        );
-      const restored = candidates[0];
-      if (restored) {
-        setSnapshot(restored.value);
-        setPersistLocally(restored.source === "local");
-        const position = deriveJourneyPosition(
-          restored.value,
-          getQuestions(restored.value),
-        );
-        setChapter(position.chapter);
-        setQuestionIndex(position.questionIndex);
-        if (restored.value.status === "lead_submitted") {
-          setLeadSubmission({
-            status: "idle",
-            message:
-              "Contact confirmation is not stored in this browser. Submit the form again to open the complete diagnostic.",
-          });
+      try {
+        try {
+          localRepositoryRef.current = createBrowserDiscoveryRepository(
+            window.localStorage,
+            STORAGE_KEY,
+            STORAGE_TTL_MS,
+          );
+        } catch {
+          localRepositoryRef.current = null;
         }
-        setSaveState("Progress restored");
-      } else {
-        const requested = new URLSearchParams(window.location.search).get("sector");
+        try {
+          sessionRepositoryRef.current = createBrowserDiscoveryRepository(
+            window.sessionStorage,
+            STORAGE_KEY,
+            STORAGE_TTL_MS,
+          );
+        } catch {
+          sessionRepositoryRef.current = null;
+        }
+
+        const [local, session] = await Promise.all([
+          localRepositoryRef.current?.load() ?? null,
+          sessionRepositoryRef.current?.load() ?? null,
+        ]);
+        if (cancelled) return;
+        persistedRevisionRef.current = {
+          local: local?.ok ? local.revision : null,
+          session: session?.ok ? session.revision : null,
+        };
+        const candidates = [
+          local?.ok && local.value
+            ? { source: "local", value: local.value }
+            : null,
+          session?.ok && session.value
+            ? { source: "session", value: session.value }
+            : null,
+        ]
+          .filter(
+            (
+              item,
+            ): item is { source: string; value: DiscoverySnapshot } =>
+              Boolean(item),
+          )
+          .sort(
+            (a, b) =>
+              Date.parse(b.value.updatedAt) - Date.parse(a.value.updatedAt) ||
+              b.value.revision - a.value.revision,
+          );
+        const restored = candidates[0];
+        if (restored) {
+          setSnapshot(restored.value);
+          setPersistLocally(restored.source === "local");
+          const position = deriveJourneyPosition(
+            restored.value,
+            getQuestions(restored.value),
+          );
+          setChapter(position.chapter);
+          setQuestionIndex(position.questionIndex);
+          if (restored.value.status === "lead_submitted") {
+            setLeadSubmission({
+              status: "idle",
+              message:
+                "Contact confirmation is not stored in this browser. Submit the form again to open the complete diagnostic.",
+            });
+          }
+          setSaveState("Progress restored");
+          return;
+        }
+
+        const requested = new URLSearchParams(window.location.search).get(
+          "sector",
+        );
         if (
           requested === "finance" ||
           requested === "insurance" ||
@@ -653,10 +650,15 @@ export function DiscoveryCockpit() {
               occurredAt: new Date().toISOString(),
             }),
           );
-          setChapter(1);
+          setChapter(0);
         }
+      } catch {
+        if (!cancelled) {
+          setSaveState("Keep this tab open");
+        }
+      } finally {
+        if (!cancelled) setHydrated(true);
       }
-      setHydrated(true);
     };
     void start();
     return () => {
@@ -691,7 +693,11 @@ export function DiscoveryCockpit() {
       if (result?.ok) {
         const cleared = await other?.clear(controller.signal);
         if (cleared?.ok) persistedRevisionRef.current[otherName] = null;
-        setSaveState(persistLocally ? "Saved for 24 hours" : "Saved in this tab");
+        setSaveState(
+          persistLocally
+            ? "Saved in this browser. You can close this and come back."
+            : "Saved in this tab.",
+        );
       } else if (result?.reason === "conflict") {
         setSaveState("Newer version in another tab");
         setSaveConflict(true);
@@ -721,17 +727,24 @@ export function DiscoveryCockpit() {
     [questions],
   );
   const report = useMemo(() => buildReportPreview(snapshot), [snapshot]);
-  const coverage = useMemo(() => calculateCoverage(snapshot), [snapshot]);
-  const diagnosticQuestionIds = useMemo(
-    () => getDiagnosticQuestionIds(questions),
-    [questions],
+  const reportPreparedDate = useMemo(
+    () =>
+      new Intl.DateTimeFormat("en", {
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+      }).format(new Date(report.generatedAt)),
+    [report.generatedAt],
   );
+  const coverage = useMemo(() => calculateCoverage(snapshot), [snapshot]);
   const activeIds =
-    chapter === 0
-      ? ["context.sector"]
-      : chapter === 1
-        ? diagnosticQuestionIds
-        : [];
+    chapter < REVIEW_CHAPTER
+      ? questions
+          .filter(
+            (question) => question.milestone === chapterMilestones[chapter],
+          )
+          .map((question) => question.id)
+      : [];
   const activeQuestion = questionById.get(activeIds[questionIndex] ?? "");
   const journeyProgress = calculateJourneyProgress(
     snapshot,
@@ -853,7 +866,7 @@ export function DiscoveryCockpit() {
     }
     if (activeQuestion.required && !hasCaptured(effectiveValue)) {
       setInvalidQuestionId(activeQuestion.id);
-      setNotice("Add an answer or choose Not sure yet.");
+      setNotice("We need this one to make the analysis useful.");
       return;
     }
     if (editingFromReview) {
@@ -867,22 +880,26 @@ export function DiscoveryCockpit() {
       setNotice("");
       return;
     }
-    moveToChapter(REVIEW_CHAPTER);
+    moveToChapter(chapter + 1);
   };
 
   const back = () => {
-    const targetChapter =
-      chapter === 1 && questionIndex === 0 ? 0 : Math.max(0, chapter);
+    if (chapter === 0 && questionIndex === 0) return;
+    const targetChapter = questionIndex === 0 ? chapter - 1 : chapter;
+    const targetChapterIds = questions
+      .filter(
+        (question) => question.milestone === chapterMilestones[targetChapter],
+      )
+      .map((question) => question.id);
     const targetQuestionIndex =
-      targetChapter === 0 ? 0 : Math.max(0, questionIndex - 1);
-    const targetQuestionId =
-      targetChapter === 0
-        ? "context.sector"
-        : diagnosticQuestionIds[targetQuestionIndex];
+      questionIndex === 0
+        ? Math.max(0, targetChapterIds.length - 1)
+        : questionIndex - 1;
+    const targetQuestionId = targetChapterIds[targetQuestionIndex];
     if (!targetQuestionId) return;
 
     const clearedQuestionIds = new Set(
-      getDiscoveryQuestionIdsFrom(targetQuestionId),
+      getDiscoveryQuestionIdsFrom(targetQuestionId, snapshot),
     );
     invalidateLeadResult();
     agentAbortRef.current?.abort();
@@ -914,11 +931,6 @@ export function DiscoveryCockpit() {
     window.scrollTo({ top: 0, behavior: "auto" });
   };
 
-  const chooseSector = (value: DiscoveryValue) => {
-    setAnswer("context.sector", value);
-    moveToChapter(1);
-  };
-
   const markUnknown = () => {
     if (!activeQuestion?.allowUnknown) return;
     setAnswer(activeQuestion.id, "Unknown / validate next");
@@ -931,7 +943,7 @@ export function DiscoveryCockpit() {
       setJourneyDirection("forward");
       setQuestionIndex((current) => current + 1);
     } else {
-      moveToChapter(REVIEW_CHAPTER);
+      moveToChapter(chapter + 1);
     }
   };
 
@@ -1330,9 +1342,8 @@ export function DiscoveryCockpit() {
       ) {
         setLeadSubmission({
           status: "error",
-          message: !result.ok
-            ? result.error.message
-            : "The server confirmation did not match this diagnostic.",
+          message:
+            "That did not go through. Email us at general@nnco.ai and we will send it manually.",
         });
         return;
       }
@@ -1344,13 +1355,14 @@ export function DiscoveryCockpit() {
       });
       setLeadSubmission({
         status: "confirmed",
-        message: "The complete diagnostic is ready below.",
+        message: "Unlocked. The full report is also on its way to your inbox.",
       });
     } catch {
       if (!controller.signal.aborted) {
         setLeadSubmission({
           status: "error",
-          message: "The request could not be confirmed. Please try again.",
+          message:
+            "That did not go through. Email us at general@nnco.ai and we will send it manually.",
         });
       }
     } finally {
@@ -1390,7 +1402,7 @@ export function DiscoveryCockpit() {
               type="button"
               onClick={() => createBrowserPrintExporter(window).exportPreview()}
             >
-              Export PDF <BlockArrow />
+              Download as PDF <BlockArrow />
             </button>
             <button
               type="button"
@@ -1405,14 +1417,18 @@ export function DiscoveryCockpit() {
           <article className="discovery-report-page" aria-label="Report page 1">
             <header>
               <span>NNCO</span>
-              <span>Operational diagnosis</span>
+              <span>Workflow diagnostic</span>
             </header>
             <div className="discovery-report-title">
               <span>Page 1</span>
               <h1 ref={previewHeadingRef} tabIndex={-1}>
-                {boundReportText(report.scope.focus, 72)}
+                Workflow diagnostic
               </h1>
-              <p>{boundReportText(report.summary, 430)}</p>
+              <p>{boundReportText(report.scope.focus, 160)}</p>
+              <small>
+                Prepared for {leadForm.organisation || report.scope.organisation},{" "}
+                {reportPreparedDate}
+              </small>
             </div>
             <section className="discovery-report-scope">
               <span>Scope</span>
@@ -1422,7 +1438,7 @@ export function DiscoveryCockpit() {
               </dl>
             </section>
             <section className="discovery-work-map">
-              <span>Current work</span>
+              <span>The workflow as you described it</span>
               <div>
                 <article>
                   <small>Inputs</small>
@@ -1459,11 +1475,14 @@ export function DiscoveryCockpit() {
                 </article>
               </div>
             </section>
-            <section className="discovery-readiness">
-              <span>Readiness</span>
-              <div><strong>{report.readiness.band}</strong><p>{report.readiness.statement}</p></div>
+            <section className="discovery-delivery-block">
+              <span>Evidence basis</span>
+              <p>
+                This is the process as you mapped it, in the order it runs.
+                Everything below is derived from these answers.
+              </p>
             </section>
-            <footer><span>Your input / not verified</span><span>1 / 2</span></footer>
+            <footer><span>Prepared by NNCO. Not a formal assessment. nnco.ai</span><span>1 / 6</span></footer>
           </article>
 
           <article
@@ -1474,11 +1493,15 @@ export function DiscoveryCockpit() {
           >
             <header>
               <span>NNCO</span>
-              <span>Top priorities</span>
+              <span>Where the time goes</span>
             </header>
             <div className="discovery-report-title">
               <span>Page 2</span>
-              <h2>Three priorities to validate next.</h2>
+              <h2>Where the time goes</h2>
+              <p>
+                The steps that consume attention without requiring judgement,
+                and the points where work waits for someone else.
+              </p>
             </div>
             <ol className="discovery-priorities">
               {report.problems.slice(0, 3).map((problem, index) => (
@@ -1497,21 +1520,37 @@ export function DiscoveryCockpit() {
                 </li>
               ))}
             </ol>
-            <footer><span>Your input / not verified</span><span>2 / 2</span></footer>
+            <footer><span>Prepared by NNCO. Not a formal assessment. nnco.ai</span><span>2 / 6</span></footer>
           </article>
         </div>
 
         {!fullReport ? (
           <section className="discovery-gate">
             <div>
-              <span>Complete diagnostic</span>
-              <h2>Solutions, what they require, and estimated time and cost.</h2>
+              <span>Pages three to six</span>
+              <h2>The rest of the analysis</h2>
               <p>
-                The complete report shows practical options, systems involved,
-                and the first next step.
+                Pages three to six cover what AI could take over, the
+                constraints on each candidate and a suggested sequence. Tell us
+                where to send them.
               </p>
             </div>
             <form onSubmit={submitLead}>
+              <label>
+                Name
+                <input
+                  type="text"
+                  maxLength={120}
+                  autoComplete="name"
+                  value={leadForm.name}
+                  onChange={(event) =>
+                    setLeadForm((current) => ({
+                      ...current,
+                      name: event.target.value,
+                    }))
+                  }
+                />
+              </label>
               <label>
                 Work email
                 <input
@@ -1544,21 +1583,6 @@ export function DiscoveryCockpit() {
                   }
                 />
               </label>
-              <label>
-                Name
-                <input
-                  type="text"
-                  maxLength={120}
-                  autoComplete="name"
-                  value={leadForm.name}
-                  onChange={(event) =>
-                    setLeadForm((current) => ({
-                      ...current,
-                      name: event.target.value,
-                    }))
-                  }
-                />
-              </label>
               <label className="discovery-consent">
                 <input
                   type="checkbox"
@@ -1573,9 +1597,14 @@ export function DiscoveryCockpit() {
                 />
                 <span>
                   I agree that NNCO may use these details and this diagnostic to
-                  prepare the complete report and contact me about the result.
+                  prepare the complete report and contact me about the result.{" "}
+                  <a href="/privacy">Privacy</a>
                 </span>
               </label>
+              <p className="discovery-gate-note">
+                We will send the full report and one reply from a person. No
+                sequence, no newsletter.
+              </p>
               {leadSubmission.message && !fullReport ? (
                 <p
                   className={`discovery-error${
@@ -1592,8 +1621,8 @@ export function DiscoveryCockpit() {
                 disabled={leadSubmission.status === "submitting"}
               >
                 {leadSubmission.status === "submitting"
-                  ? "Preparing"
-                  : "Get the complete diagnostic"}{" "}
+                  ? "Sending"
+                  : "Send me the full report"}{" "}
                 <BlockArrow />
               </button>
             </form>
@@ -1606,11 +1635,15 @@ export function DiscoveryCockpit() {
             <article className="discovery-report-page" aria-label="Report page 3">
               <header>
                 <span>NNCO</span>
-                <span>Solution routes</span>
+                <span>What AI could take over</span>
               </header>
               <div className="discovery-report-title discovery-report-title--compact">
                 <span>Page 3</span>
-                <h2>Practical routes forward.</h2>
+                <h2>What AI could take over</h2>
+                <p>
+                  Per step: what a system could do, what would stay with a
+                  person, and what it would need access to.
+                </p>
               </div>
               <ol className="discovery-route-list">
                 {fullReport.solutionOptions.map((option, index) => (
@@ -1622,23 +1655,15 @@ export function DiscoveryCockpit() {
                     </div>
                     <dl>
                       <div>
-                        <dt>Effort</dt>
-                        <dd>{option.effort}</dd>
+                        <dt>Stays with a person</dt>
+                        <dd>Approval at material decision points</dd>
                       </div>
                       <div>
-                        <dt>Timing</dt>
-                        <dd>
-                          {option.timingWeeks.min} to {option.timingWeeks.max} weeks
-                        </dd>
-                      </div>
-                      <div>
-                        <dt>Indicative price</dt>
+                        <dt>Needs access to</dt>
                         <dd>
                           {boundReportText(
-                            option.indicativeRanges.length
-                              ? option.indicativeRanges.map(formatRange).join(" · ")
-                              : "Validate after evidence review",
-                            105,
+                            option.dataAndIntegrations.join(" · "),
+                            160,
                           )}
                         </dd>
                       </div>
@@ -1647,36 +1672,86 @@ export function DiscoveryCockpit() {
                 ))}
               </ol>
               <footer>
-                <span>Indicative / not an offer</span>
-                <span>3 / 4</span>
+                <span>Prepared by NNCO. Not a formal assessment. nnco.ai</span>
+                <span>3 / 6</span>
               </footer>
             </article>
 
             <article
-              className="discovery-report-page discovery-report-page--final"
+              className="discovery-report-page"
               aria-label="Report page 4"
             >
               <header>
                 <span>NNCO</span>
-                <span>Recommended path</span>
+                <span>Constraints</span>
               </header>
               <div className="discovery-report-title discovery-report-title--compact">
                 <span>Page 4</span>
-                <h2>A 90-day path to decision.</h2>
+                <h2>Constraints</h2>
+                <p>
+                  The data, access and evidence questions each candidate would
+                  have to answer before it could be deployed.
+                </p>
+              </div>
+              <section className="discovery-delivery-block">
+                <span>Systems</span>
+                <p>
+                  {displayReportValue(
+                    snapshot,
+                    questionById,
+                    "readiness.systems",
+                    360,
+                  )}
+                </p>
+              </section>
+              <section className="discovery-delivery-block">
+                <span>Controls</span>
+                <p>
+                  {displayReportValue(
+                    snapshot,
+                    questionById,
+                    "readiness.constraints",
+                    360,
+                  )}
+                </p>
+              </section>
+              <section className="discovery-delivery-block">
+                <span>Questions to verify</span>
+                <p>
+                  {boundReportText(
+                    Array.from(
+                      new Set(
+                        fullReport.solutionOptions.flatMap(
+                          (option) => option.risks,
+                        ),
+                      ),
+                    ).join(" "),
+                    520,
+                  )}
+                </p>
+              </section>
+              <footer>
+                <span>Prepared by NNCO. Not a formal assessment. nnco.ai</span>
+                <span>4 / 6</span>
+              </footer>
+            </article>
+
+            <article className="discovery-report-page" aria-label="Report page 5">
+              <header>
+                <span>NNCO</span>
+                <span>Sequence</span>
+              </header>
+              <div className="discovery-report-title discovery-report-title--compact">
+                <span>Page 5</span>
+                <h2>Sequence</h2>
+                <p>
+                  A suggested order, with the reason each item sits where it
+                  does.
+                </p>
               </div>
               <section className="discovery-delivery-block">
                 <span>Recommended next step</span>
-                <p>{boundReportText(fullReport.recommendedNextStep, 360)}</p>
-              </section>
-              <section className="discovery-delivery-block">
-                <span>Delivery model</span>
-                <div>
-                  <p>{boundReportText(fullReport.deliveryModel, 300)}</p>
-                  <small>
-                    Investment posture:{" "}
-                    {boundReportText(fullReport.investmentPosture.label, 90)}
-                  </small>
-                </div>
+                <p>{boundReportText(fullReport.recommendedNextStep, 420)}</p>
               </section>
               <ol className="discovery-report-roadmap">
                 {fullReport.roadmap.slice(0, 3).map((step, index) => (
@@ -1689,8 +1764,50 @@ export function DiscoveryCockpit() {
                 ))}
               </ol>
               <footer>
-                <span>Validate before implementation</span>
-                <span>4 / 4</span>
+                <span>Prepared by NNCO. Not a formal assessment. nnco.ai</span>
+                <span>5 / 6</span>
+              </footer>
+            </article>
+
+            <article
+              className="discovery-report-page discovery-report-page--final"
+              aria-label="Report page 6"
+            >
+              <header>
+                <span>NNCO</span>
+                <span>Limits of this analysis</span>
+              </header>
+              <div className="discovery-report-title discovery-report-title--compact">
+                <span>Page 6</span>
+                <h2>What this analysis cannot tell you</h2>
+                <p>
+                  Written from your answers alone, without seeing the systems
+                  or the data. The parts below would need to be checked before
+                  anything is committed.
+                </p>
+              </div>
+              <section className="discovery-delivery-block">
+                <span>Not verified</span>
+                <p>
+                  Volumes, exception frequency, data quality, access paths,
+                  control ownership and the behaviour of the workflow on real
+                  cases.
+                </p>
+              </section>
+              <section className="discovery-delivery-block">
+                <span>What happens next</span>
+                <p>
+                  This is a diagnostic, not an audit. An audit looks at the
+                  systems, the data and the constraints directly, and produces
+                  a plan you can commit budget to.
+                </p>
+              </section>
+              <div className="discovery-report-closing">
+                <a href="/contact">Book a 30-minute call <BlockArrow /></a>
+              </div>
+              <footer>
+                <span>Prepared by NNCO. Not a formal assessment. nnco.ai</span>
+                <span>6 / 6</span>
               </footer>
             </article>
           </section>
@@ -1706,8 +1823,15 @@ export function DiscoveryCockpit() {
   const activeQuestionHelpId = activeQuestionKey
     ? `discovery-question-${activeQuestionKey}-help`
     : "";
+  const activeQuestionHelp = activeQuestion
+    ? activeQuestion.help ??
+      (activeQuestion.fieldType === "short_text" ||
+      activeQuestion.fieldType === "long_text"
+        ? "A sentence is enough. Detail helps but is not required."
+        : undefined)
+    : undefined;
   const activeQuestionDescription = [
-    activeQuestion?.help ? activeQuestionHelpId : "",
+    activeQuestionHelp ? activeQuestionHelpId : "",
     invalidQuestionId === activeQuestion?.id && notice
       ? "discovery-question-notice"
       : "",
@@ -1717,7 +1841,7 @@ export function DiscoveryCockpit() {
   const voiceStatusMessage = voiceAnnouncement || voiceError;
 
   const talkThrough =
-    chapter === 1 ? (
+    chapter < REVIEW_CHAPTER ? (
       <details
         className="discovery-talk"
         open={talkOpen}
@@ -1727,7 +1851,12 @@ export function DiscoveryCockpit() {
           if (!open) cancelVoiceCapture();
         }}
       >
-        <summary>Choose an option or describe it</summary>
+        <summary>
+          <span>Ask a question about any step. It goes into the same case.</span>
+          <span className="discovery-disclosure-indicator" aria-hidden="true">
+            <BlockArrow direction="down" />
+          </span>
+        </summary>
         <div>
           <p id="discovery-talk-help">
             Describe this question in your own words. We will propose details
@@ -1836,40 +1965,22 @@ export function DiscoveryCockpit() {
         </div>
       </details>
     ) : null;
-  void talkThrough;
-
   return (
     <main className="discovery-app discovery-intake">
       <section className="discovery-canvas">
         <div className="discovery-interaction">
           <aside className="discovery-section-index" aria-label="Discovery sections">
             <ol>
-              <li
-                className={chapter === 0 ? "is-active" : undefined}
-                aria-current={chapter === 0 ? "step" : undefined}
-              >
-                Sector
-              </li>
-              {diagnosticQuestionIds.map((questionId, index) => (
+              {milestones.map((milestone, index) => (
                 <li
-                  key={questionId}
-                  className={
-                    chapter === 1 && questionIndex === index
-                      ? "is-active"
-                      : undefined
-                  }
-                  aria-current={
-                    chapter === 1 && questionIndex === index ? "step" : undefined
-                  }
+                  key={milestone.id}
+                  className={chapter === index ? "is-active" : undefined}
+                  aria-current={chapter === index ? "step" : undefined}
                 >
-                  {questionNavigationLabels[questionId] ?? "Question"}
+                  <span>{milestone.label}</span>
+                  <small>{milestone.description}</small>
                 </li>
               ))}
-              {chapter === REVIEW_CHAPTER ? (
-                <li className="is-active" aria-current="step">
-                  Review
-                </li>
-              ) : null}
             </ol>
           </aside>
 
@@ -1885,8 +1996,8 @@ export function DiscoveryCockpit() {
                 tabIndex={-1}
               >
                 <h2 id={activeQuestionLabelId}>{activeQuestion.prompt}</h2>
-                {activeQuestion.help ? (
-                  <p id={activeQuestionHelpId}>{activeQuestion.help}</p>
+                {activeQuestionHelp ? (
+                  <p id={activeQuestionHelpId}>{activeQuestionHelp}</p>
                 ) : null}
                 <QuestionField
                   question={activeQuestion}
@@ -1899,11 +2010,7 @@ export function DiscoveryCockpit() {
                   invalid={invalidQuestionId === activeQuestion.id}
                   labelledBy={activeQuestionLabelId}
                   describedBy={activeQuestionDescription || undefined}
-                  onAnswer={(value) =>
-                    chapter === 0
-                      ? chooseSector(value)
-                      : setAnswer(activeQuestion.id, value)
-                  }
+                  onAnswer={(value) => setAnswer(activeQuestion.id, value)}
                   onDraft={(value) => setDraft(activeQuestion.id, value)}
                   onCommitDraft={(value) =>
                     commitDraft(activeQuestion.id, value)
@@ -1911,6 +2018,8 @@ export function DiscoveryCockpit() {
                 />
               </article>
             ) : null}
+
+            {talkThrough}
 
             {chapter === REVIEW_CHAPTER ? (
               <div
@@ -1921,35 +2030,59 @@ export function DiscoveryCockpit() {
                 tabIndex={-1}
               >
                 <header>
-                  <h1>Review what we heard.</h1>
+                  <h1>Check what you told us before we analyse it.</h1>
                   <p>Nothing below has been independently verified.</p>
                 </header>
                 {[
                   {
-                    title: "Workflow",
+                    title: "Context",
                     items: [
-                      "workflow.scope",
-                      "workflow.volumeBand",
-                      "workflow.effortBand",
+                      "context.organisationType",
+                      "context.sizeBand",
+                      "context.sector",
+                      "context.role",
+                      "context.focusArea",
                     ],
                   },
                   {
-                    title: "Capacity loss",
-                    items: ["friction.repetition"],
+                    title: "Workflow",
+                    items: [
+                      "workflow.scope",
+                      "workflow.handoffs",
+                      "workflow.inputs",
+                    ],
                   },
                   {
-                    title: "Operating environment",
-                    items: ["workflow.inputs", "readiness.constraints"],
+                    title: "Friction",
+                    items: [
+                      "friction.repetition",
+                      "friction.exceptions",
+                      "friction.impact",
+                    ],
                   },
                   {
-                    title: "Priority result",
-                    items: ["goal.outcome"],
+                    title: "Constraints",
+                    items: [
+                      "readiness.systems",
+                      "readiness.constraints",
+                      "goal.outcome",
+                      "goal.horizon",
+                      "goal.investmentPosture",
+                    ],
                   },
                 ]
                   .map((summary) => ({
                     ...summary,
-                    items: summary.items.filter((id) => questionById.has(id)),
+                    items: summary.items.filter((id) => {
+                      const question = questionById.get(id);
+                      return (
+                        Boolean(question) &&
+                        (question?.required ||
+                          hasCaptured(answerFor(snapshot, id)))
+                      );
+                    }),
                   }))
+                  .filter((summary) => summary.items.length > 0)
                   .map((summary) => (
                   <article key={summary.title}>
                     <div>
@@ -1960,10 +2093,23 @@ export function DiscoveryCockpit() {
                           <button
                             type="button"
                             onClick={() => {
+                              const target = questionById.get(questionId);
+                              if (!target) return;
+                              const targetChapter = chapterMilestones.indexOf(
+                                target.milestone,
+                              );
+                              const targetIndex = questions
+                                .filter(
+                                  (question) =>
+                                    question.milestone === target.milestone,
+                                )
+                                .findIndex(
+                                  (question) => question.id === questionId,
+                                );
                               setEditingFromReview(true);
                               moveToChapter(
-                                1,
-                                diagnosticQuestionIds.indexOf(questionId),
+                                targetChapter,
+                                targetIndex,
                                 "back",
                               );
                             }}
@@ -1996,7 +2142,7 @@ export function DiscoveryCockpit() {
               </p>
             ) : null}
 
-            {chapter === 1 ? (
+            {chapter < REVIEW_CHAPTER ? (
               <div className="discovery-actions">
                 <button
                   type="button"
@@ -2014,7 +2160,7 @@ export function DiscoveryCockpit() {
                 <div>
                   {activeQuestion?.allowUnknown ? (
                     <button type="button" onClick={markUnknown}>
-                      Not sure yet
+                      Skip
                     </button>
                   ) : null}
                   <button
@@ -2022,10 +2168,14 @@ export function DiscoveryCockpit() {
                     type="button"
                     onClick={advance}
                   >
-                    Continue <BlockArrow />
+                    Next <BlockArrow />
                   </button>
                 </div>
               </div>
+            ) : null}
+
+            {chapter < REVIEW_CHAPTER ? (
+              <p className="discovery-privacy">{saveState}</p>
             ) : null}
           </div>
         </div>

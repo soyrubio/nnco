@@ -3,7 +3,8 @@
 ## Runtime architecture
 
 The marketing pages can be statically generated, but the discovery handoff
-uses `POST /api/lead-requests`. Production therefore requires an Astro server
+uses `POST /api/lead-requests` and the contact form uses
+`POST /api/contact-requests`. Production therefore requires an Astro server
 adapter. `@astrojs/vercel` is installed and `astro.config.mjs` uses server
 output with the Vercel adapter.
 
@@ -22,6 +23,10 @@ LEAD_HANDOFF_MODE=local
 
 Local mode stores idempotent lead requests in process memory. It requires no
 secret and is disabled when `NODE_ENV=production`.
+
+Contact enquiries and submitted diagnostics use the same repository and the
+same `lead_requests` table. Contact records are distinguished by the
+`contact-enquiry` snapshot kind.
 
 ## Vercel and Supabase
 
@@ -76,5 +81,5 @@ store recordings or transcript text.
 ## Report export
 
 Browser print is the only PDF path. It exports two preview pages before contact
-and four pages after the complete diagnostic is unlocked. No report-generation
+and six pages after the complete diagnostic is unlocked. No report-generation
 service or static sample PDF is deployed.
