@@ -325,7 +325,14 @@ export const programmeSubpages = {
         paragraphs: [
           "The diagnostic maps one workflow, locates where it loses time and returns an evidence-linked preview of the same analysis. It takes about 15 minutes and does not require a call.",
         ],
-        links: [{ href: "/discovery", label: "Start the diagnostic" }],
+        links: [
+          { href: "/discovery", label: "Start the diagnostic" },
+          { href: "/ai-first-enterprise", label: "AI-First Enterprise" },
+          {
+            href: "/blog/what-goes-into-an-audit-trail-for-an-ai-workflow",
+            label: "What goes into an audit trail",
+          },
+        ],
       },
     ],
     closing:
@@ -415,6 +422,13 @@ export const programmeSubpages = {
         paragraphs: [
           "In most institutions only part of the data is genuinely restricted. A common design keeps restricted workflows entirely inside the boundary and lets the rest use hosted models, with a policy layer that decides which path a request takes. This is cheaper than running everything privately and easier to defend than running everything externally.",
         ],
+        links: [
+          { href: "/ai-first-enterprise", label: "AI-First Enterprise" },
+          {
+            href: "/blog/what-goes-into-an-audit-trail-for-an-ai-workflow",
+            label: "What goes into an audit trail",
+          },
+        ],
       },
     ],
     closing:
@@ -479,6 +493,13 @@ export const programmeSubpages = {
         title: "Or your team runs it.",
         paragraphs: [
           "Where you would rather own the operation internally, we hand over the runbooks, the acceptance criteria, the monitoring and the training. What we do not do is leave the question open, because that is how a system ends up with no owner at all.",
+        ],
+        links: [
+          { href: "/ai-first-enterprise", label: "AI-First Enterprise" },
+          {
+            href: "/blog/what-goes-into-an-audit-trail-for-an-ai-workflow",
+            label: "What goes into an audit trail",
+          },
         ],
       },
     ],
