@@ -1,0 +1,116 @@
+---
+import type { FaqItem } from "@/data/faq";
+
+interface Props {
+  items: readonly FaqItem[];
+  groupName?: string;
+}
+
+const { items, groupName = "common-questions" } = Astro.props;
+---
+
+<div class="faq-list">
+  {
+    items.map((item) => (
+      <details name={groupName}>
+        <summary>
+          <span class="faq-list__question">{item.question}</span>
+          <span class="faq-list__toggle" aria-hidden="true">+</span>
+        </summary>
+        <div class="faq-list__answer">
+          <p>{item.answer}</p>
+        </div>
+      </details>
+    ))
+  }
+</div>
+
+<style>
+  .faq-list {
+    border-top: 1px solid var(--rule-strong);
+  }
+
+  .faq-list details {
+    border-bottom: 1px solid var(--rule-strong);
+  }
+
+  .faq-list summary {
+    display: grid;
+    min-height: 6.5rem;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    gap: 2rem;
+    padding-block: 1.5rem;
+    cursor: pointer;
+    font-size: clamp(1.15rem, 1.7vw, 1.5rem);
+    font-weight: 550;
+    line-height: 1.25;
+    list-style: none;
+  }
+
+  .faq-list summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .faq-list summary:focus-visible {
+    outline: 2px solid currentColor;
+    outline-offset: -2px;
+  }
+
+  .faq-list__question {
+    max-width: 42ch;
+  }
+
+  .faq-list__toggle {
+    display: grid;
+    width: 2rem;
+    height: 2rem;
+    place-items: center;
+    font-size: 1.6rem;
+    font-weight: 400;
+    line-height: 1;
+    transition: transform 180ms ease;
+  }
+
+  .faq-list details[open] .faq-list__toggle {
+    transform: rotate(45deg);
+  }
+
+  .faq-list__answer {
+    max-width: 52rem;
+    padding: 0 clamp(3rem, 8vw, 8rem) 2.25rem 0;
+  }
+
+  .faq-list__answer p {
+    margin-bottom: 0;
+    color: var(--muted);
+    font-size: clamp(1.05rem, 1.25vw, 1.2rem);
+    line-height: 1.65;
+  }
+
+  :global(.section-frame--dark) .faq-list,
+  :global(.section-frame--dark) .faq-list details {
+    border-color: rgba(245, 245, 245, 0.42);
+  }
+
+  :global(.section-frame--dark) .faq-list__answer p {
+    color: rgba(245, 245, 245, 0.72);
+  }
+
+  @media (max-width: 767px) {
+    .faq-list summary {
+      min-height: 0;
+      gap: 1.25rem;
+      padding-block: 1.25rem;
+    }
+
+    .faq-list__toggle {
+      width: 1.5rem;
+      height: 1.5rem;
+    }
+
+    .faq-list__answer {
+      padding: 0 0 1.75rem;
+    }
+  }
+</style>
