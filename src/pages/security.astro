@@ -1,0 +1,51 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import Footer from "@/components/Footer.astro";
+import Header from "@/components/Header.astro";
+import PageHero from "@/components/PageHero.astro";
+import SectionAnatomy from "@/components/SectionAnatomy.astro";
+import SectionFrame from "@/components/SectionFrame.astro";
+
+export const prerender = true;
+---
+
+<BaseLayout
+  title="Security | NNCO"
+  description="How to report a vulnerability in the NNCO website or a system NNCO operates."
+  canonicalPath="/security"
+>
+  <Header />
+  <main class="editorial-page">
+    <PageHero
+      title="Security"
+      introduction="If you have found a vulnerability in this website or in anything we operate, we want to hear about it."
+    />
+    <SectionFrame labelledBy="reporting-title" class="editorial-section">
+      <SectionAnatomy title="Reporting" titleId="reporting-title">
+        <p class="editorial-section__body">
+          Email <a href="mailto:security@nnco.ai">security@nnco.ai</a>. Include
+          what you found, how to reproduce it and how we can reach you. We
+          acknowledge within two business days.
+        </p>
+      </SectionAnatomy>
+    </SectionFrame>
+    <SectionFrame tone="surface" labelledBy="ask-title" class="editorial-section">
+      <SectionAnatomy title="What we ask" titleId="ask-title">
+        <p class="editorial-section__body">
+          Give us reasonable time to fix it before publishing. Do not
+          access, modify or delete data that is not yours, and do not run tests
+          that degrade service for other users.
+        </p>
+      </SectionAnatomy>
+    </SectionFrame>
+    <SectionFrame labelledBy="bounty-title" class="editorial-section">
+      <SectionAnatomy title="What we do not offer" titleId="bounty-title">
+        <p class="editorial-section__body">
+          We do not run a paid bug bounty. We will credit you if you want to be
+          credited.
+        </p>
+      </SectionAnatomy>
+    </SectionFrame>
+  </main>
+  <Footer />
+</BaseLayout>

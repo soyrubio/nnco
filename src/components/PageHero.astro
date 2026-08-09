@@ -1,13 +1,58 @@
 ---
+import BlockArrow from "./BlockArrow.astro";
+import Button from "./Button.astro";
+import type { LinkAction } from "./types";
+
 interface Props {
   title: string;
+  introduction?: string;
+  actions?: readonly LinkAction[];
+  actionsLabel?: string;
+  titleId?: string;
+  class?: string;
 }
 
-const { title } = Astro.props;
+const {
+  title,
+  introduction,
+  actions = [],
+  actionsLabel,
+  titleId = "page-title",
+  class: className,
+} = Astro.props;
+
+const ActionsContainer = actionsLabel ? "nav" : "div";
 ---
 
-<section class="page-hero">
-  <div class="content-rail page-hero__inner">
-    <h1>{title}</h1>
+<header
+  class:list={["editorial-hero", className]}
+  aria-labelledby={titleId}
+>
+  <div class="content-rail editorial-hero__inner">
+    <h1 id={titleId}>{title}</h1>
+    {
+      introduction && (
+        <p class="editorial-hero__introduction">{introduction}</p>
+      )
+    }
+    {
+      actions.length > 0 && (
+        <ActionsContainer
+          class="editorial-actions"
+          aria-label={actionsLabel}
+        >
+          {actions.map((action) => (
+            <Button
+              href={action.href}
+              variant={action.variant ?? "primary"}
+              aria-label={action.ariaLabel}
+            >
+              {action.label}
+              {(action.arrow ?? true) && <BlockArrow />}
+            </Button>
+          ))}
+        </ActionsContainer>
+      )
+    }
   </div>
-</section>
+</header>

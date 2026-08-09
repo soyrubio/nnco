@@ -22,7 +22,6 @@ const isCurrentPage = (href: string) =>
     : currentPath === href ||
       currentPath === `${href}/` ||
       currentPath.startsWith(`${href}/`);
-
 ---
 
 <header
@@ -41,38 +40,83 @@ const isCurrentPage = (href: string) =>
     {
       isDiscovery ? (
         <Button href="/" size="small">
-          Back to NNCO
+          Back to NNC
           <BlockArrow />
         </Button>
       ) : (
         <>
           <nav class="site-nav" aria-label="Primary navigation">
-            {siteNavigation.map((item) => (
-              <a
-                href={item.href}
-                aria-current={isCurrentPage(item.href) ? "page" : undefined}
-              >
-                {item.label}
-              </a>
-            ))}
-          </nav>
-
-          <details class="site-menu">
-            <summary>Menu</summary>
-            <nav class="site-menu__panel" aria-label="Mobile primary navigation">
-              {siteNavigation.map((item) => (
+            {siteNavigation.map((item) =>
+              "href" in item ? (
                 <a
                   href={item.href}
                   aria-current={isCurrentPage(item.href) ? "page" : undefined}
                 >
                   {item.label}
                 </a>
-              ))}
+              ) : (
+                <details class="site-nav-dropdown" data-navigation-dropdown>
+                  <summary
+                    aria-current={item.links.some((link) => isCurrentPage(link.href)) ? "page" : undefined}
+                  >
+                    <span>{item.label}</span>
+                    <span class="site-nav-dropdown__indicator" aria-hidden="true">
+                      <BlockArrow direction="down" />
+                    </span>
+                  </summary>
+                  <div class="site-nav-dropdown__panel">
+                    {item.links.map((link) => (
+                      <a
+                        href={link.href}
+                        aria-current={isCurrentPage(link.href) ? "page" : undefined}
+                      >
+                        <strong>{link.label}</strong>
+                        {link.description && <span>{link.description}</span>}
+                      </a>
+                    ))}
+                  </div>
+                </details>
+              ),
+            )}
+          </nav>
+
+          <details class="site-menu">
+            <summary>
+              <span>Menu</span>
+              <span class="site-menu__indicator" aria-hidden="true">
+                <BlockArrow direction="down" />
+              </span>
+            </summary>
+            <nav class="site-menu__panel" aria-label="Mobile primary navigation">
+              {siteNavigation.map((item) =>
+                "href" in item ? (
+                  <a
+                    href={item.href}
+                    aria-current={isCurrentPage(item.href) ? "page" : undefined}
+                  >
+                    {item.label}
+                  </a>
+                ) : (
+                  <div class="site-menu__group">
+                    <strong>{item.label}</strong>
+                    <div class="site-menu__links">
+                      {item.links.map((link) => (
+                        <a
+                          href={link.href}
+                          aria-current={isCurrentPage(link.href) ? "page" : undefined}
+                        >
+                          {link.label}
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                ),
+              )}
             </nav>
           </details>
 
           <Button href="/discovery" size="small">
-            Start diagnostic
+            Start diagnosis
             <BlockArrow />
           </Button>
         </>
@@ -81,3 +125,75 @@ const isCurrentPage = (href: string) =>
   </div>
   <div class="nnco-header-rule" aria-hidden="true"></div>
 </header>
+
+<script>
+  const initialiseHeaderNavigation = (header: HTMLElement) => {
+    if (header.dataset.navigationReady === "true") return;
+    header.dataset.navigationReady = "true";
+
+    const dropdowns = Array.from(
+      header.querySelectorAll<HTMLDetailsElement>("[data-navigation-dropdown]"),
+    );
+    const hoverCapable = window.matchMedia("(hover: hover) and (pointer: fine)");
+    const closeDropdowns = (exception?: HTMLDetailsElement) => {
+      dropdowns.forEach((dropdown) => {
+        if (dropdown !== exception) dropdown.open = false;
+      });
+    };
+
+    dropdowns.forEach((dropdown) => {
+      let closeTimer = 0;
+
+      const cancelClose = () => {
+        window.clearTimeout(closeTimer);
+        closeTimer = 0;
+      };
+
+      dropdown.addEventListener("toggle", () => {
+        if (!dropdown.open) return;
+        closeDropdowns(dropdown);
+      });
+
+      dropdown.addEventListener("pointerenter", () => {
+        if (!hoverCapable.matches) return;
+        cancelClose();
+        dropdown.open = true;
+      });
+
+      dropdown.addEventListener("pointerleave", () => {
+        if (!hoverCapable.matches) return;
+        cancelClose();
+        closeTimer = window.setTimeout(() => {
+          dropdown.open = false;
+        }, 140);
+      });
+
+      dropdown.addEventListener("focusout", (event) => {
+        if (event.relatedTarget instanceof Node && dropdown.contains(event.relatedTarget)) return;
+        if (!dropdown.matches(":hover")) dropdown.open = false;
+      });
+    });
+
+    document.addEventListener("pointerdown", (event) => {
+      if (event.target instanceof Node && header.contains(event.target)) return;
+      closeDropdowns();
+    });
+
+    header.addEventListener("keydown", (event) => {
+      if (event.key !== "Escape") return;
+      const openDropdown = dropdowns.find((dropdown) => dropdown.open);
+      if (!openDropdown) return;
+      openDropdown.open = false;
+      openDropdown.querySelector<HTMLElement>("summary")?.focus();
+    });
+  };
+
+  const initialiseHeaders = () => {
+    document
+      .querySelectorAll<HTMLElement>("[data-site-header]")
+      .forEach(initialiseHeaderNavigation);
+  };
+
+  initialiseHeaders();
+  document.addEventListener("astro:page-load", initialiseHeaders);
+</script>

@@ -1,0 +1,4 @@
+Contact: mailto:security@nnco.ai
+Canonical: https://nnco.ai/.well-known/security.txt
+Policy: https://nnco.ai/security
+Preferred-Languages: en, cs, sk

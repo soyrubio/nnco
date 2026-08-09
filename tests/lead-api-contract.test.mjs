@@ -4,6 +4,7 @@ import { after, test } from "node:test";
 import {
   createInitialSnapshot,
   discoveryReducer,
+  getQuestions,
 } from "../src/lib/discovery.ts";
 import { LEAD_CONSENT_VERSION } from "../src/lib/lead-contract.ts";
 import {
@@ -35,13 +36,12 @@ function answer(snapshot, questionId, value) {
 
 function readySnapshot() {
   let snapshot = createInitialSnapshot("2026-07-30T11:00:00.000Z");
-  for (const questionId of [
-    "workflow.scope",
-    "friction.repetition",
-    "friction.exceptions",
-    "goal.outcome",
-  ]) {
-    snapshot = answer(snapshot, questionId, "Unknown / validate next");
+  for (const question of getQuestions(snapshot)) {
+    if (!question.required) continue;
+    const value = question.allowUnknown
+      ? "Unknown / validate next"
+      : question.options?.[0]?.value ?? "Representative answer";
+    snapshot = answer(snapshot, question.id, value);
   }
   return snapshot;
 }

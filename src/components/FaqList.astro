@@ -1,4 +1,5 @@
 ---
+import BlockArrow from "./BlockArrow.astro";
 import type { FaqItem } from "@/data/faq";
 
 interface Props {
@@ -15,7 +16,9 @@ const { items, groupName = "common-questions" } = Astro.props;
       <details name={groupName}>
         <summary>
           <span class="faq-list__question">{item.question}</span>
-          <span class="faq-list__toggle" aria-hidden="true">+</span>
+          <span class="faq-list__toggle" aria-hidden="true">
+            <BlockArrow direction="down" />
+          </span>
         </summary>
         <div class="faq-list__answer">
           <p>{item.answer}</p>
@@ -26,12 +29,8 @@ const { items, groupName = "common-questions" } = Astro.props;
 </div>
 
 <style>
-  .faq-list {
+  .faq-list details + details {
     border-top: 1px solid var(--rule-strong);
-  }
-
-  .faq-list details {
-    border-bottom: 1px solid var(--rule-strong);
   }
 
   .faq-list summary {
@@ -46,6 +45,11 @@ const { items, groupName = "common-questions" } = Astro.props;
     font-weight: 550;
     line-height: 1.25;
     list-style: none;
+  }
+
+  .faq-list details:first-child summary {
+    min-height: 0;
+    padding-top: 0;
   }
 
   .faq-list summary::-webkit-details-marker {
@@ -63,17 +67,14 @@ const { items, groupName = "common-questions" } = Astro.props;
 
   .faq-list__toggle {
     display: grid;
-    width: 2rem;
-    height: 2rem;
+    width: 0.8rem;
+    height: 0.8rem;
     place-items: center;
-    font-size: 1.6rem;
-    font-weight: 400;
-    line-height: 1;
-    transition: transform 180ms ease;
+    transition: transform 220ms cubic-bezier(0.2, 0, 0, 1);
   }
 
   .faq-list details[open] .faq-list__toggle {
-    transform: rotate(45deg);
+    transform: rotate(180deg);
   }
 
   .faq-list__answer {
@@ -88,8 +89,7 @@ const { items, groupName = "common-questions" } = Astro.props;
     line-height: 1.65;
   }
 
-  :global(.section-frame--dark) .faq-list,
-  :global(.section-frame--dark) .faq-list details {
+  :global(.section-frame--dark) .faq-list details + details {
     border-color: rgba(245, 245, 245, 0.42);
   }
 
@@ -102,11 +102,6 @@ const { items, groupName = "common-questions" } = Astro.props;
       min-height: 0;
       gap: 1.25rem;
       padding-block: 1.25rem;
-    }
-
-    .faq-list__toggle {
-      width: 1.5rem;
-      height: 1.5rem;
     }
 
     .faq-list__answer {

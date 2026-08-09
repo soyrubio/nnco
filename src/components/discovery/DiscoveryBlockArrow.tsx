@@ -1,5 +1,5 @@
 type DiscoveryBlockArrowProps = {
-  direction?: "left" | "right";
+  direction?: "down" | "left" | "right";
 };
 
 export function DiscoveryBlockArrow({

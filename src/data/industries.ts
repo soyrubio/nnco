@@ -3,29 +3,27 @@ import type { MarketingPageData } from "./programme";
 export const industries = {
   banking: {
     path: "/banking",
-    metaTitle: "AI for banks: KYC, monitoring, reporting | NNC",
+    metaTitle: "AI for banks: KYC, monitoring, reporting | NNCO",
     metaDescription:
       "AI systems for onboarding and KYC, periodic review, transaction monitoring triage, credit files and regulatory reporting. Built to run inside supervisory constraints and to be evidenced.",
-    eyebrow: "Banking",
-    title: "AI for banks, built to be evidenced.",
+    title: "Banking",
     introduction:
       "Onboarding, periodic review, alert triage, credit files and regulatory reporting carry most of the manual volume in a bank. AI can take the preparation work in all of them, provided every step can be reconstructed afterwards.",
     sections: [
       {
-        title: "What AI does inside a bank today.",
+        title: "AI in banking",
         paragraphs: [
           "In banking, AI is used to read and structure documents, prepare cases for a human decision, triage alerts by likely materiality, draft regulatory and customer correspondence, and answer staff questions from internal policy. It is not used to make credit, sanctions or account-closure decisions on its own, because those decisions have to be attributable to a person.",
         ],
       },
       {
-        title: "The volume is in preparation.",
+        title: "Preparation workload",
         paragraphs: [
           "An analyst spends most of a case gathering: pulling documents from three systems, checking a name against a register, retyping data that already exists somewhere, and writing a summary of what they found. The decision itself takes minutes. Preparation is where the queue builds, and preparation is what AI takes.",
         ],
       },
       {
-        eyebrow: "Use cases",
-        title: "AI prepares the case for a person.",
+        title: "AI-supported case preparation",
         items: [
           {
             title: "Onboarding and KYC",
@@ -54,8 +52,7 @@ export const industries = {
         ],
       },
       {
-        eyebrow: "Regulation",
-        title: "These shape the design before the build starts.",
+        title: "Design constraints",
         items: [
           {
             title: "EU AI Act",
@@ -80,13 +77,13 @@ export const industries = {
         ],
       },
       {
-        title: "The bank's decisions stay the bank's.",
+        title: "Decision authority",
         paragraphs: [
           "We build systems that prepare, check and explain. Credit approvals, sanctions determinations, escalations and account decisions stay with the people who are accountable for them, and the record shows what they saw when they decided.",
         ],
       },
       {
-        title: "Inside your boundary when the data requires it.",
+        title: "Private deployment",
         paragraphs: [
           "Customer data, transaction data and case files usually fall into classifications that rule out third-party processing. Where that is the case, models and retrieval run inside your infrastructure. Where it is not, a hosted model with the right controls is faster to stand up and we say so.",
         ],
@@ -95,7 +92,7 @@ export const industries = {
         ],
       },
       {
-        title: "Start with the audit.",
+        title: "Start with an audit",
         paragraphs: [
           "Two to four weeks, across onboarding, monitoring, credit and reporting operations. The output is a ranked list of what to build, what each one is worth, and where the rules allow it.",
         ],
@@ -120,29 +117,27 @@ export const industries = {
   },
   insurance: {
     path: "/insurance",
-    metaTitle: "AI for insurers: claims and underwriting | NNC",
+    metaTitle: "AI for insurers: claims and underwriting | NNCO",
     metaDescription:
       "AI systems for claims intake and review, underwriting support, fraud investigation and policy correspondence. The file arrives prepared; the decision stays with your people.",
-    eyebrow: "Insurance",
-    title: "The file arrives prepared.",
+    title: "Insurance",
     introduction:
       "Claims, underwriting and complaints run on documents that arrive in whatever form the customer sent them. AI reads them, extracts what the process needs and assembles the case, so the adjuster or underwriter starts from a complete file instead of an inbox.",
     sections: [
       {
-        title: "What AI does inside an insurer today.",
+        title: "AI in insurance",
         paragraphs: [
           "In insurance, AI is used to read claim and submission documents, extract structured data, check it against policy terms and prior records, assemble a case file and draft correspondence. Coverage decisions, settlement amounts, declines and underwriting acceptance stay with the people accountable for them.",
         ],
       },
       {
-        title: "Most of a claim is transcription.",
+        title: "Claims workload",
         paragraphs: [
           "Photographs, invoices, medical reports, police records and free-text descriptions arrive in every format there is. Someone reads them, retypes the relevant parts into the claims system, checks the policy, and writes a summary. That is the bulk of the handling time, and none of it is judgement.",
         ],
       },
       {
-        eyebrow: "Use cases",
-        title: "AI reads and assembles the file.",
+        title: "AI-supported claims",
         items: [
           {
             title: "Claims intake and triage",
@@ -171,8 +166,7 @@ export const industries = {
         ],
       },
       {
-        eyebrow: "Regulation",
-        title: "These shape the design before the build starts.",
+        title: "Design constraints",
         items: [
           {
             title: "EU AI Act",
@@ -193,13 +187,13 @@ export const industries = {
         ],
       },
       {
-        title: "Coverage and price stay with your people.",
+        title: "Coverage and pricing authority",
         paragraphs: [
           "The system prepares the file, checks it against the policy and explains what it found. Coverage decisions, settlement amounts, declines and underwriting acceptance are made by the adjuster or underwriter, and the record shows what was in front of them.",
         ],
       },
       {
-        title: "Health data sets the boundary.",
+        title: "Health data boundary",
         paragraphs: [
           "Claim files routinely contain health data and other special categories, which usually rules out third-party processing. Where that applies, models and retrieval run inside your infrastructure. Where a workflow touches no such data, a hosted model is faster to deploy.",
         ],
@@ -208,7 +202,7 @@ export const industries = {
         ],
       },
       {
-        title: "Start with the audit.",
+        title: "Start with an audit",
         paragraphs: [
           "Two to four weeks, across claims, underwriting and customer correspondence. The output is a ranked list of what to build, what each one is worth, and where the rules allow it.",
         ],
@@ -233,35 +227,33 @@ export const industries = {
   },
   healthcare: {
     path: "/healthcare",
-    metaTitle: "AI for healthcare operations and admin | NNC",
+    metaTitle: "AI for healthcare operations and admin | NNCO",
     metaDescription:
       "AI for administrative and operational healthcare workflows: intake and scheduling admin, documentation routing, billing preparation, capacity reporting and internal knowledge. Clinical decisions stay with clinicians.",
-    eyebrow: "Healthcare",
-    title: "The administration around care.",
+    title: "Healthcare",
     introduction:
       "Hospitals and providers run on paperwork that has nothing to do with clinical judgement: intake, scheduling, documentation routing, billing preparation, reporting and procurement. That is where we work, and there is more of it than most executives expect.",
     sections: [
       {
-        title: "What AI does in healthcare operations.",
+        title: "AI in healthcare operations",
         paragraphs: [
           "In healthcare, AI can take over administrative and operational work: reading and routing documents, preparing billing and coding inputs, structuring intake information, assembling reports and answering staff questions from internal procedures. Clinical diagnosis and treatment decisions are made by clinicians, and systems that make them are regulated medical devices.",
         ],
       },
       {
-        title: "We work on administration, not diagnosis.",
+        title: "Administrative scope",
         paragraphs: [
           "We build systems for administrative and operational workflows. Clinical decisions stay with clinicians, and we do not build software that makes them. Where AI genuinely belongs in care, the right answer is a certified medical device from a vendor who carries that certification and the liability with it, and we integrate it for you.",
         ],
       },
       {
-        title: "Clinical staff spend hours on work that is not clinical.",
+        title: "Administrative workload",
         paragraphs: [
           "Documentation, referrals, insurer correspondence, coding, scheduling changes and internal queries take a measurable share of a clinician's day and almost all of an administrator's. None of it requires medical judgement, and most of it is reading one document and writing another.",
         ],
       },
       {
-        eyebrow: "Use cases",
-        title: "AI supports the administration around care.",
+        title: "AI-supported administration",
         items: [
           {
             title: "Intake and referral administration",
@@ -290,8 +282,7 @@ export const industries = {
         ],
       },
       {
-        eyebrow: "Regulation",
-        title: "These shape the design before the build starts.",
+        title: "Design constraints",
         items: [
           {
             title: "Medical Device Regulation",
@@ -312,13 +303,13 @@ export const industries = {
         ],
       },
       {
-        title: "Clinical judgement is not in scope.",
+        title: "Clinical boundary",
         paragraphs: [
           "Nothing we build diagnoses, triages by clinical severity, or recommends treatment. Administrative outputs are reviewed by the person accountable for them before they leave the organisation.",
         ],
       },
       {
-        title: "Health data usually stays inside.",
+        title: "Health data boundary",
         paragraphs: [
           "Patient data almost always rules out third-party processing, so models and retrieval run inside your infrastructure with access inherited from your record systems. Workflows that touch no patient data, such as procurement or internal procedures, can use hosted models.",
         ],
@@ -327,7 +318,7 @@ export const industries = {
         ],
       },
       {
-        title: "Start with the audit.",
+        title: "Start with an audit",
         paragraphs: [
           "Two to four weeks, across intake, documentation, billing and internal operations. The output is a ranked list of what to build, what each one is worth, and where the rules allow it.",
         ],
@@ -352,29 +343,27 @@ export const industries = {
   },
   capitalMarkets: {
     path: "/capital-markets",
-    metaTitle: "AI for asset managers and funds | NNC",
+    metaTitle: "AI for asset managers and funds | NNCO",
     metaDescription:
       "AI for fund and investor reporting, due diligence document review, DDQ and RFP responses, compliance monitoring and portfolio data extraction. Every figure traceable to its source.",
-    eyebrow: "Capital Markets & Asset Management",
-    title: "Every figure traced to its source.",
+    title: "Capital markets and asset management",
     introduction:
       "Fund reporting, investor requests, due diligence and compliance monitoring run on documents that are read by hand and numbers that are copied between systems. AI can do the reading and the assembly, with a link from every output back to the record it came from.",
     sections: [
       {
-        title: "What AI does in asset management.",
+        title: "AI in asset management",
         paragraphs: [
           "In asset management, AI is used to read fund documents, contracts and portfolio company reporting, extract structured data, assemble investor and regulatory reporting, draft responses to due diligence questionnaires, and monitor for compliance exceptions. Investment decisions and valuations stay with the people accountable for them.",
         ],
       },
       {
-        title: "Most of reporting is assembly.",
+        title: "Reporting workload",
         paragraphs: [
           "Quarterly reporting, investor requests and DDQs consume weeks of senior time, and most of that time is spent locating a number, checking it against another source and pasting it into a template that has been filled in ten times before. The analysis is the short part.",
         ],
       },
       {
-        eyebrow: "Use cases",
-        title: "AI assembles, checks and sources.",
+        title: "AI-supported reporting",
         items: [
           {
             title: "Fund and investor reporting",
@@ -403,8 +392,7 @@ export const industries = {
         ],
       },
       {
-        eyebrow: "Regulation",
-        title: "These shape the design before the build starts.",
+        title: "Design constraints",
         items: [
           {
             title: "AIFMD and MiFID II",
@@ -425,13 +413,13 @@ export const industries = {
         ],
       },
       {
-        title: "Investment decisions are not automated.",
+        title: "Investment authority",
         paragraphs: [
           "Valuations, investment decisions and anything that goes to an investor are approved by the person accountable for them. The system does the assembly and shows its sources, which is also what makes the review fast.",
         ],
       },
       {
-        title: "Deal data sets the boundary.",
+        title: "Deal data boundary",
         paragraphs: [
           "Material non-public information and investor data normally rule out third-party processing. Where that applies, models and retrieval run inside your own environment with your information barriers enforced at the retrieval layer.",
         ],
@@ -440,7 +428,7 @@ export const industries = {
         ],
       },
       {
-        title: "Start with the audit.",
+        title: "Start with an audit",
         paragraphs: [
           "Two to four weeks, across reporting, due diligence and compliance operations. The output is a ranked list of what to build, what each one is worth, and where the rules allow it.",
         ],

@@ -7,6 +7,7 @@ interface Props {
   target?: "_blank" | "_self";
   rel?: string;
   class?: string;
+  "aria-label"?: string;
 }
 
 const {
@@ -17,6 +18,7 @@ const {
   target,
   rel,
   class: className,
+  "aria-label": ariaLabel,
 } = Astro.props;
 
 const classes = [
@@ -29,11 +31,11 @@ const classes = [
 
 {
   href ? (
-    <a class:list={classes} href={href} target={target} rel={rel}>
+    <a class:list={classes} href={href} target={target} rel={rel} aria-label={ariaLabel}>
       <slot />
     </a>
   ) : (
-    <button class:list={classes} type={type}>
+    <button class:list={classes} type={type} aria-label={ariaLabel}>
       <slot />
     </button>
   )

@@ -1,4 +1,6 @@
 ---
+import SectionRow from "./SectionRow.astro";
+
 interface Props {
   title: string;
   titleId?: string;
@@ -10,8 +12,7 @@ const { title, titleId, class: className } = Astro.props;
 
 <div class:list={["section-anatomy", className]}>
   <span class="section-anatomy__rule" aria-hidden="true"></span>
-  <h2 class="section-anatomy__title" id={titleId}>{title}</h2>
-  <div class="section-anatomy__content">
+  <SectionRow title={title} titleId={titleId}>
     <slot />
-  </div>
+  </SectionRow>
 </div>
