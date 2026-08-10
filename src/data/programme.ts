@@ -1,3 +1,5 @@
+import type { FaqPageKey } from "./faq";
+
 export interface ContentItem {
   title: string;
   text: string;
@@ -33,7 +35,7 @@ export interface MarketingPageData {
   secondaryAction?: ContentLink;
   sections: readonly ContentSection[];
   closing: string;
-  faqKey: string;
+  faqKey: FaqPageKey;
   service?: {
     name: string;
     serviceType: string;

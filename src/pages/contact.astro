@@ -9,19 +9,12 @@ import PageHero from "@/components/PageHero.astro";
 import SectionAnatomy from "@/components/SectionAnatomy.astro";
 import SectionFrame from "@/components/SectionFrame.astro";
 import { faqByPage } from "@/data/faq";
+import { buildFaqSchema } from "@/lib/schema";
 
 export const prerender = true;
 
 const faq = faqByPage.contact;
-const faqSchema = {
-  "@type": "FAQPage",
-  "@id": "https://nnco.ai/contact#faq",
-  mainEntity: faq.map((item) => ({
-    "@type": "Question",
-    name: item.question,
-    acceptedAnswer: { "@type": "Answer", text: item.answer },
-  })),
-};
+const faqSchema = buildFaqSchema(faq, "/contact");
 ---
 
 <BaseLayout

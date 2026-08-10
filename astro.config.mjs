@@ -5,6 +5,7 @@ import { defineConfig } from "astro/config";
 
 export default defineConfig({
   adapter: vercel(),
+  compressHTML: true,
   site: "https://nnco.ai",
   trailingSlash: "never",
   integrations: [

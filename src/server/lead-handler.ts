@@ -3,6 +3,13 @@ import {
   calculateCoverage,
   isDiscoverySnapshot,
 } from "../lib/discovery.ts";
+import {
+  CONTACT_FIELD_LIMITS,
+  isContactTextWithinLimits,
+  isValidContactEmail,
+  normalizeContactEmail,
+} from "../lib/contact-contract.ts";
+import { isValidRequestId } from "../lib/request-identity.ts";
 import { buildFullDiagnosticReport } from "../lib/full-report.ts";
 import {
   LEAD_CONSENT_VERSION,
@@ -16,6 +23,11 @@ import {
   persistLead,
   type LeadRecord,
 } from "./lead-repository.ts";
+import {
+  checkSlidingWindowRateLimit,
+  isSameOrigin,
+  readBoundedBody,
+} from "./request-guards.ts";
 
 const MAX_BODY_BYTES = 128 * 1024;
 const RATE_WINDOW_MS = 10 * 60 * 1_000;
@@ -32,7 +44,7 @@ export async function handleLeadRequest(
   request: Request,
   clientAddress?: string,
 ): Promise<Response> {
-  if (!sameOrigin(request)) {
+  if (!isSameOrigin(request)) {
     return errorResponse(
       400,
       "VALIDATION_ERROR",
@@ -40,7 +52,13 @@ export async function handleLeadRequest(
       false,
     );
   }
-  const retryAfter = rateLimit(request, clientAddress);
+  const retryAfter = checkSlidingWindowRateLimit(
+    request,
+    clientAddress,
+    rateLimits,
+    RATE_LIMIT,
+    RATE_WINDOW_MS,
+  );
   if (retryAfter !== null) {
     const response = errorResponse(
       429,
@@ -52,8 +70,8 @@ export async function handleLeadRequest(
     return response;
   }
 
-  const contentLength = Number(request.headers.get("content-length") ?? "0");
-  if (contentLength > MAX_BODY_BYTES) {
+  const body = await readBoundedBody(request, MAX_BODY_BYTES);
+  if (!body.ok && body.reason === "too_large") {
     return errorResponse(
       400,
       "VALIDATION_ERROR",
@@ -61,19 +79,18 @@ export async function handleLeadRequest(
       false,
     );
   }
+  if (!body.ok) {
+    return errorResponse(
+      400,
+      "VALIDATION_ERROR",
+      "The request could not be read.",
+      false,
+    );
+  }
 
   let parsed: unknown;
   try {
-    const body = await request.text();
-    if (new TextEncoder().encode(body).byteLength > MAX_BODY_BYTES) {
-      return errorResponse(
-        400,
-        "VALIDATION_ERROR",
-        "The diagnostic request is too large.",
-        false,
-      );
-    }
-    parsed = JSON.parse(body);
+    parsed = JSON.parse(new TextDecoder().decode(body.bytes));
   } catch {
     return errorResponse(
       400,
@@ -108,7 +125,7 @@ export async function handleLeadRequest(
     handoffId: randomUUID(),
     caseId: payload.caseId,
     caseRevision: payload.caseRevision,
-    workEmail: payload.contact.workEmail.trim().toLocaleLowerCase("en"),
+    workEmail: normalizeContactEmail(payload.contact.workEmail),
     organisation: payload.contact.organisation.trim(),
     name: payload.contact.name?.trim() || null,
     consentVersion: payload.consent.version,
@@ -140,6 +157,7 @@ export async function handleLeadRequest(
     };
     return Response.json(body, {
       status: persisted.created ? 201 : 200,
+      headers: { "Cache-Control": "no-store" },
     });
   } catch (error) {
     if (error instanceof LeadRepositoryError) {
@@ -185,20 +203,24 @@ export function validateLeadPayload(
   const payload = value as Partial<LeadRequestPayload>;
   if (
     payload.schemaVersion !== 1 ||
-    typeof payload.requestId !== "string" ||
-    !UUID_PATTERN.test(payload.requestId) ||
+    !isValidRequestId(payload.requestId) ||
     typeof payload.caseId !== "string" ||
     !Number.isInteger(payload.caseRevision) ||
     !payload.contact ||
     typeof payload.contact.workEmail !== "string" ||
-    !EMAIL_PATTERN.test(payload.contact.workEmail.trim()) ||
-    payload.contact.workEmail.length > 254 ||
+    !isValidContactEmail(payload.contact.workEmail) ||
     typeof payload.contact.organisation !== "string" ||
-    payload.contact.organisation.trim().length < 2 ||
-    payload.contact.organisation.length > 160 ||
+    !isContactTextWithinLimits(
+      payload.contact.organisation,
+      CONTACT_FIELD_LIMITS.organisation,
+    ) ||
     (payload.contact.name !== undefined &&
       (typeof payload.contact.name !== "string" ||
-        payload.contact.name.length > 120)) ||
+        (payload.contact.name.trim().length > 0 &&
+          !isContactTextWithinLimits(
+            payload.contact.name,
+            CONTACT_FIELD_LIMITS.name,
+          )))) ||
     !isDiscoverySnapshot(payload.snapshot)
   ) {
     return invalid("Check the contact fields and diagnostic before retrying.");
@@ -248,33 +270,10 @@ function errorResponse(
     ok: false,
     error: { code, message, retryable },
   };
-  return Response.json(body, { status });
-}
-
-function sameOrigin(request: Request): boolean {
-  const origin = request.headers.get("origin");
-  if (!origin) return true;
-  try {
-    return new URL(origin).origin === new URL(request.url).origin;
-  } catch {
-    return false;
-  }
-}
-
-function rateLimit(request: Request, clientAddress?: string): number | null {
-  const forwarded = request.headers.get("x-forwarded-for");
-  const key = forwarded?.split(",")[0]?.trim() || clientAddress || "local";
-  const now = Date.now();
-  const recent = (rateLimits.get(key) ?? []).filter(
-    (timestamp) => timestamp > now - RATE_WINDOW_MS,
-  );
-  if (recent.length >= RATE_LIMIT) {
-    const retryAt = recent[0] + RATE_WINDOW_MS;
-    return Math.max(1, Math.ceil((retryAt - now) / 1_000));
-  }
-  recent.push(now);
-  rateLimits.set(key, recent);
-  return null;
+  return Response.json(body, {
+    status,
+    headers: { "Cache-Control": "no-store" },
+  });
 }
 
 function createRequestHash(payload: LeadRequestPayload): string {
@@ -284,7 +283,7 @@ function createRequestHash(payload: LeadRequestPayload): string {
         caseId: payload.caseId,
         caseRevision: payload.caseRevision,
         contact: {
-          workEmail: payload.contact.workEmail.trim().toLocaleLowerCase("en"),
+          workEmail: normalizeContactEmail(payload.contact.workEmail),
           organisation: payload.contact.organisation.trim(),
           name: payload.contact.name?.trim() || null,
         },
@@ -307,7 +306,3 @@ function canonicalJson(value: unknown): string {
   }
   return JSON.stringify(value) ?? "null";
 }
-
-const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const UUID_PATTERN =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;

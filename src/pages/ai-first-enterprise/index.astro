@@ -1,9 +1,8 @@
 ---
 import MarketingPage from "@/components/MarketingPage.astro";
-import { faqByPage } from "@/data/faq";
 import { programmePage } from "@/data/programme";
 
 export const prerender = true;
 ---
 
-<MarketingPage page={programmePage} faq={faqByPage.programme} />
+<MarketingPage page={programmePage} />
