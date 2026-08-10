@@ -16,6 +16,7 @@ import { faqByPage } from "@/data/faq";
 import { posts } from "@/data/posts";
 import { homePhases } from "@/data/programme";
 import { sectors } from "@/data/site";
+import { buildFaqSchema } from "@/lib/schema";
 
 export const prerender = true;
 
@@ -29,15 +30,7 @@ const websiteSchema = {
   publisher: { "@id": "https://nnco.ai/#organization" },
   inLanguage: "en",
 };
-const faqSchema = {
-  "@type": "FAQPage",
-  "@id": "https://nnco.ai/#faq",
-  mainEntity: faq.map((item) => ({
-    "@type": "Question",
-    name: item.question,
-    acceptedAnswer: { "@type": "Answer", text: item.answer },
-  })),
-};
+const faqSchema = buildFaqSchema(faq, "/");
 ---
 
 <BaseLayout

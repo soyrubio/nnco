@@ -1,3 +1,10 @@
+import {
+  checkSlidingWindowRateLimit,
+  isSameOrigin,
+  readBoundedBody,
+} from "./request-guards.ts";
+import { DISCOVERY_MESSAGE_MAX_LENGTH } from "../lib/discovery.ts";
+
 const MAX_AUDIO_BYTES = 4 * 1024 * 1024;
 const MAX_REQUEST_BYTES = MAX_AUDIO_BYTES + 64 * 1024;
 const RATE_WINDOW_MS = 10 * 60 * 1_000;
@@ -33,7 +40,7 @@ export async function handleTranscriptionRequest(
   clientAddress?: string,
   options: TranscriptionHandlerOptions = {},
 ): Promise<Response> {
-  if (!sameOrigin(request)) {
+  if (!isSameOrigin(request)) {
     return errorResponse(
       400,
       "VALIDATION_ERROR",
@@ -42,7 +49,13 @@ export async function handleTranscriptionRequest(
     );
   }
 
-  const retryAfter = rateLimit(request, clientAddress);
+  const retryAfter = checkSlidingWindowRateLimit(
+    request,
+    clientAddress,
+    rateLimits,
+    RATE_LIMIT,
+    RATE_WINDOW_MS,
+  );
   if (retryAfter !== null) {
     const response = errorResponse(
       429,
@@ -64,8 +77,8 @@ export async function handleTranscriptionRequest(
     );
   }
 
-  const contentLength = Number(request.headers.get("content-length") ?? "0");
-  if (contentLength > MAX_REQUEST_BYTES) {
+  const body = await readBoundedBody(request, MAX_REQUEST_BYTES);
+  if (!body.ok && body.reason === "too_large") {
     return errorResponse(
       413,
       "AUDIO_TOO_LARGE",
@@ -73,10 +86,20 @@ export async function handleTranscriptionRequest(
       false,
     );
   }
+  if (!body.ok) {
+    return errorResponse(
+      400,
+      "VALIDATION_ERROR",
+      "The recording could not be read.",
+      false,
+    );
+  }
 
   let formData: FormData;
   try {
-    formData = await request.formData();
+    formData = await new Response(body.bytes, {
+      headers: { "Content-Type": contentType },
+    }).formData();
   } catch {
     return errorResponse(
       400,
@@ -195,7 +218,7 @@ export async function handleTranscriptionRequest(
     return errorResponse(
       503,
       "TRANSCRIPTION_UNAVAILABLE",
-      error instanceof DOMException && error.name === "AbortError"
+      error instanceof DOMException && error.name === "TimeoutError"
         ? "Transcription timed out. Try a shorter recording."
         : "Voice transcription is temporarily unavailable.",
       true,
@@ -215,33 +238,11 @@ function extensionFor(mimeType: string): string {
 }
 
 function normalizeTranscript(value: string): string {
-  return value.replace(/\s+/g, " ").trim().slice(0, 1_200);
-}
-
-function sameOrigin(request: Request): boolean {
-  const origin = request.headers.get("origin");
-  if (!origin) return true;
-  try {
-    return new URL(origin).origin === new URL(request.url).origin;
-  } catch {
-    return false;
-  }
-}
-
-function rateLimit(request: Request, clientAddress?: string): number | null {
-  const forwarded = request.headers.get("x-forwarded-for");
-  const key = forwarded?.split(",")[0]?.trim() || clientAddress || "local";
-  const now = Date.now();
-  const recent = (rateLimits.get(key) ?? []).filter(
-    (timestamp) => timestamp > now - RATE_WINDOW_MS,
-  );
-  if (recent.length >= RATE_LIMIT) {
-    const retryAt = recent[0] + RATE_WINDOW_MS;
-    return Math.max(1, Math.ceil((retryAt - now) / 1_000));
-  }
-  recent.push(now);
-  rateLimits.set(key, recent);
-  return null;
+  return value
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, DISCOVERY_MESSAGE_MAX_LENGTH)
+    .trimEnd();
 }
 
 function errorResponse(

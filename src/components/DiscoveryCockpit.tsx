@@ -18,6 +18,9 @@ import {
   calculateJourneyProgress,
   containsSensitiveDataCue,
   createInitialSnapshot,
+  DISCOVERY_LONG_TEXT_MAX_LENGTH,
+  DISCOVERY_MESSAGE_MAX_LENGTH,
+  DISCOVERY_SHORT_TEXT_MAX_LENGTH,
   discoveryReducer,
   getDiscoveryQuestionIdsFrom,
   getMilestones,
@@ -31,6 +34,7 @@ import {
 import {
   createBrowserDiscoveryRepository,
   createBrowserPrintExporter,
+  appendBoundedDraft,
   localDiscoveryAgent,
   type ChatPatch,
   type DiscoveryRepository,
@@ -40,6 +44,17 @@ import {
   type FullDiagnosticReport,
   type LeadResponse,
 } from "@/lib/lead-contract";
+import {
+  CONTACT_EMAIL_PATTERN_SOURCE,
+  CONTACT_FIELD_LIMITS,
+  isContactTextWithinLimits,
+  isValidContactEmail,
+  normalizeContactEmail,
+} from "@/lib/contact-contract";
+import {
+  resolveRequestIdentity,
+  type RequestIdentity,
+} from "@/lib/request-identity";
 
 const STORAGE_KEY = "nnco.signal.discovery.v2";
 const STORAGE_TTL_MS = 24 * 60 * 60 * 1_000;
@@ -47,6 +62,8 @@ const MAX_TRANSCRIPTION_BYTES = 4 * 1024 * 1024;
 const MAX_RECORDING_MS = 60_000;
 const transcriptionEnabled =
   import.meta.env.PUBLIC_TRANSCRIPTION_ENABLED === "true";
+const LEAD_SUBMISSION_ERROR_MESSAGE =
+  "That did not go through. Email us at general@nnco.ai and we will send it manually.";
 type VoiceState =
   | "idle"
   | "requesting"
@@ -54,16 +71,10 @@ type VoiceState =
   | "transcribing"
   | "error";
 type JourneyDirection = "forward" | "back";
-const analysisLines = ["That is everything we need. Building the analysis."] as const;
-const chapterMilestones = [
-  "context",
-  "workflow",
-  "friction",
-  "readiness",
-  "review",
-] as const;
-const REVIEW_CHAPTER = 4;
+const ANALYSIS_MESSAGE = "That is everything we need. Building the analysis.";
 const milestones = getMilestones();
+const chapterMilestones = milestones.map((milestone) => milestone.id);
+const REVIEW_CHAPTER = chapterMilestones.indexOf("review");
 
 function answerFor(snapshot: DiscoverySnapshot, questionId: string) {
   return snapshot.answers[questionId]?.value;
@@ -147,7 +158,7 @@ function validChatPatch(patch: ChatPatch, question?: DiscoveryQuestion) {
     return (
       typeof patch.value === "string" &&
       patch.value.trim().length > 0 &&
-      patch.value.length <= 1_200 &&
+      patch.value.length <= DISCOVERY_LONG_TEXT_MAX_LENGTH &&
       !containsSensitiveDataCue(patch.value)
     );
   }
@@ -169,7 +180,10 @@ function validChatPatch(patch: ChatPatch, question?: DiscoveryQuestion) {
   if (question.fieldType === "number") {
     return typeof patch.value === "number" && Number.isFinite(patch.value);
   }
-  const maximum = question.fieldType === "long_text" ? 1_200 : 240;
+  const maximum =
+    question.fieldType === "long_text"
+      ? DISCOVERY_LONG_TEXT_MAX_LENGTH
+      : DISCOVERY_SHORT_TEXT_MAX_LENGTH;
   return (
     typeof patch.value === "string" &&
     patch.value.trim().length > 0 &&
@@ -266,7 +280,6 @@ function QuestionField({
         role="group"
         aria-labelledby={labelledBy}
         aria-describedby={describedBy}
-        aria-required={question.required || undefined}
         aria-invalid={invalid}
       >
         {question.options?.map((option) => {
@@ -301,7 +314,7 @@ function QuestionField({
     return (
       <AutoGrowLongText
         resetKey={question.id}
-        maxLength={1_200}
+        maxLength={DISCOVERY_LONG_TEXT_MAX_LENGTH}
         value={longTextValue}
         placeholder={question.placeholder}
         labelledBy={labelledBy}
@@ -317,7 +330,7 @@ function QuestionField({
   return (
     <input
       type={question.fieldType === "number" ? "number" : "text"}
-      maxLength={240}
+      maxLength={DISCOVERY_SHORT_TEXT_MAX_LENGTH}
       value={
         question.fieldType === "short_text"
           ? (draftValue ??
@@ -468,7 +481,6 @@ export function DiscoveryCockpit() {
     mutationEpoch: number;
   } | null>(null);
   const [isAgentBusy, setIsAgentBusy] = useState(false);
-  const [analysisStage, setAnalysisStage] = useState(0);
   const [leadForm, setLeadForm] = useState({
     workEmail: "",
     organisation: "",
@@ -479,12 +491,14 @@ export function DiscoveryCockpit() {
     status: "idle" | "submitting" | "error" | "confirmed";
     message: string;
   }>({ status: "idle", message: "" });
-  const [leadRequestId, setLeadRequestId] = useState("");
   const [fullReport, setFullReport] = useState<FullDiagnosticReport | null>(null);
 
   const snapshotRef = useRef(snapshot);
   const activeContentRef = useRef<HTMLElement>(null);
   const previewHeadingRef = useRef<HTMLHeadingElement>(null);
+  const fullReportHeadingRef = useRef<HTMLHeadingElement>(null);
+  const chatInputRef = useRef<HTMLTextAreaElement>(null);
+  const focusChatInputAfterProposalEditRef = useRef(false);
   const agentAbortRef = useRef<AbortController | null>(null);
   const voiceAbortRef = useRef<AbortController | null>(null);
   const voiceRecorderRef = useRef<MediaRecorder | null>(null);
@@ -493,6 +507,9 @@ export function DiscoveryCockpit() {
   const voiceCancelledRef = useRef(false);
   const mountedRef = useRef(true);
   const leadAbortRef = useRef<AbortController | null>(null);
+  const leadSubmissionMutexRef = useRef(false);
+  const leadContactEpochRef = useRef(0);
+  const leadRequestIdentityRef = useRef<RequestIdentity | null>(null);
   const agentRequestRef = useRef(0);
   const leadRequestEpochRef = useRef(0);
   const mutationEpochRef = useRef(0);
@@ -556,6 +573,7 @@ export function DiscoveryCockpit() {
         cancelVoiceCapture(false);
         agentAbortRef.current?.abort();
         leadAbortRef.current?.abort();
+        leadSubmissionMutexRef.current = false;
       };
     },
     [cancelVoiceCapture],
@@ -712,14 +730,10 @@ export function DiscoveryCockpit() {
   useEffect(() => {
     if (snapshot.status !== "analyzing") return;
     const timer = window.setTimeout(() => {
-      if (analysisStage < analysisLines.length - 1) {
-        setAnalysisStage((current) => current + 1);
-      } else {
-        dispatch({ type: "SET_STATUS", status: "preview_ready" });
-      }
+      dispatch({ type: "SET_STATUS", status: "preview_ready" });
     }, 820);
     return () => window.clearTimeout(timer);
-  }, [analysisStage, dispatch, snapshot.status]);
+  }, [dispatch, snapshot.status]);
 
   const questions = useMemo(() => getQuestions(snapshot), [snapshot]);
   const questionById = useMemo(
@@ -772,20 +786,57 @@ export function DiscoveryCockpit() {
   }, [chapter, hydrated, questionIndex, snapshot.status]);
 
   useEffect(() => {
-    if (!hydrated || snapshot.status !== "preview_ready") return;
+    if (
+      !hydrated ||
+      fullReport ||
+      (snapshot.status !== "preview_ready" &&
+        snapshot.status !== "lead_submitted")
+    ) {
+      return;
+    }
     const frame = window.requestAnimationFrame(() => {
       previewHeadingRef.current?.focus({ preventScroll: true });
     });
     return () => window.cancelAnimationFrame(frame);
-  }, [hydrated, snapshot.status]);
+  }, [fullReport, hydrated, snapshot.status]);
+
+  useEffect(() => {
+    if (!hydrated || !fullReport) return;
+    const frame = window.requestAnimationFrame(() => {
+      fullReportHeadingRef.current?.focus({ preventScroll: true });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [fullReport, hydrated]);
+
+  useEffect(() => {
+    if (!focusChatInputAfterProposalEditRef.current || pendingChat) return;
+    focusChatInputAfterProposalEditRef.current = false;
+    const frame = window.requestAnimationFrame(() => {
+      chatInputRef.current?.focus({ preventScroll: true });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [pendingChat]);
 
   const invalidateLeadResult = () => {
     leadAbortRef.current?.abort();
     leadAbortRef.current = null;
+    leadSubmissionMutexRef.current = false;
     leadRequestEpochRef.current += 1;
     setFullReport(null);
-    setLeadRequestId("");
+    leadRequestIdentityRef.current = null;
     setLeadSubmission({ status: "idle", message: "" });
+  };
+
+  const updateLeadForm = (update: Partial<typeof leadForm>) => {
+    leadContactEpochRef.current += 1;
+    if (leadSubmissionMutexRef.current) {
+      leadAbortRef.current?.abort();
+      leadAbortRef.current = null;
+      leadSubmissionMutexRef.current = false;
+      leadRequestEpochRef.current += 1;
+      setLeadSubmission({ status: "idle", message: "" });
+    }
+    setLeadForm((current) => ({ ...current, ...update }));
   };
 
   const setAnswer = (questionId: string, value: DiscoveryValue) => {
@@ -837,6 +888,9 @@ export function DiscoveryCockpit() {
     nextQuestion = 0,
     direction: JourneyDirection = "forward",
   ) => {
+    if (leadSubmissionMutexRef.current || leadAbortRef.current) {
+      invalidateLeadResult();
+    }
     const safeChapter = Math.max(0, Math.min(REVIEW_CHAPTER, nextChapter));
     cancelVoiceCapture();
     setJourneyDirection(direction);
@@ -996,14 +1050,19 @@ export function DiscoveryCockpit() {
         );
       }
       const transcript =
-        typeof payload?.text === "string" ? payload.text.trim() : "";
+        typeof payload?.text === "string"
+          ? payload.text.trim().slice(0, DISCOVERY_MESSAGE_MAX_LENGTH)
+          : "";
       if (!transcript) {
         throw new Error("No speech was detected. Try again.");
       }
       if (!controller.signal.aborted && mountedRef.current) {
         setChatInput((current) => {
-          const draft = current.trim();
-          return draft ? `${draft}\n${transcript}` : transcript;
+          return appendBoundedDraft(
+            current,
+            transcript,
+            DISCOVERY_MESSAGE_MAX_LENGTH,
+          );
         });
         setVoiceState("idle");
         setVoiceAnnouncement(
@@ -1159,7 +1218,9 @@ export function DiscoveryCockpit() {
 
   const submitTalk = async (event: SyntheticEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const message = chatInput.trim();
+    const message = chatInput
+      .trim()
+      .slice(0, DISCOVERY_MESSAGE_MAX_LENGTH);
     if (!message || isAgentBusy || pendingChat) return;
     if (containsSensitiveDataCue(message)) {
       setNotice("Remove personal or confidential information before continuing.");
@@ -1275,28 +1336,75 @@ export function DiscoveryCockpit() {
 
   const editPendingDetails = () => {
     if (!pendingChat) return;
+    focusChatInputAfterProposalEditRef.current = true;
     setChatInput(pendingChat.message);
     setPendingChat(null);
+    setAgentReply("");
   };
 
   const generateReport = () => {
-    setAnalysisStage(0);
     dispatch({ type: "SET_STATUS", status: "analyzing" });
   };
 
   const submitLead = async (event: SyntheticEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (leadSubmission.status === "submitting") return;
-    const requestId = leadRequestId || window.crypto.randomUUID();
-    if (!leadRequestId) setLeadRequestId(requestId);
+    if (leadSubmissionMutexRef.current) return;
+    const leadName = leadForm.name.trim();
+    if (
+      !isValidContactEmail(leadForm.workEmail) ||
+      !isContactTextWithinLimits(
+        leadForm.organisation,
+        CONTACT_FIELD_LIMITS.organisation,
+      ) ||
+      (leadName.length > 0 &&
+        !isContactTextWithinLimits(
+          leadForm.name,
+          CONTACT_FIELD_LIMITS.name,
+        )) ||
+      !leadForm.consent
+    ) {
+      setLeadSubmission({
+        status: "error",
+        message: LEAD_SUBMISSION_ERROR_MESSAGE,
+      });
+      return;
+    }
+    leadSubmissionMutexRef.current = true;
+
     const submittedSnapshot = snapshotRef.current;
+    const submittedContact = {
+      workEmail: normalizeContactEmail(leadForm.workEmail),
+      organisation: leadForm.organisation.trim(),
+      ...(leadName ? { name: leadName } : {}),
+    };
+    const unsignedPayload = {
+      schemaVersion: 1 as const,
+      caseId: submittedSnapshot.caseId,
+      caseRevision: submittedSnapshot.revision,
+      contact: submittedContact,
+      consent: {
+        accepted: leadForm.consent,
+        version: LEAD_CONSENT_VERSION,
+      },
+      snapshot: submittedSnapshot,
+    };
+    const payloadSignature = JSON.stringify(unsignedPayload);
+    const requestIdentity = resolveRequestIdentity(
+      leadRequestIdentityRef.current,
+      payloadSignature,
+      () => window.crypto.randomUUID(),
+    );
+    leadRequestIdentityRef.current = requestIdentity;
+
     const requestEpoch = leadRequestEpochRef.current + 1;
     leadRequestEpochRef.current = requestEpoch;
     const boundary = {
       caseId: submittedSnapshot.caseId,
       revision: submittedSnapshot.revision,
       mutationEpoch: mutationEpochRef.current,
-      requestId,
+      contactEpoch: leadContactEpochRef.current,
+      payloadSignature,
+      requestId: requestIdentity.requestId,
       requestEpoch,
     };
     const controller = new AbortController();
@@ -1309,20 +1417,8 @@ export function DiscoveryCockpit() {
         headers: { "Content-Type": "application/json" },
         signal: controller.signal,
         body: JSON.stringify({
-          schemaVersion: 1,
-          requestId,
-          caseId: submittedSnapshot.caseId,
-          caseRevision: submittedSnapshot.revision,
-          contact: {
-            workEmail: leadForm.workEmail,
-            organisation: leadForm.organisation,
-            name: leadForm.name || undefined,
-          },
-          consent: {
-            accepted: leadForm.consent,
-            version: LEAD_CONSENT_VERSION,
-          },
-          snapshot: submittedSnapshot,
+          ...unsignedPayload,
+          requestId: requestIdentity.requestId,
         }),
       });
       const result = (await response.json()) as LeadResponse;
@@ -1331,6 +1427,9 @@ export function DiscoveryCockpit() {
         controller.signal.aborted ||
         leadRequestEpochRef.current !== boundary.requestEpoch ||
         mutationEpochRef.current !== boundary.mutationEpoch ||
+        leadContactEpochRef.current !== boundary.contactEpoch ||
+        leadRequestIdentityRef.current?.payloadSignature !==
+          boundary.payloadSignature ||
         current.caseId !== boundary.caseId ||
         current.revision !== boundary.revision;
       if (boundaryChanged) return;
@@ -1340,10 +1439,15 @@ export function DiscoveryCockpit() {
         result.caseId !== boundary.caseId ||
         result.requestId !== boundary.requestId
       ) {
+        if (
+          !result.ok &&
+          result.error.code === "IDEMPOTENCY_CONFLICT"
+        ) {
+          leadRequestIdentityRef.current = null;
+        }
         setLeadSubmission({
           status: "error",
-          message:
-            "That did not go through. Email us at general@nnco.ai and we will send it manually.",
+          message: LEAD_SUBMISSION_ERROR_MESSAGE,
         });
         return;
       }
@@ -1361,12 +1465,14 @@ export function DiscoveryCockpit() {
       if (!controller.signal.aborted) {
         setLeadSubmission({
           status: "error",
-          message:
-            "That did not go through. Email us at general@nnco.ai and we will send it manually.",
+          message: LEAD_SUBMISSION_ERROR_MESSAGE,
         });
       }
     } finally {
       if (leadAbortRef.current === controller) leadAbortRef.current = null;
+      if (leadRequestEpochRef.current === boundary.requestEpoch) {
+        leadSubmissionMutexRef.current = false;
+      }
     }
   };
 
@@ -1382,7 +1488,7 @@ export function DiscoveryCockpit() {
     return (
       <main className="discovery-app discovery-analysis" aria-live="polite">
         <BlockLoader size="large" />
-        <p key={analysisStage}>{analysisLines[analysisStage]}</p>
+        <p>{ANALYSIS_MESSAGE}</p>
       </main>
     );
   }
@@ -1540,14 +1646,12 @@ export function DiscoveryCockpit() {
                 Name
                 <input
                   type="text"
-                  maxLength={120}
+                  minLength={CONTACT_FIELD_LIMITS.name.minLength}
+                  maxLength={CONTACT_FIELD_LIMITS.name.maxLength}
                   autoComplete="name"
                   value={leadForm.name}
                   onChange={(event) =>
-                    setLeadForm((current) => ({
-                      ...current,
-                      name: event.target.value,
-                    }))
+                    updateLeadForm({ name: event.target.value })
                   }
                 />
               </label>
@@ -1556,13 +1660,12 @@ export function DiscoveryCockpit() {
                 <input
                   type="email"
                   required
+                  maxLength={CONTACT_FIELD_LIMITS.workEmail.maxLength}
+                  pattern={CONTACT_EMAIL_PATTERN_SOURCE}
                   autoComplete="email"
                   value={leadForm.workEmail}
                   onChange={(event) =>
-                    setLeadForm((current) => ({
-                      ...current,
-                      workEmail: event.target.value,
-                    }))
+                    updateLeadForm({ workEmail: event.target.value })
                   }
                 />
               </label>
@@ -1571,15 +1674,12 @@ export function DiscoveryCockpit() {
                 <input
                   type="text"
                   required
-                  minLength={2}
-                  maxLength={160}
+                  minLength={CONTACT_FIELD_LIMITS.organisation.minLength}
+                  maxLength={CONTACT_FIELD_LIMITS.organisation.maxLength}
                   autoComplete="organization"
                   value={leadForm.organisation}
                   onChange={(event) =>
-                    setLeadForm((current) => ({
-                      ...current,
-                      organisation: event.target.value,
-                    }))
+                    updateLeadForm({ organisation: event.target.value })
                   }
                 />
               </label>
@@ -1589,10 +1689,7 @@ export function DiscoveryCockpit() {
                   required
                   checked={leadForm.consent}
                   onChange={(event) =>
-                    setLeadForm((current) => ({
-                      ...current,
-                      consent: event.target.checked,
-                    }))
+                    updateLeadForm({ consent: event.target.checked })
                   }
                 />
                 <span>
@@ -1639,7 +1736,9 @@ export function DiscoveryCockpit() {
               </header>
               <div className="discovery-report-title discovery-report-title--compact">
                 <span>Page 3</span>
-                <h2>What AI could take over</h2>
+                <h2 ref={fullReportHeadingRef} tabIndex={-1}>
+                  What AI could take over
+                </h2>
                 <p>
                   Per step: what a system could do, what would stay with a
                   person, and what it would need access to.
@@ -1864,8 +1963,9 @@ export function DiscoveryCockpit() {
           </p>
           <form onSubmit={submitTalk}>
             <textarea
+              ref={chatInputRef}
               rows={3}
-              maxLength={1_200}
+              maxLength={DISCOVERY_MESSAGE_MAX_LENGTH}
               value={chatInput}
               disabled={isAgentBusy || Boolean(pendingChat)}
               placeholder="Describe what happens without names or private records."
@@ -1995,7 +2095,7 @@ export function DiscoveryCockpit() {
                 data-question-id={activeQuestion.id}
                 tabIndex={-1}
               >
-                <h2 id={activeQuestionLabelId}>{activeQuestion.prompt}</h2>
+                <h1 id={activeQuestionLabelId}>{activeQuestion.prompt}</h1>
                 {activeQuestionHelp ? (
                   <p id={activeQuestionHelpId}>{activeQuestionHelp}</p>
                 ) : null}

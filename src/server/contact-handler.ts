@@ -1,20 +1,29 @@
 import { createHash, randomUUID } from "node:crypto";
 import {
+  CONTACT_FIELD_LIMITS,
   CONTACT_CONSENT_VERSION,
+  isContactArea,
+  isContactSector,
+  isContactTextWithinLimits,
+  isValidContactEmail,
+  normalizeContactEmail,
   type ContactErrorResponse,
   type ContactRequestPayload,
   type ContactSuccessResponse,
 } from "../lib/contact-contract.ts";
+import { isValidRequestId } from "../lib/request-identity.ts";
 import {
   LeadRepositoryError,
   persistLead,
   type LeadRecord,
 } from "./lead-repository.ts";
+import {
+  checkSlidingWindowRateLimit,
+  isSameOrigin,
+  readBoundedBody,
+} from "./request-guards.ts";
 
 const MAX_BODY_BYTES = 32 * 1024;
-const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const UUID_PATTERN =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const RATE_WINDOW_MS = 10 * 60 * 1_000;
 const RATE_LIMIT = 10;
 const globalContactRateStore = globalThis as typeof globalThis & {
@@ -28,27 +37,32 @@ export async function handleContactRequest(
   request: Request,
   clientAddress?: string,
 ): Promise<Response> {
-  if (!sameOrigin(request)) {
+  if (!isSameOrigin(request)) {
     return errorResponse(400, "VALIDATION_ERROR", "The request origin could not be verified.", false);
   }
-  const retryAfter = rateLimit(request, clientAddress);
+  const retryAfter = checkSlidingWindowRateLimit(
+    request,
+    clientAddress,
+    rateLimits,
+    RATE_LIMIT,
+    RATE_WINDOW_MS,
+  );
   if (retryAfter !== null) {
     const response = errorResponse(429, "RATE_LIMITED", "Too many attempts. Wait briefly and retry.", true);
     response.headers.set("Retry-After", String(retryAfter));
     return response;
   }
-  const contentLength = Number(request.headers.get("content-length") ?? "0");
-  if (contentLength > MAX_BODY_BYTES) {
+  const body = await readBoundedBody(request, MAX_BODY_BYTES);
+  if (!body.ok && body.reason === "too_large") {
     return errorResponse(400, "VALIDATION_ERROR", "The request is too large.", false);
+  }
+  if (!body.ok) {
+    return errorResponse(400, "VALIDATION_ERROR", "The request could not be read.", false);
   }
 
   let parsed: unknown;
   try {
-    const body = await request.text();
-    if (new TextEncoder().encode(body).byteLength > MAX_BODY_BYTES) {
-      return errorResponse(400, "VALIDATION_ERROR", "The request is too large.", false);
-    }
-    parsed = JSON.parse(body);
+    parsed = JSON.parse(new TextDecoder().decode(body.bytes));
   } catch {
     return errorResponse(400, "VALIDATION_ERROR", "The request could not be read.", false);
   }
@@ -72,7 +86,7 @@ export async function handleContactRequest(
     handoffId: randomUUID(),
     caseId: `CONTACT-${payload.requestId}`,
     caseRevision: 1,
-    workEmail: payload.workEmail.trim().toLocaleLowerCase("en"),
+    workEmail: normalizeContactEmail(payload.workEmail),
     organisation: payload.organisation.trim(),
     name: payload.name.trim(),
     consentVersion: payload.consent.version,
@@ -82,7 +96,7 @@ export async function handleContactRequest(
         JSON.stringify({
           ...snapshot,
           name: payload.name.trim(),
-          workEmail: payload.workEmail.trim().toLocaleLowerCase("en"),
+          workEmail: normalizeContactEmail(payload.workEmail),
           organisation: payload.organisation.trim(),
           consentVersion: payload.consent.version,
         }),
@@ -100,7 +114,10 @@ export async function handleContactRequest(
       confirmedAt: persisted.record.consentedAt,
       persistence: persisted.persistence,
     };
-    return Response.json(body, { status: persisted.created ? 201 : 200 });
+    return Response.json(body, {
+      status: persisted.created ? 201 : 200,
+      headers: { "Cache-Control": "no-store" },
+    });
   } catch (error) {
     if (error instanceof LeadRepositoryError) {
       const status =
@@ -133,52 +150,28 @@ export function validateContactPayload(
   const payload = value as Partial<ContactRequestPayload>;
   if (
     payload.schemaVersion !== 1 ||
-    typeof payload.requestId !== "string" ||
-    !UUID_PATTERN.test(payload.requestId) ||
+    !isValidRequestId(payload.requestId) ||
     typeof payload.name !== "string" ||
-    payload.name.trim().length < 2 ||
-    payload.name.length > 120 ||
+    !isContactTextWithinLimits(payload.name, CONTACT_FIELD_LIMITS.name) ||
     typeof payload.workEmail !== "string" ||
-    !EMAIL_PATTERN.test(payload.workEmail.trim()) ||
-    payload.workEmail.length > 254 ||
+    !isValidContactEmail(payload.workEmail) ||
     typeof payload.organisation !== "string" ||
-    payload.organisation.trim().length < 2 ||
-    payload.organisation.length > 160 ||
+    !isContactTextWithinLimits(
+      payload.organisation,
+      CONTACT_FIELD_LIMITS.organisation,
+    ) ||
     typeof payload.sector !== "string" ||
-    !CONTACT_SECTORS.has(payload.sector) ||
+    !isContactSector(payload.sector) ||
     typeof payload.area !== "string" ||
-    !CONTACT_AREAS.has(payload.area) ||
+    !isContactArea(payload.area) ||
     typeof payload.message !== "string" ||
-    payload.message.trim().length < 10 ||
-    payload.message.length > 4_000 ||
+    !isContactTextWithinLimits(payload.message, CONTACT_FIELD_LIMITS.message) ||
     payload.consent?.accepted !== true ||
     payload.consent.version !== CONTACT_CONSENT_VERSION
   ) {
     return { ok: false, message: "Check the contact fields and try again." };
   }
   return { ok: true, payload: payload as ContactRequestPayload };
-}
-
-function sameOrigin(request: Request): boolean {
-  const origin = request.headers.get("origin");
-  if (!origin) return true;
-  try {
-    return new URL(origin).origin === new URL(request.url).origin;
-  } catch {
-    return false;
-  }
-}
-
-function rateLimit(request: Request, clientAddress?: string): number | null {
-  const key = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || clientAddress || "local";
-  const now = Date.now();
-  const recent = (rateLimits.get(key) ?? []).filter((timestamp) => timestamp > now - RATE_WINDOW_MS);
-  if (recent.length >= RATE_LIMIT) {
-    return Math.max(1, Math.ceil((recent[0] + RATE_WINDOW_MS - now) / 1_000));
-  }
-  recent.push(now);
-  rateLimits.set(key, recent);
-  return null;
 }
 
 function errorResponse(
@@ -188,20 +181,8 @@ function errorResponse(
   retryable: boolean,
 ): Response {
   const body: ContactErrorResponse = { ok: false, error: { code, message, retryable } };
-  return Response.json(body, { status });
+  return Response.json(body, {
+    status,
+    headers: { "Cache-Control": "no-store" },
+  });
 }
-
-const CONTACT_SECTORS = new Set([
-  "Banking",
-  "Insurance",
-  "Healthcare",
-  "Capital markets or asset management",
-  "Other",
-]);
-const CONTACT_AREAS = new Set([
-  "An AI audit",
-  "A specific workflow",
-  "Private or on-premise infrastructure",
-  "Running a system we already have",
-  "Something else",
-]);

@@ -53,6 +53,17 @@ export interface ReportExporter {
   exportPreview(): Promise<void>;
 }
 
+export function appendBoundedDraft(
+  current: string,
+  addition: string,
+  maximumLength: number,
+): string {
+  const draft = current.trim();
+  const next = addition.trim();
+  const combined = draft && next ? `${draft}\n${next}` : draft || next;
+  return combined.slice(0, Math.max(0, maximumLength));
+}
+
 function hasAnswer(value: DiscoveryValue | undefined): boolean {
   if (Array.isArray(value)) return value.length > 0;
   if (typeof value === "string")

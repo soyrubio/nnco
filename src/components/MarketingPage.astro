@@ -11,17 +11,18 @@ import PageHero from "./PageHero.astro";
 import SectionAnatomy from "./SectionAnatomy.astro";
 import SectionFrame from "./SectionFrame.astro";
 import type { LinkAction } from "./types";
-import type { FaqItem } from "@/data/faq";
+import { faqByPage } from "@/data/faq";
 import type { MarketingPageData } from "@/data/programme";
 import BaseLayout from "@/layouts/BaseLayout.astro";
+import { buildFaqSchema } from "@/lib/schema";
 
 interface Props {
   page: MarketingPageData;
-  faq: readonly FaqItem[];
   industry?: boolean;
 }
 
-const { page, faq, industry = false } = Astro.props;
+const { page, industry = false } = Astro.props;
+const faq = faqByPage[page.faqKey];
 const usesPrivateAiPlate = page.path === "/ai-first-enterprise/private-ai";
 const visibleSections = usesPrivateAiPlate ? page.sections.slice(1) : page.sections;
 const sectionOffset = usesPrivateAiPlate ? 1 : 0;
@@ -32,15 +33,7 @@ if (page.primaryAction) {
 if (page.secondaryAction) {
   heroActions.push({ ...page.secondaryAction, variant: "secondary" });
 }
-const faqSchema = {
-  "@type": "FAQPage",
-  "@id": `https://nnco.ai${page.path}#faq`,
-  mainEntity: faq.map((item) => ({
-    "@type": "Question",
-    name: item.question,
-    acceptedAnswer: { "@type": "Answer", text: item.answer },
-  })),
-};
+const faqSchema = buildFaqSchema(faq, page.path);
 const serviceSchema = page.service
   ? {
       "@type": "Service",
