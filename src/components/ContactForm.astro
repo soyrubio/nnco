@@ -1,6 +1,12 @@
 ---
 import Button from "./Button.astro";
-import { CONTACT_CONSENT_VERSION } from "@/lib/contact-contract";
+import {
+  CONTACT_AREAS,
+  CONTACT_CONSENT_VERSION,
+  CONTACT_EMAIL_PATTERN_SOURCE,
+  CONTACT_FIELD_LIMITS,
+  CONTACT_SECTORS,
+} from "@/lib/contact-contract";
 ---
 
 <contact-form class="contact-form-shell" data-consent-version={CONTACT_CONSENT_VERSION}>
@@ -8,46 +14,61 @@ import { CONTACT_CONSENT_VERSION } from "@/lib/contact-contract";
     <div class="contact-form__grid">
       <label class="field">
         <span>Name</span>
-        <input name="name" autocomplete="name" required minlength="2" />
-        <small data-error-for="name"></small>
+        <input
+          name="name"
+          autocomplete="name"
+          required
+          minlength={CONTACT_FIELD_LIMITS.name.minLength}
+          maxlength={CONTACT_FIELD_LIMITS.name.maxLength}
+          aria-describedby="contact-name-error"
+        />
+        <small id="contact-name-error" data-error-for="name"></small>
       </label>
 
       <label class="field">
         <span>Work email</span>
-        <input name="email" type="email" autocomplete="email" inputmode="email" required />
-        <small data-error-for="email"></small>
+        <input
+          name="email"
+          type="email"
+          autocomplete="email"
+          inputmode="email"
+          required
+          maxlength={CONTACT_FIELD_LIMITS.workEmail.maxLength}
+          pattern={CONTACT_EMAIL_PATTERN_SOURCE}
+          aria-describedby="contact-email-error"
+        />
+        <small id="contact-email-error" data-error-for="email"></small>
       </label>
 
       <label class="field">
         <span>Organisation</span>
-        <input name="institution" autocomplete="organization" required minlength="2" />
-        <small data-error-for="institution"></small>
+        <input
+          name="institution"
+          autocomplete="organization"
+          required
+          minlength={CONTACT_FIELD_LIMITS.organisation.minLength}
+          maxlength={CONTACT_FIELD_LIMITS.organisation.maxLength}
+          aria-describedby="contact-institution-error"
+        />
+        <small id="contact-institution-error" data-error-for="institution"></small>
       </label>
 
       <label class="field">
         <span>Sector</span>
-        <select name="sector" required>
+        <select name="sector" required aria-describedby="contact-sector-error">
           <option value="">Select sector</option>
-          <option>Banking</option>
-          <option>Insurance</option>
-          <option>Healthcare</option>
-          <option>Capital markets or asset management</option>
-          <option>Other</option>
+          {CONTACT_SECTORS.map((sector) => <option value={sector}>{sector}</option>)}
         </select>
-        <small data-error-for="sector"></small>
+        <small id="contact-sector-error" data-error-for="sector"></small>
       </label>
 
       <label class="field">
         <span>What is this about?</span>
-        <select name="area" required>
+        <select name="area" required aria-describedby="contact-area-error">
           <option value="">Select one</option>
-          <option>An AI audit</option>
-          <option>A specific workflow</option>
-          <option>Private or on-premise infrastructure</option>
-          <option>Running a system we already have</option>
-          <option>Something else</option>
+          {CONTACT_AREAS.map((area) => <option value={area}>{area}</option>)}
         </select>
-        <small data-error-for="area"></small>
+        <small id="contact-area-error" data-error-for="area"></small>
       </label>
 
       <label class="field contact-form__message">
@@ -55,18 +76,24 @@ import { CONTACT_CONSENT_VERSION } from "@/lib/contact-contract";
         <textarea
           name="message"
           rows="6"
-          minlength="10"
-          maxlength="4000"
+          minlength={CONTACT_FIELD_LIMITS.message.minLength}
+          maxlength={CONTACT_FIELD_LIMITS.message.maxLength}
           placeholder="The workflow, where it slows down, and any constraint you already know about."
           required
+          aria-describedby="contact-message-error"
         ></textarea>
-        <small data-error-for="message"></small>
+        <small id="contact-message-error" data-error-for="message"></small>
       </label>
 
       <label class="contact-form__consent">
-        <input name="consent" type="checkbox" required />
+        <input
+          name="consent"
+          type="checkbox"
+          required
+          aria-describedby="contact-consent-error"
+        />
         <span>I agree that NNCO may use these details to respond to my enquiry. <a href="/privacy">Privacy</a></span>
-        <small data-error-for="consent"></small>
+        <small id="contact-consent-error" data-error-for="consent"></small>
       </label>
     </div>
 
@@ -81,15 +108,52 @@ import { CONTACT_CONSENT_VERSION } from "@/lib/contact-contract";
 </contact-form>
 
 <script>
+  import {
+    CONTACT_FIELD_LIMITS,
+    isContactArea,
+    isContactSector,
+    isContactTextWithinLimits,
+    isValidContactEmail,
+  } from "@/lib/contact-contract";
+  import {
+    resolveRequestIdentity,
+    type RequestIdentity,
+  } from "@/lib/request-identity";
+
   class NncoContactForm extends HTMLElement {
+    private connectionController: AbortController | null = null;
+    private requestController: AbortController | null = null;
+    private requestIdentity: RequestIdentity | null = null;
+
     connectedCallback() {
+      this.connectionController?.abort();
+      this.requestController?.abort();
+
+      const connectionController = new AbortController();
+      this.connectionController = connectionController;
+      this.requestController = null;
+
       const form = this.querySelector<HTMLFormElement>("[data-contact-form]");
       const status = this.querySelector<HTMLElement>("[data-form-status]");
       const submit = form?.querySelector<HTMLButtonElement>('button[type="submit"]');
       const consentVersion = this.dataset.consentVersion;
-      let requestId = crypto.randomUUID();
 
       if (!form || !status || !submit || !consentVersion) return;
+
+      let responseEpoch = 0;
+      let isSubmitting = false;
+
+      const resetSubmissionUi = () => {
+        isSubmitting = false;
+        submit.disabled = false;
+        submit.textContent = "Send";
+        if (status.classList.contains("is-loading")) {
+          status.className = "";
+          status.textContent = "";
+        }
+      };
+
+      resetSubmissionUi();
 
       const clearErrors = () => {
         form.querySelectorAll<HTMLElement>("[data-error-for]").forEach((item) => {
@@ -100,77 +164,209 @@ import { CONTACT_CONSENT_VERSION } from "@/lib/contact-contract";
         );
       };
 
+      const errorMessageFor = (
+        field: HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement,
+      ) => {
+        if (field.name === "consent") {
+          return "We need this to be able to reply.";
+        }
+        if (field.name === "email" && !isValidContactEmail(field.value)) {
+          return "Enter a valid work email address.";
+        }
+        if (
+          field.name === "message" &&
+          field.value.trim().length < CONTACT_FIELD_LIMITS.message.minLength
+        ) {
+          return "Add a sentence or two so we can come prepared.";
+        }
+        return "This field is required.";
+      };
+
+      const clearFieldError = (
+        field: HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement,
+      ) => {
+        field.removeAttribute("aria-invalid");
+        const target = form.querySelector<HTMLElement>(
+          `[data-error-for="${field.name}"]`,
+        );
+        if (target) target.textContent = "";
+      };
+
+      const clearTerminalStatus = () => {
+        if (
+          !status.classList.contains("is-error") &&
+          !status.classList.contains("is-success")
+        ) {
+          return;
+        }
+        status.className = "";
+        status.textContent = "";
+      };
+
       const showError = (field: HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement) => {
         field.setAttribute("aria-invalid", "true");
         const target = form.querySelector<HTMLElement>(`[data-error-for="${field.name}"]`);
         if (!target) return;
-        target.textContent =
-          field.name === "consent"
-            ? "We need this to be able to reply."
-            : field.validity.typeMismatch
-              ? "Enter a valid work email address."
-              : field.validity.tooShort && field.name === "message"
-                ? "Add a sentence or two so we can come prepared."
-                : "This field is required.";
+        target.textContent = errorMessageFor(field);
       };
 
-      form.addEventListener("submit", async (event) => {
-        event.preventDefault();
-        clearErrors();
-        status.className = "";
-        status.textContent = "";
-
-        const invalidFields = Array.from(
-          form.querySelectorAll<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>(":invalid"),
-        );
-        if (invalidFields.length > 0) {
-          invalidFields.forEach(showError);
-          invalidFields[0].focus();
-          status.className = "is-error";
-          status.textContent = "Check the highlighted fields.";
-          return;
+      const hasValidValue = (
+        field: HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement,
+      ) => {
+        switch (field.name) {
+          case "name":
+            return isContactTextWithinLimits(field.value, CONTACT_FIELD_LIMITS.name);
+          case "email":
+            return isValidContactEmail(field.value);
+          case "institution":
+            return isContactTextWithinLimits(
+              field.value,
+              CONTACT_FIELD_LIMITS.organisation,
+            );
+          case "sector":
+            return isContactSector(field.value);
+          case "area":
+            return isContactArea(field.value);
+          case "message":
+            return isContactTextWithinLimits(field.value, CONTACT_FIELD_LIMITS.message);
+          default:
+            return field.checkValidity();
         }
+      };
 
-        const data = new FormData(form);
-        const payload = {
-          schemaVersion: 1,
-          requestId,
-          name: String(data.get("name") ?? ""),
-          workEmail: String(data.get("email") ?? ""),
-          organisation: String(data.get("institution") ?? ""),
-          sector: String(data.get("sector") ?? ""),
-          area: String(data.get("area") ?? ""),
-          message: String(data.get("message") ?? ""),
-          consent: { accepted: true, version: consentVersion },
-        };
+      form.addEventListener(
+        "input",
+        (event) => {
+          this.requestIdentity = null;
+          responseEpoch += 1;
 
-        submit.disabled = true;
-        submit.textContent = "Sending.";
-        status.className = "is-loading";
-        status.textContent = "Sending.";
+          const field = event.target;
+          if (
+            field instanceof HTMLInputElement ||
+            field instanceof HTMLSelectElement ||
+            field instanceof HTMLTextAreaElement
+          ) {
+            clearFieldError(field);
+          }
+          clearTerminalStatus();
 
-        try {
-          const response = await fetch("/api/contact-requests", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload),
-          });
-          const result = await response.json().catch(() => null);
-          if (!response.ok || result?.ok !== true) throw new Error("handoff failed");
+          const activeRequest = this.requestController;
+          this.requestController = null;
+          activeRequest?.abort();
 
-          form.reset();
-          requestId = crypto.randomUUID();
-          status.className = "is-success";
-          status.textContent = "Received. We will reply within one business day.";
-        } catch {
-          status.className = "is-error";
-          status.textContent =
-            "That did not send. Email us at general@nnco.ai and we will pick it up from there.";
-        } finally {
-          submit.disabled = false;
-          submit.textContent = "Send";
-        }
-      });
+          if (!isSubmitting) return;
+          resetSubmissionUi();
+        },
+        { signal: connectionController.signal },
+      );
+
+      form.addEventListener(
+        "submit",
+        async (event) => {
+          event.preventDefault();
+          if (isSubmitting) return;
+
+          clearErrors();
+          status.className = "";
+          status.textContent = "";
+
+          const invalidFields = Array.from(
+            form.querySelectorAll<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>(
+              "input, select, textarea",
+            ),
+          ).filter((field) => !field.checkValidity() || !hasValidValue(field));
+          if (invalidFields.length > 0) {
+            invalidFields.forEach(showError);
+            invalidFields[0].focus();
+            status.className = "is-error";
+            status.textContent = "Check the highlighted fields.";
+            return;
+          }
+
+          const data = new FormData(form);
+          const payloadValues = {
+            schemaVersion: 1,
+            name: String(data.get("name") ?? ""),
+            workEmail: String(data.get("email") ?? ""),
+            organisation: String(data.get("institution") ?? ""),
+            sector: String(data.get("sector") ?? ""),
+            area: String(data.get("area") ?? ""),
+            message: String(data.get("message") ?? ""),
+            consent: { accepted: true, version: consentVersion },
+          };
+          const payloadSignature = JSON.stringify(payloadValues);
+          this.requestIdentity = resolveRequestIdentity(
+            this.requestIdentity,
+            payloadSignature,
+            () => crypto.randomUUID(),
+          );
+          const payload = {
+            ...payloadValues,
+            requestId: this.requestIdentity.requestId,
+          };
+          const submissionEpoch = responseEpoch + 1;
+          responseEpoch = submissionEpoch;
+          isSubmitting = true;
+
+          const requestController = new AbortController();
+          this.requestController?.abort();
+          this.requestController = requestController;
+          const ownsSubmission = () =>
+            !connectionController.signal.aborted &&
+            !requestController.signal.aborted &&
+            this.requestController === requestController &&
+            responseEpoch === submissionEpoch;
+
+          submit.disabled = true;
+          submit.textContent = "Sending.";
+          status.className = "is-loading";
+          status.textContent = "Sending.";
+
+          try {
+            const response = await fetch("/api/contact-requests", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(payload),
+              signal: requestController.signal,
+            });
+            const result = await response.json().catch(() => null);
+            if (!ownsSubmission()) return;
+            if (result?.error?.code === "IDEMPOTENCY_CONFLICT") {
+              this.requestIdentity = null;
+            }
+            if (
+              !response.ok ||
+              result?.ok !== true ||
+              result.requestId !== payload.requestId
+            ) {
+              throw new Error("handoff failed");
+            }
+
+            form.reset();
+            this.requestIdentity = null;
+            status.className = "is-success";
+            status.textContent = "Received. We will reply within one business day.";
+          } catch {
+            if (!ownsSubmission()) return;
+            status.className = "is-error";
+            status.textContent =
+              "That did not send. Email us at general@nnco.ai and we will pick it up from there.";
+          } finally {
+            if (ownsSubmission()) {
+              this.requestController = null;
+              resetSubmissionUi();
+            }
+          }
+        },
+        { signal: connectionController.signal },
+      );
+    }
+
+    disconnectedCallback() {
+      this.connectionController?.abort();
+      this.connectionController = null;
+      this.requestController?.abort();
+      this.requestController = null;
     }
   }
 

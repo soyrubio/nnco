@@ -83,6 +83,34 @@ export const siteNavigation: readonly NavigationItem[] = [
   { href: "/contact", label: "Contact" },
 ] as const;
 
+export const footerGroups = [
+  {
+    label: "Company",
+    links: [
+      { href: "/company", label: "About" },
+      { href: "/blog", label: "Blog" },
+      { href: "/privacy", label: "Privacy" },
+      { href: "/security", label: "Security" },
+    ],
+  },
+  { label: "Programme", links: programmeLinks },
+  {
+    label: "Industries",
+    links: sectors.map(({ href, shortName }) => ({
+      href,
+      label: shortName,
+    })),
+  },
+  {
+    label: "Contact",
+    links: [
+      { href: "/contact", label: "Book a call" },
+      { href: "/discovery", label: "Start the diagnostic" },
+      { href: "mailto:general@nnco.ai", label: "general@nnco.ai" },
+    ],
+  },
+] as const;
+
 export const waysOfWorking = [
   {
     title: "The audit comes before the proposal",

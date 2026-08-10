@@ -1,0 +1,2 @@
+overrides:
+  '@vercel/routing-utils>path-to-regexp': 6.3.0

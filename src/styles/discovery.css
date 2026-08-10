@@ -294,7 +294,7 @@
   }
 }
 
-.discovery-question h2 {
+.discovery-question h1 {
   max-width: 21ch;
   margin: 0;
   font-size: clamp(2.35rem, 4.6vw, 4.8rem);
@@ -513,10 +513,11 @@
   background: currentColor;
   -webkit-mask: url("/assets/nnco-arrow.svg") center / contain no-repeat;
   mask: url("/assets/nnco-arrow.svg") center / contain no-repeat;
-  transition: translate 200ms ease;
+  transition: translate 260ms cubic-bezier(0.2, 0, 0, 1);
 }
 
-.discovery-app button:hover .nnco-arrow {
+.discovery-app a:hover .nnco-arrow--right,
+.discovery-app button:hover .nnco-arrow--right {
   translate: 1px 0;
 }
 
@@ -798,7 +799,9 @@
 }
 
 .discovery-analysis {
-  min-height: 100svh;
+  min-height: calc(
+    100svh - var(--header-height) - var(--header-rule-height)
+  );
   display: grid;
   place-content: center;
   justify-items: center;
@@ -1084,6 +1087,11 @@
   color: var(--discovery-white);
 }
 
+.discovery-gate label > input:not([type="checkbox"]):focus-visible {
+  border-bottom-color: var(--discovery-white);
+  box-shadow: inset 0 -1px 0 var(--discovery-white);
+}
+
 .discovery-consent {
   grid-column: 1 / -1;
   flex-direction: row !important;
@@ -1093,6 +1101,11 @@
   color: var(--discovery-grey);
   font-weight: 400 !important;
   line-height: 1.4;
+}
+
+.discovery-consent input:focus-visible {
+  outline: 2px solid var(--discovery-white);
+  outline-offset: 3px;
 }
 
 .discovery-consent a {
@@ -1340,7 +1353,7 @@
     font-size: clamp(2.75rem, 14vw, 4.5rem);
   }
 
-  .discovery-question h2 {
+  .discovery-question h1 {
     font-size: clamp(2.25rem, 11vw, 3.75rem);
   }
 

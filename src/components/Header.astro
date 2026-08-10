@@ -3,6 +3,10 @@ import BlockArrow from "./BlockArrow.astro";
 import BrandLogo from "./BrandLogo.astro";
 import Button from "./Button.astro";
 import { siteNavigation } from "@/data/site";
+import {
+  isExactNavigationPage,
+  isNavigationSection,
+} from "@/lib/navigation";
 
 interface Props {
   currentPath?: string;
@@ -16,12 +20,9 @@ const {
   variant = "default",
 } = Astro.props;
 const isDiscovery = variant === "discovery";
-const isCurrentPage = (href: string) =>
-  href === "/"
-    ? currentPath === "/"
-    : currentPath === href ||
-      currentPath === `${href}/` ||
-      currentPath.startsWith(`${href}/`);
+const isExactPage = (href: string) => isExactNavigationPage(currentPath, href);
+const isAncestorSection = (href: string) =>
+  !isExactPage(href) && isNavigationSection(currentPath, href);
 ---
 
 <header
@@ -50,14 +51,17 @@ const isCurrentPage = (href: string) =>
               "href" in item ? (
                 <a
                   href={item.href}
-                  aria-current={isCurrentPage(item.href) ? "page" : undefined}
+                  aria-current={isExactPage(item.href) ? "page" : undefined}
+                  data-current-section={isAncestorSection(item.href) ? "true" : undefined}
                 >
                   {item.label}
                 </a>
               ) : (
                 <details class="site-nav-dropdown" data-navigation-dropdown>
                   <summary
-                    aria-current={item.links.some((link) => isCurrentPage(link.href)) ? "page" : undefined}
+                    data-current-section={item.links.some((link) =>
+                      isNavigationSection(currentPath, link.href)
+                    ) ? "true" : undefined}
                   >
                     <span>{item.label}</span>
                     <span class="site-nav-dropdown__indicator" aria-hidden="true">
@@ -68,7 +72,8 @@ const isCurrentPage = (href: string) =>
                     {item.links.map((link) => (
                       <a
                         href={link.href}
-                        aria-current={isCurrentPage(link.href) ? "page" : undefined}
+                        aria-current={isExactPage(link.href) ? "page" : undefined}
+                        data-current-section={isAncestorSection(link.href) ? "true" : undefined}
                       >
                         <strong>{link.label}</strong>
                         {link.description && <span>{link.description}</span>}
@@ -80,7 +85,7 @@ const isCurrentPage = (href: string) =>
             )}
           </nav>
 
-          <details class="site-menu">
+          <details class="site-menu" data-navigation-menu>
             <summary>
               <span>Menu</span>
               <span class="site-menu__indicator" aria-hidden="true">
@@ -92,7 +97,8 @@ const isCurrentPage = (href: string) =>
                 "href" in item ? (
                   <a
                     href={item.href}
-                    aria-current={isCurrentPage(item.href) ? "page" : undefined}
+                    aria-current={isExactPage(item.href) ? "page" : undefined}
+                    data-current-section={isAncestorSection(item.href) ? "true" : undefined}
                   >
                     {item.label}
                   </a>
@@ -103,7 +109,8 @@ const isCurrentPage = (href: string) =>
                       {item.links.map((link) => (
                         <a
                           href={link.href}
-                          aria-current={isCurrentPage(link.href) ? "page" : undefined}
+                          aria-current={isExactPage(link.href) ? "page" : undefined}
+                          data-current-section={isAncestorSection(link.href) ? "true" : undefined}
                         >
                           {link.label}
                         </a>
@@ -134,11 +141,18 @@ const isCurrentPage = (href: string) =>
     const dropdowns = Array.from(
       header.querySelectorAll<HTMLDetailsElement>("[data-navigation-dropdown]"),
     );
+    const mobileMenu =
+      header.querySelector<HTMLDetailsElement>("[data-navigation-menu]");
     const hoverCapable = window.matchMedia("(hover: hover) and (pointer: fine)");
+    const mobileNavigation = window.matchMedia("(max-width: 1180px)");
     const closeDropdowns = (exception?: HTMLDetailsElement) => {
       dropdowns.forEach((dropdown) => {
         if (dropdown !== exception) dropdown.open = false;
       });
+    };
+    const closeNavigation = (exception?: HTMLDetailsElement) => {
+      closeDropdowns(exception);
+      if (mobileMenu && mobileMenu !== exception) mobileMenu.open = false;
     };
 
     dropdowns.forEach((dropdown) => {
@@ -150,8 +164,9 @@ const isCurrentPage = (href: string) =>
       };
 
       dropdown.addEventListener("toggle", () => {
+        cancelClose();
         if (!dropdown.open) return;
-        closeDropdowns(dropdown);
+        closeNavigation(dropdown);
       });
 
       dropdown.addEventListener("pointerenter", () => {
@@ -174,18 +189,37 @@ const isCurrentPage = (href: string) =>
       });
     });
 
+    mobileMenu?.addEventListener("toggle", () => {
+      if (!mobileMenu.open) return;
+      closeNavigation(mobileMenu);
+    });
+
     document.addEventListener("pointerdown", (event) => {
-      if (event.target instanceof Node && header.contains(event.target)) return;
-      closeDropdowns();
+      const openNavigation = [mobileMenu, ...dropdowns].find(
+        (item): item is HTMLDetailsElement => Boolean(item?.open),
+      );
+      if (
+        openNavigation &&
+        event.target instanceof Node &&
+        openNavigation.contains(event.target)
+      ) {
+        return;
+      }
+      closeNavigation();
     });
 
     header.addEventListener("keydown", (event) => {
       if (event.key !== "Escape") return;
-      const openDropdown = dropdowns.find((dropdown) => dropdown.open);
-      if (!openDropdown) return;
-      openDropdown.open = false;
-      openDropdown.querySelector<HTMLElement>("summary")?.focus();
+      const openNavigation = [mobileMenu, ...dropdowns].find(
+        (item): item is HTMLDetailsElement => Boolean(item?.open),
+      );
+      if (!openNavigation) return;
+      event.preventDefault();
+      openNavigation.open = false;
+      openNavigation.querySelector<HTMLElement>("summary")?.focus();
     });
+
+    mobileNavigation.addEventListener("change", () => closeNavigation());
   };
 
   const initialiseHeaders = () => {
