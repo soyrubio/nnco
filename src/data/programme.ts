@@ -45,20 +45,20 @@ export interface MarketingPageData {
 
 export const homePhases = [
   {
-    title: "AI audit",
+    title: "1/ AI Audit",
     text: "We go through your operations and return a map of opportunities and a plan for what to build first.",
     href: "/ai-first-enterprise/ai-audit",
   },
   {
-    title: "Pilot in production",
+    title: "2/ Pilot in Production",
     text: "The first use case runs on real data, inside your systems, with real users.",
   },
   {
-    title: "Scale",
+    title: "3/ Scale",
     text: "Further use cases across the operation, on the infrastructure the pilot already proved.",
   },
   {
-    title: "Operation",
+    title: "4/ Operation",
     text: "We keep it running: quality monitoring, model replacement, and changes when the regulation changes.",
     href: "/ai-first-enterprise/operation",
   },

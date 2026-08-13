@@ -2,6 +2,7 @@
 import BlockArrow from "./BlockArrow.astro";
 import BrandLogo from "./BrandLogo.astro";
 import Button from "./Button.astro";
+import DisclosureChevron from "./DisclosureChevron.astro";
 import { siteNavigation } from "@/data/site";
 import {
   isExactNavigationPage,
@@ -23,6 +24,9 @@ const isDiscovery = variant === "discovery";
 const isExactPage = (href: string) => isExactNavigationPage(currentPath, href);
 const isAncestorSection = (href: string) =>
   !isExactPage(href) && isNavigationSection(currentPath, href);
+let headerMode: "solid" | "hero" | "discovery" = "solid";
+if (overHero) headerMode = "hero";
+if (isDiscovery) headerMode = "discovery";
 ---
 
 <header
@@ -33,7 +37,7 @@ const isAncestorSection = (href: string) =>
       "site-header--discovery": isDiscovery,
     },
   ]}
-  data-site-header={isDiscovery ? "discovery" : overHero ? "hero" : "solid"}
+  data-site-header={headerMode}
 >
   <div class="nnco-navbar-rail site-header__inner">
     <BrandLogo eager />
@@ -64,9 +68,7 @@ const isAncestorSection = (href: string) =>
                     ) ? "true" : undefined}
                   >
                     <span>{item.label}</span>
-                    <span class="site-nav-dropdown__indicator" aria-hidden="true">
-                      <BlockArrow direction="down" />
-                    </span>
+                    <DisclosureChevron />
                   </summary>
                   <div class="site-nav-dropdown__panel">
                     {item.links.map((link) => (
@@ -88,9 +90,7 @@ const isAncestorSection = (href: string) =>
           <details class="site-menu" data-navigation-menu>
             <summary>
               <span>Menu</span>
-              <span class="site-menu__indicator" aria-hidden="true">
-                <BlockArrow direction="down" />
-              </span>
+              <DisclosureChevron />
             </summary>
             <nav class="site-menu__panel" aria-label="Mobile primary navigation">
               {siteNavigation.map((item) =>
@@ -122,7 +122,7 @@ const isAncestorSection = (href: string) =>
             </nav>
           </details>
 
-          <Button href="/discovery" size="small">
+          <Button href="/discovery" size="small" class="site-header__cta">
             Start diagnosis
             <BlockArrow />
           </Button>

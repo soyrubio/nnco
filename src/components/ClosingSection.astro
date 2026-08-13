@@ -1,8 +1,7 @@
 ---
 import BlockArrow from "./BlockArrow.astro";
 import Button from "./Button.astro";
-import SectionAnatomy from "./SectionAnatomy.astro";
-import SectionFrame from "./SectionFrame.astro";
+import TerminalSection from "./TerminalSection.astro";
 import type { LinkAction } from "./types";
 
 interface Props {
@@ -10,7 +9,6 @@ interface Props {
   actions: readonly LinkAction[];
   title?: string;
   id?: string;
-  tone?: "paper" | "surface" | "dark";
 }
 
 const {
@@ -18,34 +16,31 @@ const {
   actions,
   title = "Start here",
   id = "closing",
-  tone = "dark",
 } = Astro.props;
 const titleId = `${id}-title`;
 ---
 
-<SectionFrame
+<TerminalSection
   id={id}
-  tone={tone}
-  labelledBy={titleId}
-  class={`closing-section closing-section--${tone}`}
+  title={title}
+  titleId={titleId}
+  class="closing-section closing-section--surface"
 >
-  <SectionAnatomy title={title} titleId={titleId}>
-    <div class="closing-callout">
-      <p>{description}</p>
-      <div class="closing-callout__actions">
-        {
-          actions.map((action) => (
-            <Button
-              href={action.href}
-              variant={action.variant ?? "secondary"}
-              aria-label={action.ariaLabel}
-            >
-              {action.label}
-              {(action.arrow ?? true) && <BlockArrow />}
-            </Button>
-          ))
-        }
-      </div>
+  <div class="closing-callout">
+    <p>{description}</p>
+    <div class="closing-callout__actions">
+      {
+        actions.map((action) => (
+          <Button
+            href={action.href}
+            variant={action.variant ?? "secondary"}
+            aria-label={action.ariaLabel}
+          >
+            {action.label}
+            {(action.arrow ?? true) && <BlockArrow />}
+          </Button>
+        ))
+      }
     </div>
-  </SectionAnatomy>
-</SectionFrame>
+  </div>
+</TerminalSection>

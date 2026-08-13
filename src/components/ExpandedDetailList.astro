@@ -1,0 +1,103 @@
+---
+interface ExpandedDetailMedia {
+  src: string;
+  alt: string;
+  width: number;
+  height: number;
+  kind?: "image" | "icon";
+}
+
+interface ExpandedDetailItem {
+  title: string;
+  description: string;
+  media?: ExpandedDetailMedia;
+}
+
+interface Props {
+  items: readonly ExpandedDetailItem[];
+  class?: string;
+}
+
+const { items, class: className } = Astro.props;
+---
+
+<div class:list={["expanded-detail-list", className]}>
+  {
+    items.map((item) => (
+      <article class="expanded-detail-list__item">
+        {item.media && (
+          <img
+            class:list={[
+              "expanded-detail-list__media",
+              `expanded-detail-list__media--${item.media.kind ?? "image"}`,
+            ]}
+            src={item.media.src}
+            alt={item.media.alt}
+            width={item.media.width}
+            height={item.media.height}
+            loading="lazy"
+          />
+        )}
+        <h3>{item.title}</h3>
+        <p>{item.description}</p>
+      </article>
+    ))
+  }
+</div>
+
+<style>
+  .expanded-detail-list {
+    display: grid;
+  }
+
+  .expanded-detail-list__item {
+    display: grid;
+    gap: 1rem;
+    padding-block: clamp(2rem, 4vw, 3.5rem);
+  }
+
+  .expanded-detail-list__item:first-child {
+    padding-top: 0;
+  }
+
+  .expanded-detail-list__item + .expanded-detail-list__item {
+    border-top: var(--content-rule-thickness) solid var(--ink);
+  }
+
+  .expanded-detail-list__media {
+    display: block;
+    width: 100%;
+    height: auto;
+    margin-bottom: clamp(1rem, 2vw, 2rem);
+  }
+
+  .expanded-detail-list__media--icon {
+    width: 3rem;
+    height: 3rem;
+    object-fit: contain;
+  }
+
+  .expanded-detail-list h3 {
+    max-width: 32ch;
+    margin: 0;
+    color: var(--ink-soft);
+    font-size: var(--section-heading-size);
+    font-weight: var(--type-weight-medium);
+    letter-spacing: var(--type-tracking-heading);
+    line-height: var(--type-leading-heading);
+  }
+
+  .expanded-detail-list p {
+    max-width: 52rem;
+    margin: 0;
+    color: var(--muted);
+    font-size: var(--type-size-body-large);
+    line-height: var(--type-leading-relaxed);
+  }
+
+  @media (max-width: 767px) {
+    .expanded-detail-list__item {
+      padding-block: 1.75rem;
+    }
+  }
+</style>

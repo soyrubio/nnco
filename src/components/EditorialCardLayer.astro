@@ -1,0 +1,67 @@
+---
+interface Props {
+  colSize?: 1 | 2 | 3;
+  surface?: "solid" | "bordered";
+  class?: string;
+}
+
+const {
+  colSize = 3,
+  surface = "solid",
+  class: className,
+} = Astro.props;
+---
+
+<div
+  class:list={[
+    "editorial-card-layer",
+    `editorial-card-layer--${colSize}`,
+    `editorial-card-layer--${surface}`,
+    className,
+  ]}
+>
+  <slot />
+</div>
+
+<style>
+  .editorial-card-layer {
+    display: grid;
+    grid-template-columns: repeat(var(--editorial-card-columns), minmax(0, 1fr));
+  }
+
+  .editorial-card-layer--solid {
+    --editorial-card-surface: var(--surface);
+
+    gap: clamp(0.75rem, 1.5vw, 1.25rem);
+  }
+
+  .editorial-card-layer--bordered {
+    --editorial-card-surface: transparent;
+
+    gap: 0;
+  }
+
+  .editorial-card-layer--1 {
+    --editorial-card-columns: 1;
+  }
+
+  .editorial-card-layer--2 {
+    --editorial-card-columns: 2;
+  }
+
+  .editorial-card-layer--3 {
+    --editorial-card-columns: 3;
+  }
+
+  @media (min-width: 768px) and (max-width: 1000px) {
+    .editorial-card-layer--3 {
+      --editorial-card-columns: 2;
+    }
+  }
+
+  @media (max-width: 767px) {
+    .editorial-card-layer {
+      --editorial-card-columns: 1;
+    }
+  }
+</style>

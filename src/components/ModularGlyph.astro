@@ -1,0 +1,110 @@
+---
+export type ModularGlyphCell = readonly [column: number, row: number];
+export type ModularGlyphSymmetry =
+  | "horizontal"
+  | "vertical"
+  | "rotational"
+  | "diagonal";
+
+interface Props {
+  cells: readonly ModularGlyphCell[];
+  symmetry: ModularGlyphSymmetry;
+  label?: string;
+  class?: string;
+}
+
+const { cells, symmetry, label, class: className } = Astro.props;
+const gridLimit = 3;
+const tileSize = 10;
+const tileStep = 15;
+const viewBoxSize = 64;
+
+if (cells.length < 5 || cells.length > 9) {
+  throw new Error("ModularGlyph requires between 5 and 9 cells.");
+}
+
+const cellKeys = new Set<string>();
+for (const [column, row] of cells) {
+  if (
+    !Number.isInteger(column) ||
+    !Number.isInteger(row) ||
+    column < 0 ||
+    column > gridLimit ||
+    row < 0 ||
+    row > gridLimit
+  ) {
+    throw new Error("ModularGlyph cells must use integer coordinates from 0 to 3.");
+  }
+
+  const key = `${column}:${row}`;
+  if (cellKeys.has(key)) {
+    throw new Error(`ModularGlyph contains the duplicate cell ${key}.`);
+  }
+  cellKeys.add(key);
+}
+
+const mirroredCell = ([column, row]: ModularGlyphCell): ModularGlyphCell => {
+  switch (symmetry) {
+    case "horizontal":
+      return [column, gridLimit - row];
+    case "vertical":
+      return [gridLimit - column, row];
+    case "rotational":
+      return [gridLimit - column, gridLimit - row];
+    case "diagonal":
+      return [row, column];
+  }
+};
+
+for (const cell of cells) {
+  const [mirrorColumn, mirrorRow] = mirroredCell(cell);
+  if (!cellKeys.has(`${mirrorColumn}:${mirrorRow}`)) {
+    throw new Error(`ModularGlyph cells must follow ${symmetry} symmetry.`);
+  }
+}
+
+const columns = cells.map(([column]) => column);
+const rows = cells.map(([, row]) => row);
+const minColumn = Math.min(...columns);
+const maxColumn = Math.max(...columns);
+const minRow = Math.min(...rows);
+const maxRow = Math.max(...rows);
+const glyphWidth = (maxColumn - minColumn) * tileStep + tileSize;
+const glyphHeight = (maxRow - minRow) * tileStep + tileSize;
+const offsetX = (viewBoxSize - glyphWidth) / 2 - minColumn * tileStep;
+const offsetY = (viewBoxSize - glyphHeight) / 2 - minRow * tileStep;
+const isLabelled = Boolean(label);
+---
+
+<svg
+  class:list={["modular-glyph", className]}
+  viewBox={`0 0 ${viewBoxSize} ${viewBoxSize}`}
+  role={isLabelled ? "img" : undefined}
+  aria-label={label}
+  aria-hidden={isLabelled ? undefined : "true"}
+  focusable="false"
+  shape-rendering="crispEdges"
+>
+  <g transform={`translate(${offsetX} ${offsetY})`}>
+    {
+      cells.map(([column, row]) => (
+        <rect
+          x={column * tileStep}
+          y={row * tileStep}
+          width={tileSize}
+          height={tileSize}
+          fill="currentColor"
+        />
+      ))
+    }
+  </g>
+</svg>
+
+<style>
+  .modular-glyph {
+    display: block;
+    width: clamp(3.5rem, 5vw, 4.25rem);
+    height: auto;
+    color: currentColor;
+  }
+</style>

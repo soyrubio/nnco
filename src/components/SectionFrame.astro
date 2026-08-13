@@ -1,8 +1,7 @@
 ---
 interface Props {
   id?: string;
-  tone?: "paper" | "surface" | "dark";
-  width?: "full" | "reading";
+  tone?: "paper" | "dark";
   labelledBy?: string;
   class?: string;
 }
@@ -10,7 +9,6 @@ interface Props {
 const {
   id,
   tone = "paper",
-  width = "full",
   labelledBy,
   class: className,
 } = Astro.props;
@@ -21,7 +19,6 @@ const {
   class:list={[
     "section-frame",
     `section-frame--${tone}`,
-    `section-frame--${width}`,
     className,
   ]}
   aria-labelledby={labelledBy}
