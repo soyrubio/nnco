@@ -1,11 +1,12 @@
 import react from "@astrojs/react";
 import sitemap from "@astrojs/sitemap";
-import vercel from "@astrojs/vercel";
+import cloudflare from "@astrojs/cloudflare";
 import { defineConfig } from "astro/config";
 
 export default defineConfig({
-  adapter: vercel(),
+  adapter: cloudflare({ imageService: "passthrough" }),
   compressHTML: true,
+  session: false,
   site: "https://nnco.ai",
   trailingSlash: "never",
   integrations: [

@@ -1,8 +1,5 @@
-import { lookup } from "node:dns/promises";
-import { request as httpRequest } from "node:http";
-import { request as httpsRequest } from "node:https";
+import { resolve4, resolve6 } from "node:dns/promises";
 import { isIP } from "node:net";
-import { Readable } from "node:stream";
 import {
   buildFallbackCompanyContext,
   DISCOVERY_RELEASE_LIMITS,
@@ -414,53 +411,10 @@ async function fetchPinnedWebsitePage(
   init: RequestInit,
   validatedAddresses: readonly string[],
 ): Promise<Response> {
-  const address = validatedAddresses[0];
-  const family = isIP(address);
-  if (!address || !family || !isPublicIpAddress(address)) {
+  if (!validatedAddresses.length) {
     throw new Error("No validated public address");
   }
-
-  return new Promise<Response>((resolve, reject) => {
-    const headers = new Headers(init.headers);
-    headers.set("Host", url.host);
-    const request = (url.protocol === "https:" ? httpsRequest : httpRequest)(
-      {
-        protocol: url.protocol,
-        hostname: address,
-        family,
-        port: url.port || (url.protocol === "https:" ? 443 : 80),
-        method: init.method || "GET",
-        path: `${url.pathname}${url.search}`,
-        headers: Object.fromEntries(headers.entries()),
-        signal: init.signal ?? undefined,
-        ...(url.protocol === "https:"
-          ? { servername: url.hostname.replace(/^\[|\]$/g, "") }
-          : {}),
-      },
-      (upstream) => {
-        const responseHeaders = new Headers();
-        for (const [name, value] of Object.entries(upstream.headers)) {
-          if (Array.isArray(value)) {
-            for (const entry of value) responseHeaders.append(name, entry);
-          } else if (value !== undefined) {
-            responseHeaders.set(name, value);
-          }
-        }
-        resolve(
-          new Response(Readable.toWeb(upstream) as BodyInit, {
-            status: upstream.statusCode ?? 502,
-            statusText: upstream.statusMessage,
-            headers: responseHeaders,
-          }),
-        );
-      },
-    );
-    request.once("error", reject);
-    request.setTimeout(FETCH_TIMEOUT_MS, () => {
-      request.destroy(new Error("Website request timed out"));
-    });
-    request.end();
-  });
+  return fetch(url, init);
 }
 
 async function readResponseText(
@@ -518,8 +472,11 @@ function discoverCandidateUrls(html: string, base: URL): URL[] {
 }
 
 async function resolvePublicHost(hostname: string): Promise<string[]> {
-  const records = await lookup(hostname, { all: true, verbatim: true });
-  return records.map((record) => record.address);
+  const [ipv4, ipv6] = await Promise.all([
+    resolve4(hostname).catch(() => []),
+    resolve6(hostname).catch(() => []),
+  ]);
+  return [...ipv4, ...ipv6];
 }
 
 async function assertPublicUrl(

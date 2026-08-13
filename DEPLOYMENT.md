@@ -4,8 +4,10 @@
 
 The marketing pages can be statically generated, but contact and discovery use
 server routes. Production therefore requires an Astro server adapter.
-`@astrojs/vercel` is installed and `astro.config.mjs` uses server output with
-the Vercel adapter.
+`@astrojs/cloudflare` is installed and `astro.config.mjs` uses server output
+with the Cloudflare adapter. `wrangler.jsonc` pins the Worker name and runtime
+compatibility settings; the adapter supplies the generated Worker entry and
+asset bindings.
 
 The release discovery flow calls two same-origin routes:
 
@@ -36,7 +38,20 @@ Contact enquiries and submitted diagnostics use the same repository and the
 same `lead_requests` table. Contact records are distinguished by the
 `contact-enquiry` snapshot kind.
 
-## Vercel and Supabase
+## Cloudflare deployment and Supabase
+
+Cloudflare Workers Builds should use:
+
+```text
+Build command: pnpm build
+Deploy command: pnpm wrangler deploy
+```
+
+The equivalent local deployment is `pnpm deploy`. The pnpm workspace permits
+only the `esbuild` and `workerd` dependency install scripts required by Astro
+and Cloudflare's local runtime; other dependency build scripts remain blocked.
+The Worker configuration sets `NODE_ENV=production`; secrets still belong in
+the Cloudflare dashboard and are not committed to the repository.
 
 Recommended production values:
 
@@ -102,9 +117,10 @@ preview when no key is configured.
 
 Website enrichment keeps its public-page corpus in process memory for no more
 than 24 hours, caps the cache at 100 companies and does not create a lead.
-Fetched connections are pinned to a DNS address that passed the public-network
-check, including after redirects. Enriched company context is signed before it
-is returned to the browser and verified again before analysis. The submitted
+Each hostname is checked against public DNS before fetching, including after
+redirects, while Cloudflare's outbound proxy rejects private destinations.
+Enriched company context is signed before it is returned to the browser and
+verified again before analysis. The submitted
 diagnostic stores only the normalized inputs, contact handoff and completed
 report response; fetched HTML is not stored in `lead_requests`. The completed
 response is retained with the lead only to replay the same request ID without
