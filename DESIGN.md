@@ -283,20 +283,20 @@ The structure is deliberately blocky:
 - `Blog`: an editorial feature and ruled reading queue backed by the typed
   `blog` content collection. Each post is a Markdown file loaded through
   Astro's glob loader. The filename defines the slug, while required `title`
-  frontmatter is the single source for the hero `h1`, page metadata, lists,
-  related entries and schema. Required `summary` frontmatter is repeated as the
+  frontmatter is the single source for the hero `h1`, page metadata, lists and
+  schema. Required `summary` frontmatter is repeated as the
   opening Markdown paragraph. The Markdown body contains no `h1` and continues
-  with normal `h2`/`h3` hierarchy, links and key statement. `ArticleProse` scopes Markdown element
-  typography without changing headings in the related-reading aside. Queue
+  with normal `h2`/`h3` hierarchy and links. `ArticleProse` scopes Markdown
+  element typography. Queue
   rows stay flush to the content rail with no movement, transition or surface
   change on hover. Keyboard focus uses the shared visible outline without
   changing the row surface. Their dates are a deliberate metadata exception:
   12px, sentence case, and formatted as a long English date such as
   `6 August 2026`. Each article places its title alone in the shared PageHero.
   The ruled content rail below uses two desktop columns: publication date,
-  author and an All posts button with a backward arrow on the left; Markdown
-  and related reading on the right. At 767px and below metadata moves above the full-width body. A
-  terminal closing action follows the article.
+  author and an All posts button with a backward arrow on the left, and only
+  Markdown on the right. At 767px and below metadata moves above the full-width
+  body. The shared Start here terminal section and footer follow the article.
 - `Team`: sparse text-only editorial profiles in the shared ruled grid. The
   desktop grid uses three columns and collapses to one at 767px; profiles have
   no portrait swap or interactive card inversion.

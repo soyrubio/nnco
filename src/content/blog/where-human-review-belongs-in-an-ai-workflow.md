@@ -6,7 +6,6 @@ readingMinutes: 6
 publishedAt: "2026-07-24"
 updatedAt: "2026-07-24"
 summary: Human review works only when the reviewer can inspect the evidence, understand the system's reasoning and change the outcome before it matters.
-related: private-ai-starts-with-the-data-boundary
 ---
 
 Human review works only when the reviewer can inspect the evidence, understand the system's reasoning and change the outcome before it matters.
@@ -42,9 +41,3 @@ A reviewer needs explicit authority to stop, change or redirect the workflow. If
 Track how often reviewers change outcomes, which reasons they give and whether certain case types produce repeated corrections. A review step with no disagreement may indicate excellent automation. It may also indicate a control that exists only on paper.
 
 Human oversight becomes credible when the organisation can show what the reviewer saw, what they decided and what changed because they were there.
-
-## The point to retain
-
-<blockquote class="article-prose__key-statement">
-<p>A human in the loop is a control only when that person has enough context, authority and time to disagree with the system.</p>
-</blockquote>

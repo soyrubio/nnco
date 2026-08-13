@@ -6,7 +6,6 @@ readingMinutes: 7
 publishedAt: "2026-08-06"
 updatedAt: "2026-08-09"
 summary: An audit trail for an AI workflow must reconstruct a decision as it stood when it was made, using only the evidence retained with the case.
-related: where-human-review-belongs-in-an-ai-workflow
 ---
 
 An audit trail for an AI workflow must reconstruct a decision as it stood when it was made, using only the evidence retained with the case.
@@ -70,9 +69,3 @@ Building this into the design costs a modest amount, mostly in deciding what cou
 The uncomfortable part is that nothing about this shows up in a pilot. A pilot is judged on whether the output is good, and the output is good. The trail matters at the point where the system stops being an experiment and starts being something a person has to defend, and by then the design decisions have already been made.
 
 That is the argument for [settling it in week one](/ai-first-enterprise/ai-audit), when it is a conversation, rather than in month eight, when it is a rebuild.
-
-## The point to retain
-
-<blockquote class="article-prose__key-statement">
-<p>An audit trail has to let someone reconstruct the decision as it stood at the moment it was made, using only the record.</p>
-</blockquote>

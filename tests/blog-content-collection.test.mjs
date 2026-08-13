@@ -98,12 +98,13 @@ async function localLinkExists(href, slugs) {
 test("blog uses Astro 7 content collections with a glob-backed Markdown loader", async () => {
   assert.match(
     sourceEntries.config,
-    /import \{ defineCollection, reference \} from "astro:content";\s*import \{ glob \} from "astro\/loaders";\s*import \{ z \} from "astro\/zod";/,
+    /import \{ defineCollection \} from "astro:content";\s*import \{ glob \} from "astro\/loaders";\s*import \{ z \} from "astro\/zod";/,
   );
   assert.match(
     sourceEntries.config,
-    /defineCollection\(\{\s*loader: glob\(\{ base: "\.\/src\/content\/blog", pattern: "\*\*\/\*\.md" \}\),[\s\S]*?related: reference\("blog"\)\.optional\(\)/,
+    /defineCollection\(\{\s*loader: glob\(\{ base: "\.\/src\/content\/blog", pattern: "\*\*\/\*\.md" \}\),/,
   );
+  assert.doesNotMatch(sourceEntries.config, /related:|reference\("blog"\)/);
   assert.match(sourceEntries.config, /publishedAt: z\.iso\.date\(\)/);
   assert.match(sourceEntries.config, /updatedAt: z\.iso\.date\(\)/);
   assert.match(
@@ -172,24 +173,19 @@ test("every Markdown post satisfies authoring and local-reference contracts", as
     if (migratedDateLabels[slug]) {
       assert.equal(formatBlogDate(data.publishedAt), migratedDateLabels[slug]);
     }
-    if (data.related) {
-      assert.notEqual(data.related, slug, `${file}: self-related entry`);
-      assert.ok(slugs.has(data.related), `${file}: related entry ${data.related}`);
-    }
+    assert.equal(data.related, undefined, `${file}: no related-post metadata`);
     const keyStatements = collectRenderedNodes(
       tree,
       (node) =>
         node.tagName === "blockquote" &&
         renderedAttribute(node, "class")?.split(/\s+/).includes("article-prose__key-statement"),
     );
-    if (migratedSlugs.includes(slug)) {
-      assert.equal(keyStatements.length, 1, `${file}: explicit key-statement marker`);
-      assert.equal(
-        keyStatements[0].childNodes.filter((node) => node.tagName)[0]?.tagName,
-        "p",
-        `${file}: key-statement paragraph`,
-      );
-    }
+    assert.equal(keyStatements.length, 0, `${file}: no special key-statement section`);
+    assert.equal(
+      headings.some((heading) => visibleRenderedText(heading) === "The point to retain"),
+      false,
+      `${file}: no point-to-retain heading`,
+    );
 
     const links = collectRenderedNodes(tree, (node) => node.tagName === "a");
     for (const link of links) {
@@ -204,7 +200,7 @@ test("every Markdown post satisfies authoring and local-reference contracts", as
 test("article routes render frontmatter titles in the hero and Markdown on the right", () => {
   assert.match(
     sourceEntries.route,
-    /import \{ getEntry, render \} from "astro:content";[\s\S]*?import PageHero from "@\/components\/PageHero\.astro";[\s\S]*?const \{ Content, headings \} = await render\(post\);/,
+    /import \{ render \} from "astro:content";[\s\S]*?import PageHero from "@\/components\/PageHero\.astro";[\s\S]*?const \{ Content, headings \} = await render\(post\);/,
   );
   assert.match(
     sourceEntries.route,
@@ -252,19 +248,18 @@ test("article routes render frontmatter titles in the hero and Markdown on the r
   assert.match(sourceEntries.prose, /\.article-prose :global\(h4\)/);
   assert.match(sourceEntries.prose, /\.article-prose :global\(h5\)/);
   assert.match(sourceEntries.prose, /\.article-prose :global\(h6\)/);
-  assert.match(
-    sourceEntries.prose,
-    /blockquote\.article-prose__key-statement p\)[^{]*\{[^}]*font-size:\s*clamp\(2rem, 4vw, 3\.5rem\);[^}]*font-weight:\s*var\(--type-weight-medium\);[^}]*letter-spacing:\s*var\(--type-tracking-display\);[^}]*line-height:\s*1\.04;/s,
-  );
+  assert.doesNotMatch(sourceEntries.prose, /article-prose__key-statement/);
   assert.match(
     sourceEntries.prose,
     /\.article-prose :global\(blockquote\)\s*\{[^}]*padding-left:\s*1\.25rem;[^}]*border-left:\s*2px solid var\(--rule\);/s,
   );
+  assert.doesNotMatch(sourceEntries.route, /Related perspective|Read next|news-article__related|post\.data\.related/);
   assert.match(
-    sourceEntries.styles,
-    /\.news-article__related h2\s*\{[^}]*margin:\s*0 0 1\.5rem;[^}]*font-size:\s*clamp\(1\.75rem, 3vw, 2\.625rem\);[^}]*font-weight:\s*var\(--type-weight-medium\);[^}]*letter-spacing:\s*var\(--type-tracking-heading\);[^}]*line-height:\s*var\(--type-leading-heading\);/s,
+    sourceEntries.route,
+    /<ArticleProse>\s*<Content \/>\s*<\/ArticleProse>\s*<\/div>\s*<\/article>\s*<\/SectionFrame>\s*<ClosingSection[\s\S]*?<\/main>\s*<Footer \/>/,
   );
-  assert.doesNotMatch(sourceEntries.styles, /\.news-article__(?:content|related) :?is?\([^}]*h1|\.news-article__content h[1-6]/);
+  assert.doesNotMatch(sourceEntries.styles, /news-article__related/);
+  assert.doesNotMatch(sourceEntries.styles, /\.news-article__content :?is?\([^}]*h1|\.news-article__content h[1-6]/);
 });
 
 test("home and blog indexes share sorted collection summaries", () => {

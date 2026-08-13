@@ -1,4 +1,4 @@
-import { defineCollection, reference } from "astro:content";
+import { defineCollection } from "astro:content";
 import { glob } from "astro/loaders";
 import { z } from "astro/zod";
 
@@ -13,7 +13,6 @@ const blog = defineCollection({
       publishedAt: z.iso.date(),
       updatedAt: z.iso.date(),
       summary: z.string().min(1),
-      related: reference("blog").optional(),
     })
     .refine((data) => data.updatedAt >= data.publishedAt, {
       message: "updatedAt must be on or after publishedAt",

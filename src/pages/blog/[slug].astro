@@ -1,5 +1,5 @@
 ---
-import { getEntry, render } from "astro:content";
+import { render } from "astro:content";
 import BaseLayout from "@/layouts/BaseLayout.astro";
 import ArticleProse from "@/components/ArticleProse.astro";
 import BlockArrow from "@/components/BlockArrow.astro";
@@ -32,7 +32,6 @@ if (headings.some((heading) => heading.depth === 1)) {
     `Blog post "${post.id}" must define its title in frontmatter and omit Markdown h1 headings.`,
   );
 }
-const related = post.data.related ? await getEntry(post.data.related) : undefined;
 const publishedLabel = formatBlogDate(post.data.publishedAt);
 const canonical = `https://nnco.ai/blog/${post.id}`;
 const blogSchema = {
@@ -92,19 +91,6 @@ const breadcrumbSchema = {
           <ArticleProse>
             <Content />
           </ArticleProse>
-
-          {
-            related && (
-              <aside class="news-article__related" aria-labelledby="related-title">
-                <h2 id="related-title">Related perspective</h2>
-                <h3>{related.data.title}</h3>
-                <p>{related.data.summary}</p>
-                <Button href={`/blog/${related.id}`} variant="secondary">
-                  Read next <BlockArrow />
-                </Button>
-              </aside>
-            )
-          }
         </div>
       </article>
     </SectionFrame>

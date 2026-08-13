@@ -6,7 +6,6 @@ readingMinutes: 8
 publishedAt: "2026-07-10"
 updatedAt: "2026-07-10"
 summary: Private AI is an architecture decision about where data travels, where models execute and who can operate the system, not a label attached to a model.
-related: what-goes-into-an-audit-trail-for-an-ai-workflow
 ---
 
 Private AI is an architecture decision about where data travels, where models execute and who can operate the system, not a label attached to a model.
@@ -42,9 +41,3 @@ The boundary has to survive model updates, incident response, debugging and vend
 Keep the evidence needed for debugging inside the same control environment. Define who can inspect it, how access is approved and how long it remains available. Test model replacement without moving the underlying case record.
 
 Private AI is durable when privacy is expressed through the system's normal operating procedures, not through an instruction that everyone must remember during an incident.
-
-## The point to retain
-
-<blockquote class="article-prose__key-statement">
-<p>Choose the data boundary before choosing the model, because the boundary determines which models and operating patterns are actually available.</p>
-</blockquote>
