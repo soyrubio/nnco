@@ -1,10 +1,10 @@
-export const FONT_PREFERENCE_STORAGE_KEY = "nnco:font:v1";
+export const FONT_PREFERENCE_STORAGE_KEY = "nnco:font:v2";
 
 export const fontPreferenceOptions = [
-  { value: "", label: "Helvetica" },
+  { value: "", label: "Ronzino" },
+  { value: "helvetica", label: "Helvetica" },
   { value: "geist", label: "Geist" },
   { value: "poppins", label: "Poppins" },
-  { value: "ronzino", label: "Ronzino" },
 ] as const;
 
 export type StoredFontPreference = Exclude<

@@ -1,8 +1,14 @@
 ---
 import { fontPreferenceOptions } from "@/lib/font-preference";
+
+interface Props {
+  visible?: boolean;
+}
+
+const { visible = false } = Astro.props;
 ---
 
-<div class="font-switcher" data-font-switcher>
+<div class="font-switcher" data-font-switcher hidden={!visible}>
   <label for="font-switcher-typeface">Typeface</label>
   <select id="font-switcher-typeface" data-font-select>
     {
@@ -94,6 +100,10 @@ import { fontPreferenceOptions } from "@/lib/font-preference";
     border: 1px solid var(--ink);
     background: var(--paper);
     color: var(--ink);
+  }
+
+  .font-switcher[hidden] {
+    display: none;
   }
 
   .font-switcher label {

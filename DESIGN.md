@@ -36,11 +36,11 @@ source to copy page by page.
 --radius-button: 999px;
 ```
 
-The default `Helvetica` typeface uses the established Helvetica Neue, Helvetica,
-Arial and sans-serif stack. The fixed accessible native selector may switch
-the shared type token to Google Fonts' variable Geist or Poppins family, or to
-the locally hosted static Ronzino family. Do not introduce another interface
-face, a serif, monospace display face or ornamental font.
+The default typeface is the locally hosted static Ronzino family. The hidden
+native selector may switch the shared type token to the established Helvetica
+Neue, Helvetica and Arial stack, or to Google Fonts' variable Geist or Poppins
+family. Do not introduce another interface face, a serif, monospace display
+face or ornamental font.
 
 ## Typography
 
@@ -146,9 +146,9 @@ The structure is deliberately blocky:
 
 - `BaseLayout`: metadata, early allowlisted typeface preference bootstrap,
   remote Geist loading, global tokens and the single site-wide font utility.
-  The default root has no font data attribute; `html[data-font="geist"]`,
-  `html[data-font="poppins"]` and `html[data-font="ronzino"]` are the only
-  alternate states.
+  The default root has no font data attribute and renders Ronzino;
+  `html[data-font="helvetica"]`, `html[data-font="geist"]` and
+  `html[data-font="poppins"]` are the only alternate states.
 - `Header`: large official NNCO mark, single-line navigation and one CTA.
   Primary navigation labels use the 16px control size at regular weight; the
   active tab remains regular because its inverted surface supplies emphasis.
@@ -203,12 +203,12 @@ The structure is deliberately blocky:
   than imposing a separate row height.
 - `Footer`: shared rail and restrained identity/navigation groups.
 - `FontSwitcher`: one compact, fixed bottom-right utility rendered by
-  `BaseLayout` on every route, including Discovery. Its visible `Typeface`
-  label controls a native selector. `Helvetica` is the default; `Geist`,
-  `Poppins` and `Ronzino` persist as optional allowlisted local preferences
-  without animation. It stays inside the page-loader inert boundary, below
-  blocking overlays and the navigation layer, uses responsive safe insets and
-  does not print.
+  `BaseLayout` on every route, including Discovery, but hidden by default. When
+  explicitly enabled, its visible `Typeface` label controls a native selector.
+  `Ronzino` is the default; `Helvetica`, `Geist` and `Poppins` persist as
+  optional allowlisted local preferences without animation. It stays inside
+  the page-loader inert boundary, below blocking overlays and the navigation
+  layer, uses responsive safe insets and does not print.
 - `DiscoveryLauncher`: mounts the stateful release diagnostic. `DiscoveryRelease`
   owns website enrichment, five routed questions, the final contact gate, AI
   analysis and the two-page print artifact.
@@ -346,8 +346,8 @@ The structure is deliberately blocky:
   pages and excludes intake, toolbar and contact controls. Displayed copy is
   bounded for A4 without changing the stored diagnostic.
 - Discovery and its print report consume the same `--font-sans` token as the
-  marketing site, including persisted optional Geist, Poppins and Ronzino
-  selections.
+  marketing site, including default Ronzino and persisted optional Helvetica,
+  Geist and Poppins selections.
 - Structural panels stay square. Interactive action buttons are the only
   rounded controls.
 

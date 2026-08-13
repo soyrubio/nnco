@@ -28,19 +28,19 @@ const sources = Object.fromEntries(
   ),
 );
 
-test("font options keep Helvetica as the empty default and allow three explicit alternatives", () => {
-  assert.equal(FONT_PREFERENCE_STORAGE_KEY, "nnco:font:v1");
+test("font options keep Ronzino as the empty default and allow three explicit alternatives", () => {
+  assert.equal(FONT_PREFERENCE_STORAGE_KEY, "nnco:font:v2");
   assert.deepEqual(fontPreferenceOptions, [
-    { value: "", label: "Helvetica" },
+    { value: "", label: "Ronzino" },
+    { value: "helvetica", label: "Helvetica" },
     { value: "geist", label: "Geist" },
     { value: "poppins", label: "Poppins" },
-    { value: "ronzino", label: "Ronzino" },
   ]);
-  assert.deepEqual(storedFontPreferenceValues, ["geist", "poppins", "ronzino"]);
+  assert.deepEqual(storedFontPreferenceValues, ["helvetica", "geist", "poppins"]);
+  assert.equal(isStoredFontPreference("helvetica"), true);
   assert.equal(isStoredFontPreference("geist"), true);
   assert.equal(isStoredFontPreference("poppins"), true);
-  assert.equal(isStoredFontPreference("ronzino"), true);
-  for (const invalidValue of [undefined, null, "", "current", "other", "GEIST"]) {
+  for (const invalidValue of [undefined, null, "", "ronzino", "current", "other", "GEIST"]) {
     assert.equal(isStoredFontPreference(invalidValue), false);
   }
 });
@@ -80,12 +80,20 @@ test("Google Fonts connections and the combined text-font request are separate f
   assert.doesNotMatch(sources.lockfile, /@fontsource-variable\/geist/);
 });
 
-test("BaseLayout exposes one labelled native select on every route", () => {
+test("BaseLayout includes one labelled native select that is hidden by default", () => {
   assert.match(
     sources.layout,
     /<div data-page-content>\s*<slot \/>\s*<FontSwitcher \/>\s*<\/div>/,
   );
   assert.doesNotMatch(sources.footer, /FontSwitcher|font-switcher/);
+  assert.match(
+    sources.component,
+    /const \{ visible = false \} = Astro\.props;/,
+  );
+  assert.match(
+    sources.component,
+    /<div class="font-switcher" data-font-switcher hidden=\{!visible\}>/,
+  );
   assert.match(
     sources.component,
     /<label for="font-switcher-typeface">Typeface<\/label>\s*<select id="font-switcher-typeface" data-font-select>/,
@@ -174,7 +182,11 @@ test("Ronzino ships only licensed normal WOFF2 faces used by the site", async ()
 test("shared token covers marketing, discovery, print, focus, and mobile sizing without motion", () => {
   assert.match(
     sources.globalStyles,
-    /--font-sans:\s*"Helvetica Neue", Helvetica, Arial, sans-serif;/,
+    /--font-sans:\s*"Ronzino", "Helvetica Neue", Helvetica, Arial, sans-serif;/,
+  );
+  assert.match(
+    sources.globalStyles,
+    /html\[data-font="helvetica"\]\s*\{\s*--font-sans:\s*"Helvetica Neue", Helvetica, Arial, sans-serif;/,
   );
   assert.match(
     sources.globalStyles,
@@ -184,10 +196,7 @@ test("shared token covers marketing, discovery, print, focus, and mobile sizing 
     sources.globalStyles,
     /html\[data-font="poppins"\]\s*\{\s*--font-sans:\s*"Poppins", "Helvetica Neue", Helvetica, Arial, sans-serif;/,
   );
-  assert.match(
-    sources.globalStyles,
-    /html\[data-font="ronzino"\]\s*\{\s*--font-sans:\s*"Ronzino", "Helvetica Neue", Helvetica, Arial, sans-serif;/,
-  );
+  assert.doesNotMatch(sources.globalStyles, /html\[data-font="ronzino"\]/);
   assert.match(sources.globalStyles, /body\s*\{[^}]*font-family:\s*var\(--font-sans\);/s);
   assert.match(
     sources.discoveryStyles,
@@ -201,6 +210,7 @@ test("shared token covers marketing, discovery, print, focus, and mobile sizing 
     sources.component,
     /\.font-switcher\s*\{[^}]*position:\s*fixed;[^}]*z-index:\s*90;[^}]*right:\s*max\(var\(--gutter\), env\(safe-area-inset-right\)\);[^}]*bottom:\s*max\(1rem, env\(safe-area-inset-bottom\)\);/s,
   );
+  assert.match(sources.component, /\.font-switcher\[hidden\]\s*\{\s*display:\s*none;/);
   assert.match(sources.component, /\.font-switcher select:focus-visible/);
   assert.match(
     sources.component,
