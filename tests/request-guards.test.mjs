@@ -39,7 +39,7 @@ test("same-origin validation preserves missing, matching, and rejected origins",
   );
 });
 
-test("sliding-window rate limits preserve forwarded keys and retry timing", () => {
+test("sliding-window rate limits prefer the trusted adapter address and preserve retry timing", () => {
   const primaryStore = new Map();
   const separateStore = new Map();
   const request = new Request(REQUEST_URL, {
@@ -58,7 +58,7 @@ test("sliding-window rate limits preserve forwarded keys and retry timing", () =
     checkSlidingWindowRateLimit(request, "192.0.2.10", primaryStore, 2, 10_000, 2_000),
     9,
   );
-  assert.deepEqual(primaryStore.get("198.51.100.10"), [1_000, 1_500]);
+  assert.deepEqual(primaryStore.get("192.0.2.10"), [1_000, 1_500]);
 
   assert.equal(
     checkSlidingWindowRateLimit(request, "192.0.2.10", separateStore, 2, 10_000, 2_000),
@@ -68,7 +68,7 @@ test("sliding-window rate limits preserve forwarded keys and retry timing", () =
     checkSlidingWindowRateLimit(request, "192.0.2.10", primaryStore, 2, 10_000, 11_001),
     null,
   );
-  assert.deepEqual(primaryStore.get("198.51.100.10"), [1_500, 11_001]);
+  assert.deepEqual(primaryStore.get("192.0.2.10"), [1_500, 11_001]);
 });
 
 test("bounded body reading accepts the exact limit without Content-Length", async () => {
