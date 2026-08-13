@@ -7,10 +7,11 @@ import Header from "@/components/Header.astro";
 import PageHero from "@/components/PageHero.astro";
 import SectionAnatomy from "@/components/SectionAnatomy.astro";
 import SectionFrame from "@/components/SectionFrame.astro";
-import { posts } from "@/data/posts";
+import { getBlogEntries, toBlogPostListItem } from "@/lib/blog";
 
 export const prerender = true;
 
+const posts = (await getBlogEntries()).map(toBlogPostListItem);
 ---
 
 <BaseLayout
@@ -31,7 +32,7 @@ export const prerender = true;
       </SectionAnatomy>
     </SectionFrame>
 
-    <SectionFrame tone="paper" labelledBy="editorial-policy-title" class="editorial-section">
+    <SectionFrame labelledBy="editorial-policy-title" class="editorial-section">
       <SectionAnatomy
         title="What we publish"
         titleId="editorial-policy-title"
@@ -47,7 +48,6 @@ export const prerender = true;
 
     <ClosingSection
       id="blog-closing"
-      tone="surface"
       description="If something here matches a problem you are working on, the fastest way to go further is 30 minutes with the people who wrote it."
       actions={[{ href: "/contact", label: "Book a 30-minute call" }]}
     />

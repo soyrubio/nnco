@@ -1,11 +1,6 @@
 ---
 import CardAffordance from "./CardAffordance.astro";
-import type { Post } from "@/data/posts";
-
-type BlogPostListItem = Pick<
-  Post,
-  "slug" | "title" | "summary" | "publishedAt" | "publishedLabel"
->;
+import type { BlogPostListItem } from "@/lib/blog";
 
 interface Props {
   posts: readonly BlogPostListItem[];

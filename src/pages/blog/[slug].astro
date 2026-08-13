@@ -1,5 +1,7 @@
 ---
+import { getEntry, render } from "astro:content";
 import BaseLayout from "@/layouts/BaseLayout.astro";
+import ArticleProse from "@/components/ArticleProse.astro";
 import BlockArrow from "@/components/BlockArrow.astro";
 import Button from "@/components/Button.astro";
 import ClosingSection from "@/components/ClosingSection.astro";
@@ -7,29 +9,43 @@ import Footer from "@/components/Footer.astro";
 import Header from "@/components/Header.astro";
 import PageHero from "@/components/PageHero.astro";
 import SectionFrame from "@/components/SectionFrame.astro";
-import SectionRow from "@/components/SectionRow.astro";
-import { getPost, posts, type Post } from "@/data/posts";
+import { getBlogEntries, type BlogEntry } from "@/lib/blog";
+import { formatBlogDate } from "@/lib/blog-date";
 
 export const prerender = true;
 
-export function getStaticPaths() {
-  return posts.map((post) => ({ params: { slug: post.slug }, props: { post } }));
+export async function getStaticPaths() {
+  return (await getBlogEntries()).map((post) => ({
+    params: { slug: post.id },
+    props: { post },
+  }));
 }
 
 interface Props {
-  post: Post;
+  post: BlogEntry;
 }
 
 const { post } = Astro.props;
-const related = post.relatedSlug ? getPost(post.relatedSlug) : undefined;
-const canonical = `https://nnco.ai/blog/${post.slug}`;
+const { Content, headings } = await render(post);
+if (headings.some((heading) => heading.depth === 1)) {
+  throw new Error(
+    `Blog post "${post.id}" must define its title in frontmatter and omit Markdown h1 headings.`,
+  );
+}
+const related = post.data.related ? await getEntry(post.data.related) : undefined;
+const publishedLabel = formatBlogDate(post.data.publishedAt);
+const canonical = `https://nnco.ai/blog/${post.id}`;
 const blogSchema = {
   "@type": "BlogPosting",
-  headline: post.title,
-  description: post.summary,
-  datePublished: post.publishedAt,
-  dateModified: post.updatedAt,
-  author: { "@type": "Person", name: post.author, url: "https://nnco.ai/company" },
+  headline: post.data.title,
+  description: post.data.summary,
+  datePublished: post.data.publishedAt,
+  dateModified: post.data.updatedAt,
+  author: {
+    "@type": "Person",
+    name: post.data.author,
+    url: "https://nnco.ai/company",
+  },
   publisher: { "@id": "https://nnco.ai/#organization" },
   mainEntityOfPage: canonical,
   inLanguage: "en",
@@ -39,93 +55,62 @@ const breadcrumbSchema = {
   itemListElement: [
     { "@type": "ListItem", position: 1, name: "Home", item: "https://nnco.ai/" },
     { "@type": "ListItem", position: 2, name: "Blog", item: "https://nnco.ai/blog" },
-    { "@type": "ListItem", position: 3, name: post.title, item: canonical },
+    {
+      "@type": "ListItem",
+      position: 3,
+      name: post.data.title,
+      item: canonical,
+    },
   ],
 };
 ---
 
 <BaseLayout
-  title={`${post.title} | NNCO`}
-  description={post.summary}
-  canonicalPath={`/blog/${post.slug}`}
+  title={`${post.data.title} | NNCO`}
+  description={post.data.summary}
+  canonicalPath={`/blog/${post.id}`}
   schemas={[blogSchema, breadcrumbSchema]}
+  ogType="article"
+  articlePublishedTime={post.data.publishedAt}
+  articleModifiedTime={post.data.updatedAt}
 >
   <Header />
   <main class="news-article editorial-page">
-    <PageHero title={post.title} introduction={post.summary} />
+    <PageHero title={post.data.title} titleId="article-title" />
 
-    <SectionFrame class="news-article__body" labelledBy="article-introduction">
-      <article class="news-article__sections">
-        <span class="news-article__rule" aria-hidden="true"></span>
+    <SectionFrame class="news-article__body">
+      <article class="news-article__layout">
+        <header class="news-article__meta" aria-label="Publication details">
+          <time datetime={post.data.publishedAt}>{publishedLabel}</time>
+          <span>{post.data.author}</span>
+          <Button href="/blog" variant="secondary">
+            <BlockArrow direction="left" /> All posts
+          </Button>
+        </header>
 
-        <section class="news-article__section" aria-labelledby="article-introduction">
-          <SectionRow title="Introduction" titleId="article-introduction">
-            <div slot="heading-meta" class="news-article__byline">
-              <time datetime={post.publishedAt}>{post.publishedLabel}</time>
-              <span>{post.author}</span>
-            </div>
-          <div class="news-reading-copy">
-            {post.introduction.map((paragraph) => <p>{paragraph}</p>)}
-          </div>
-          </SectionRow>
-        </section>
+        <div class="news-article__content">
+          <ArticleProse>
+            <Content />
+          </ArticleProse>
 
-        {
-          post.sections.map((section, sectionIndex) => (
-            <section
-              class="news-article__section"
-              aria-labelledby={`article-section-${sectionIndex + 1}`}
-            >
-              <SectionRow
-                title={section.heading}
-                titleId={`article-section-${sectionIndex + 1}`}
-              >
-                <div class="news-reading-copy">
-                  {section.paragraphs.map((paragraph, paragraphIndex) => {
-                    const link = section.links?.find(
-                      (item) => item.paragraph === paragraphIndex,
-                    );
-                    if (!link || !paragraph.includes(link.text)) {
-                      return <p>{paragraph}</p>;
-                    }
-                    const [before, after] = paragraph.split(link.text);
-                    return <p>{before}<a href={link.href}>{link.text}</a>{after}</p>;
-                  })}
-                </div>
-              </SectionRow>
-            </section>
-          ))
-        }
-
-        <section class="news-article__section" aria-labelledby="article-takeaway">
-          <SectionRow title="The point to retain" titleId="article-takeaway">
-            <div class="news-reading-copy">
-              <blockquote><p>{post.keyStatement}</p></blockquote>
-            </div>
-          </SectionRow>
-        </section>
-
-        {
-          related && (
-            <aside class="news-article__section" aria-labelledby="related-title">
-              <SectionRow title="Related perspective" titleId="related-title">
-                <div class="news-article__related-content">
-                  <h3>{related.title}</h3>
-                  <p>{related.summary}</p>
-                  <Button href={`/blog/${related.slug}`} variant="secondary">
-                    Read next <BlockArrow />
-                  </Button>
-                </div>
-              </SectionRow>
-            </aside>
-          )
-        }
+          {
+            related && (
+              <aside class="news-article__related" aria-labelledby="related-title">
+                <h2 id="related-title">Related perspective</h2>
+                <h3>{related.data.title}</h3>
+                <p>{related.data.summary}</p>
+                <Button href={`/blog/${related.id}`} variant="secondary">
+                  Read next <BlockArrow />
+                </Button>
+              </aside>
+            )
+          }
+        </div>
       </article>
     </SectionFrame>
 
     <ClosingSection
       id="blog-closing"
-      tone="surface"
       description="If something here matches a problem you are working on, the fastest way to go further is 30 minutes with the people who wrote it."
       actions={[{ href: "/contact", label: "Book a 30-minute call" }]}
     />
