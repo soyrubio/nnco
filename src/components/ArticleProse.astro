@@ -1,0 +1,113 @@
+---
+interface Props {
+  class?: string;
+}
+
+const { class: className } = Astro.props;
+---
+
+<div class:list={["article-prose", className]}>
+  <slot />
+</div>
+
+<style>
+  .article-prose > :global(p:first-child) {
+    margin-bottom: clamp(3.5rem, 7vw, 6rem);
+    color: var(--ink-soft);
+    font-size: clamp(1.2rem, 2vw, 1.6rem);
+    line-height: var(--type-leading-body);
+  }
+
+  .article-prose :global(h2) {
+    margin: clamp(3.5rem, 7vw, 6rem) 0 1.5rem;
+    font-size: clamp(1.75rem, 3vw, 2.625rem);
+    font-weight: var(--type-weight-medium);
+    letter-spacing: var(--type-tracking-heading);
+    line-height: var(--type-leading-heading);
+  }
+
+  .article-prose :global(h3) {
+    margin: 2.75rem 0 1rem;
+    font-size: clamp(1.3rem, 2vw, 1.75rem);
+    font-weight: var(--type-weight-medium);
+    letter-spacing: var(--type-tracking-heading);
+    line-height: var(--type-leading-item);
+  }
+
+  .article-prose :global(h4),
+  .article-prose :global(h5),
+  .article-prose :global(h6) {
+    margin: 2rem 0 0.75rem;
+    font-weight: var(--type-weight-medium);
+    line-height: var(--type-leading-item);
+  }
+
+  .article-prose :global(h4) {
+    font-size: 1.125rem;
+    letter-spacing: -0.01em;
+  }
+
+  .article-prose :global(h5) {
+    font-size: var(--type-size-control);
+  }
+
+  .article-prose :global(h6) {
+    font-size: var(--type-size-small);
+  }
+
+  .article-prose :global(p),
+  .article-prose :global(li) {
+    margin: 0;
+    color: var(--muted);
+    font-size: var(--type-size-body);
+    line-height: var(--type-leading-relaxed);
+  }
+
+  .article-prose :global(p + p) {
+    margin-top: 1.35rem;
+  }
+
+  .article-prose :global(ul),
+  .article-prose :global(ol) {
+    margin: 1.35rem 0 0;
+    padding-left: 1.5rem;
+  }
+
+  .article-prose :global(li + li) {
+    margin-top: 0.75rem;
+  }
+
+  .article-prose :global(a) {
+    color: var(--ink);
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 0.2em;
+  }
+
+  .article-prose :global(blockquote) {
+    margin: 2rem 0;
+    padding-left: 1.25rem;
+    border-left: 2px solid var(--rule);
+  }
+
+  .article-prose :global(blockquote p) {
+    margin: 0;
+    color: var(--muted);
+    font-size: var(--type-size-body);
+    line-height: var(--type-leading-relaxed);
+  }
+
+  .article-prose :global(blockquote.article-prose__key-statement) {
+    margin: 0;
+    padding: 0;
+    border: 0;
+  }
+
+  .article-prose :global(blockquote.article-prose__key-statement p) {
+    color: var(--ink);
+    font-size: clamp(2rem, 4vw, 3.5rem);
+    font-weight: var(--type-weight-medium);
+    letter-spacing: var(--type-tracking-display);
+    line-height: 1.04;
+  }
+</style>
