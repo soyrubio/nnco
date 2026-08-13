@@ -191,7 +191,8 @@ img {
   align-items: center;
   gap: clamp(1.25rem, 2.5vw, 2.75rem);
   color: var(--muted);
-  font-size: 0.82rem;
+  font-size: 0.875rem;
+  font-weight: 600;
   pointer-events: auto;
 }
 
@@ -216,7 +217,8 @@ img {
 
 .site-menu summary {
   cursor: pointer;
-  font-size: 0.82rem;
+  font-size: 0.875rem;
+  font-weight: 600;
   list-style: none;
   pointer-events: auto;
 }
@@ -500,6 +502,23 @@ h1 {
 .hero h1 {
   max-width: none;
   font-size: clamp(2.5rem, 4.5vw, 4.5rem);
+}
+
+.hero h1::before,
+.hero h1::after {
+  display: block;
+  width: 100%;
+  height: 6px;
+  background: currentColor;
+  content: "";
+}
+
+.hero h1::before {
+  margin-bottom: clamp(1rem, 1.5vw, 1.5rem);
+}
+
+.hero h1::after {
+  margin-top: clamp(1rem, 1.5vw, 1.5rem);
 }
 
 .hero__headline-line {
