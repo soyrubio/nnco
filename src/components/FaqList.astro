@@ -1,5 +1,5 @@
 ---
-import BlockArrow from "./BlockArrow.astro";
+import DisclosureChevron from "./DisclosureChevron.astro";
 import type { FaqItem } from "@/data/faq";
 
 interface Props {
@@ -16,9 +16,7 @@ const { items, groupName = "common-questions" } = Astro.props;
       <details name={groupName}>
         <summary>
           <span class="faq-list__question">{item.question}</span>
-          <span class="faq-list__toggle" aria-hidden="true">
-            <BlockArrow direction="down" />
-          </span>
+          <DisclosureChevron />
         </summary>
         <div class="faq-list__answer">
           <p>{item.answer}</p>
@@ -30,25 +28,23 @@ const { items, groupName = "common-questions" } = Astro.props;
 
 <style>
   .faq-list details + details {
-    border-top: 1px solid var(--rule-strong);
+    border-top: var(--content-rule-thickness) solid var(--ink);
   }
 
   .faq-list summary {
     display: grid;
-    min-height: 6.5rem;
     grid-template-columns: 1fr auto;
     align-items: center;
     gap: 2rem;
-    padding-block: 1.5rem;
+    padding: 1.5rem 0;
     cursor: pointer;
-    font-size: clamp(1.15rem, 1.7vw, 1.5rem);
-    font-weight: 550;
-    line-height: 1.25;
+    font-size: var(--type-size-item-heading);
+    font-weight: var(--type-weight-medium);
+    line-height: var(--type-leading-item);
     list-style: none;
   }
 
   .faq-list details:first-child summary {
-    min-height: 0;
     padding-top: 0;
   }
 
@@ -65,18 +61,6 @@ const { items, groupName = "common-questions" } = Astro.props;
     max-width: 42ch;
   }
 
-  .faq-list__toggle {
-    display: grid;
-    width: 0.8rem;
-    height: 0.8rem;
-    place-items: center;
-    transition: transform 220ms cubic-bezier(0.2, 0, 0, 1);
-  }
-
-  .faq-list details[open] .faq-list__toggle {
-    transform: rotate(180deg);
-  }
-
   .faq-list__answer {
     max-width: 52rem;
     padding: 0 clamp(3rem, 8vw, 8rem) 2.25rem 0;
@@ -85,23 +69,18 @@ const { items, groupName = "common-questions" } = Astro.props;
   .faq-list__answer p {
     margin-bottom: 0;
     color: var(--muted);
-    font-size: clamp(1.05rem, 1.25vw, 1.2rem);
-    line-height: 1.65;
-  }
-
-  :global(.section-frame--dark) .faq-list details + details {
-    border-color: rgba(245, 245, 245, 0.42);
-  }
-
-  :global(.section-frame--dark) .faq-list__answer p {
-    color: rgba(245, 245, 245, 0.72);
+    font-size: var(--type-size-body-large);
+    line-height: var(--type-leading-relaxed);
   }
 
   @media (max-width: 767px) {
     .faq-list summary {
-      min-height: 0;
       gap: 1.25rem;
-      padding-block: 1.25rem;
+      padding: 1.25rem 0;
+    }
+
+    .faq-list details:first-child summary {
+      padding-top: 0;
     }
 
     .faq-list__answer {

@@ -1,4 +1,6 @@
 ---
+import { PRIMARY_LOGO } from "@/lib/brand-assets";
+
 interface Props {
   href?: string;
   eager?: boolean;
@@ -18,204 +20,28 @@ const source =
     ? "/assets/nnco-logo-legacy-alternate.svg"
     : variant === "previous"
       ? "/assets/nnco-logo-legacy-primary.svg"
-      : "/assets/nnco-logo-condensed-frame-01.png";
-const sourceWidth = variant === "primary" ? 720 : 900;
-const animationFrames = [
-  "/assets/nnco-logo-condensed-frame-01.png",
-  "/assets/nnco-logo-condensed-frame-02.png",
-  "/assets/nnco-logo-condensed-frame-03.png",
-  "/assets/nnco-logo-condensed-frame-04.png",
-] as const;
+      : PRIMARY_LOGO.src;
+const sourceWidth = variant === "primary" ? PRIMARY_LOGO.width : 900;
+const sourceHeight = PRIMARY_LOGO.height;
 ---
 
 <a
-  class:list={["brand-logo", className]}
+  class:list={[
+    "brand-logo",
+    { "brand-logo--wide": variant !== "primary" },
+    className,
+  ]}
   href={href}
   aria-label="NNCO home"
-  data-brand-logo-animation={variant === "primary" ? "true" : undefined}
 >
   <span class="brand-logo__stage" aria-hidden="true">
     <img
-      class="brand-logo__static"
       src={source}
       alt=""
       width={sourceWidth}
-      height="700"
+      height={sourceHeight}
       loading={eager ? "eager" : "lazy"}
       fetchpriority={eager ? "high" : "auto"}
     />
-    {
-      variant === "primary" &&
-        animationFrames.map((frame, index) => (
-          <img
-            class="brand-logo__frame"
-            src={frame}
-            alt=""
-            width="720"
-            height="700"
-            loading="eager"
-            fetchpriority={eager || index === 0 ? "high" : "auto"}
-            data-logo-frame={index}
-          />
-        ))
-    }
   </span>
 </a>
-
-<style>
-  .brand-logo,
-  .brand-logo__stage,
-  .brand-logo__stage img {
-    animation: none !important;
-    transform: none !important;
-    transition: none !important;
-  }
-
-  .brand-logo__frame {
-    visibility: hidden;
-  }
-
-  .brand-logo.is-animating .brand-logo__static {
-    visibility: hidden;
-  }
-
-  .brand-logo.is-animating .brand-logo__frame.is-active {
-    visibility: visible;
-  }
-</style>
-
-<script>
-  const logoFrameCadenceMs = 240;
-
-  const initialiseBrandLogo = (logo: HTMLElement) => {
-    if (logo.dataset.logoAnimationReady === "true") return;
-    logo.dataset.logoAnimationReady = "true";
-
-    const frames = Array.from(
-      logo.querySelectorAll<HTMLElement>("[data-logo-frame]"),
-    );
-    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
-    let frameIndex = 0;
-    let frameTimer = 0;
-    let hovered = false;
-    let focused = false;
-    let interactionActive = false;
-    let queuedInteraction = false;
-    let runningSequence = false;
-    let disposed = false;
-
-    const showFrame = (index: number) => {
-      frames.forEach((frame, candidate) => {
-        frame.classList.toggle("is-active", candidate === index);
-      });
-    };
-
-    const resetVisual = () => {
-      window.clearInterval(frameTimer);
-      frameTimer = 0;
-      frameIndex = 0;
-      frames.forEach((frame) => frame.classList.remove("is-active"));
-      logo.classList.remove("is-animating");
-    };
-
-    const finishSequence = () => {
-      resetVisual();
-      runningSequence = false;
-
-      if (
-        queuedInteraction &&
-        (hovered || focused) &&
-        !reducedMotion.matches &&
-        !disposed
-      ) {
-        queuedInteraction = false;
-        startSequence();
-      } else if (!hovered && !focused) {
-        queuedInteraction = false;
-      }
-    };
-
-    const startSequence = () => {
-      if (disposed || reducedMotion.matches || frames.length === 0) return;
-
-      if (runningSequence) {
-        queuedInteraction = true;
-        return;
-      }
-
-      runningSequence = true;
-      logo.classList.add("is-animating");
-      frameIndex = 0;
-      showFrame(frameIndex);
-      frameTimer = window.setInterval(() => {
-        frameIndex += 1;
-        if (frameIndex >= frames.length) {
-          finishSequence();
-          return;
-        }
-        showFrame(frameIndex);
-      }, logoFrameCadenceMs);
-    };
-
-    const requestInteraction = () => {
-      if (disposed || reducedMotion.matches) return;
-
-      if (runningSequence) {
-        queuedInteraction = true;
-        return;
-      }
-
-      startSequence();
-    };
-
-    const syncInteraction = () => {
-      const nextInteractionActive = hovered || focused;
-      if (nextInteractionActive && !interactionActive) requestInteraction();
-      interactionActive = nextInteractionActive;
-    };
-
-    logo.addEventListener("pointerenter", () => {
-      hovered = true;
-      syncInteraction();
-    });
-    logo.addEventListener("pointerleave", () => {
-      hovered = false;
-      syncInteraction();
-    });
-    logo.addEventListener("focus", () => {
-      focused = true;
-      syncInteraction();
-    });
-    logo.addEventListener("blur", () => {
-      focused = false;
-      syncInteraction();
-    });
-
-    const handleMotionPreference = () => {
-      if (reducedMotion.matches) {
-        queuedInteraction = false;
-        runningSequence = false;
-        resetVisual();
-      }
-    };
-
-    const dispose = () => {
-      disposed = true;
-      reducedMotion.removeEventListener("change", handleMotionPreference);
-      document.removeEventListener("astro:before-swap", dispose);
-      resetVisual();
-    };
-
-    reducedMotion.addEventListener("change", handleMotionPreference);
-    document.addEventListener("astro:before-swap", dispose, { once: true });
-  };
-
-  const initialiseBrandLogos = () => {
-    document
-      .querySelectorAll<HTMLElement>('[data-brand-logo-animation="true"]')
-      .forEach(initialiseBrandLogo);
-  };
-
-  initialiseBrandLogos();
-  document.addEventListener("astro:page-load", initialiseBrandLogos);
-</script>

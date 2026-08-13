@@ -1,0 +1,32 @@
+---
+interface Props {
+  id: string;
+  name: string;
+  errorId: string;
+  required?: boolean;
+  disabled?: boolean;
+  class?: string;
+}
+
+const {
+  id,
+  name,
+  errorId,
+  required = false,
+  disabled = false,
+  class: className,
+} = Astro.props;
+---
+
+<div class:list={["form-checkbox", className]}>
+  <input
+    id={id}
+    name={name}
+    type="checkbox"
+    required={required}
+    disabled={disabled}
+    aria-describedby={errorId}
+  />
+  <span><label for={id}><slot name="label" /></label>{" "}<slot /></span>
+  <small id={errorId} data-error-for={name}></small>
+</div>

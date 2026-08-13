@@ -5,23 +5,26 @@ import BlogPostList from "@/components/BlogPostList.astro";
 import Button from "@/components/Button.astro";
 import ClosingSection from "@/components/ClosingSection.astro";
 import EditorialCard from "@/components/EditorialCard.astro";
+import EditorialCardLayer from "@/components/EditorialCardLayer.astro";
 import FaqSection from "@/components/FaqSection.astro";
 import Footer from "@/components/Footer.astro";
 import Header from "@/components/Header.astro";
 import Hero from "@/components/Hero.astro";
 import MarketingBehavior from "@/components/MarketingBehavior.astro";
+import PrivateAiBoundary from "@/components/PrivateAiBoundary.astro";
 import SectionAnatomy from "@/components/SectionAnatomy.astro";
 import SectionFrame from "@/components/SectionFrame.astro";
 import { faqByPage } from "@/data/faq";
-import { posts } from "@/data/posts";
+import { homeBuildItems } from "@/data/home";
 import { homePhases } from "@/data/programme";
 import { sectors } from "@/data/site";
+import { getBlogEntries, toBlogPostListItem } from "@/lib/blog";
 import { buildFaqSchema } from "@/lib/schema";
 
 export const prerender = true;
 
 const faq = faqByPage.home;
-const latestPosts = posts.slice(0, 3);
+const latestPosts = (await getBlogEntries()).slice(0, 3).map(toBlogPostListItem);
 const websiteSchema = {
   "@type": "WebSite",
   "@id": "https://nnco.ai/#website",
@@ -73,22 +76,19 @@ const faqSchema = buildFaqSchema(faq, "/");
       </SectionAnatomy>
     </SectionFrame>
 
-    <SectionFrame tone="surface" labelledBy="build-title" class="editorial-section">
-      <SectionAnatomy title="What we build" titleId="build-title">
-        <div class="editorial-card-grid editorial-card-grid--3">
-          <EditorialCard
-            title="Agents that run whole workflows"
-            text="An agent takes a process end to end: onboarding checks, document review, preparing a case for a human decision. It works inside your systems, not next to them."
-          />
-          <EditorialCard
-            title="Documents and case files"
-            text="It reads contracts, statements and case files, pulls out the data and drafts the output. This is the work whole departments sit on today."
-          />
-          <EditorialCard
-            title="Data that sits unused"
-            text="Data your teams never had time to use becomes an answer in seconds, with a link back to the record it came from."
-          />
-        </div>
+    <SectionFrame labelledBy="build-title">
+      <SectionAnatomy title="What we build" titleId="build-title" contentWidth="75">
+        <EditorialCardLayer colSize={1}>
+          {
+            homeBuildItems.map((item) => (
+              <EditorialCard
+                title={item.title}
+                text={item.description}
+                glyph={item.glyph}
+              />
+            ))
+          }
+        </EditorialCardLayer>
       </SectionAnatomy>
     </SectionFrame>
 
@@ -118,36 +118,28 @@ const faqSchema = buildFaqSchema(faq, "/");
               </Button>
             </div>
           </div>
-          <img
-            class="infrastructure-plate__image"
-            src="/assets/nnco-private-ai-pixelated.png"
-            alt=""
-            width="1248"
-            height="1248"
-            loading="lazy"
-          />
+          <PrivateAiBoundary />
         </div>
       </SectionAnatomy>
     </SectionFrame>
 
     <SectionFrame id="industries" labelledBy="industries-title" class="home-sectors">
       <SectionAnatomy title="Industries" titleId="industries-title">
-        <div class="sector-panel-grid">
+        <EditorialCardLayer colSize={2} surface="bordered">
           {
             sectors.map((sector) => (
               <EditorialCard
                 title={sector.name}
                 text={sector.description}
                 href={sector.href}
-                variant="sector"
               />
             ))
           }
-        </div>
+        </EditorialCardLayer>
       </SectionAnatomy>
     </SectionFrame>
 
-    <SectionFrame tone="surface" labelledBy="production-title" class="approach-section">
+    <SectionFrame labelledBy="production-title" class="approach-section">
       <SectionAnatomy title="From pilot to production" titleId="production-title">
         <div class="approach-layout">
           <div>
@@ -182,9 +174,13 @@ const faqSchema = buildFaqSchema(faq, "/");
       </SectionAnatomy>
     </SectionFrame>
 
-    <SectionFrame tone="surface" labelledBy="sequence-title" class="editorial-section">
-      <SectionAnatomy title="From audit to operation" titleId="sequence-title">
-        <div class="editorial-card-grid editorial-card-grid--4">
+    <SectionFrame labelledBy="sequence-title" class="editorial-section">
+      <SectionAnatomy
+        title="From audit to operation"
+        titleId="sequence-title"
+        contentWidth="50"
+      >
+        <EditorialCardLayer colSize={1}>
           {
             homePhases.map((phase) => (
               <EditorialCard
@@ -194,7 +190,7 @@ const faqSchema = buildFaqSchema(faq, "/");
               />
             ))
           }
-        </div>
+        </EditorialCardLayer>
       </SectionAnatomy>
     </SectionFrame>
 
@@ -207,12 +203,12 @@ const faqSchema = buildFaqSchema(faq, "/");
       </SectionAnatomy>
     </SectionFrame>
 
+    <FaqSection items={faq} />
+
     <ClosingSection
       description="No slides. We go through where AI would pay off first in your operation, what it would take to run it, and what your data and your regulator allow."
       actions={[{ href: "/contact", label: "Book a 30-minute call" }]}
     />
-
-    <FaqSection items={faq} />
   </main>
 
   <Footer />

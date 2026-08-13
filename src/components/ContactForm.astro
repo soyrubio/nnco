@@ -1,5 +1,7 @@
 ---
 import Button from "./Button.astro";
+import FormCheckbox from "./form/FormCheckbox.astro";
+import FormControl from "./form/FormControl.astro";
 import {
   CONTACT_AREAS,
   CONTACT_CONSENT_VERSION,
@@ -12,8 +14,7 @@ import {
 <contact-form class="contact-form-shell" data-consent-version={CONTACT_CONSENT_VERSION}>
   <form class="contact-form" data-contact-form novalidate>
     <div class="contact-form__grid">
-      <label class="field">
-        <span>Name</span>
+      <FormControl label="Name" name="name" errorId="contact-name-error">
         <input
           name="name"
           autocomplete="name"
@@ -22,11 +23,9 @@ import {
           maxlength={CONTACT_FIELD_LIMITS.name.maxLength}
           aria-describedby="contact-name-error"
         />
-        <small id="contact-name-error" data-error-for="name"></small>
-      </label>
+      </FormControl>
 
-      <label class="field">
-        <span>Work email</span>
+      <FormControl label="Work email" name="email" errorId="contact-email-error">
         <input
           name="email"
           type="email"
@@ -37,11 +36,13 @@ import {
           pattern={CONTACT_EMAIL_PATTERN_SOURCE}
           aria-describedby="contact-email-error"
         />
-        <small id="contact-email-error" data-error-for="email"></small>
-      </label>
+      </FormControl>
 
-      <label class="field">
-        <span>Organisation</span>
+      <FormControl
+        label="Organisation"
+        name="institution"
+        errorId="contact-institution-error"
+      >
         <input
           name="institution"
           autocomplete="organization"
@@ -50,29 +51,28 @@ import {
           maxlength={CONTACT_FIELD_LIMITS.organisation.maxLength}
           aria-describedby="contact-institution-error"
         />
-        <small id="contact-institution-error" data-error-for="institution"></small>
-      </label>
+      </FormControl>
 
-      <label class="field">
-        <span>Sector</span>
+      <FormControl label="Sector" name="sector" errorId="contact-sector-error">
         <select name="sector" required aria-describedby="contact-sector-error">
           <option value="">Select sector</option>
           {CONTACT_SECTORS.map((sector) => <option value={sector}>{sector}</option>)}
         </select>
-        <small id="contact-sector-error" data-error-for="sector"></small>
-      </label>
+      </FormControl>
 
-      <label class="field">
-        <span>What is this about?</span>
+      <FormControl label="What is this about?" name="area" errorId="contact-area-error">
         <select name="area" required aria-describedby="contact-area-error">
           <option value="">Select one</option>
           {CONTACT_AREAS.map((area) => <option value={area}>{area}</option>)}
         </select>
-        <small id="contact-area-error" data-error-for="area"></small>
-      </label>
+      </FormControl>
 
-      <label class="field contact-form__message">
-        <span>What are you working on?</span>
+      <FormControl
+        label="What are you working on?"
+        name="message"
+        errorId="contact-message-error"
+        class="contact-form__message"
+      >
         <textarea
           name="message"
           rows="6"
@@ -82,19 +82,18 @@ import {
           required
           aria-describedby="contact-message-error"
         ></textarea>
-        <small id="contact-message-error" data-error-for="message"></small>
-      </label>
+      </FormControl>
 
-      <label class="contact-form__consent">
-        <input
-          name="consent"
-          type="checkbox"
-          required
-          aria-describedby="contact-consent-error"
-        />
-        <span>I agree that NNCO may use these details to respond to my enquiry. <a href="/privacy">Privacy</a></span>
-        <small id="contact-consent-error" data-error-for="consent"></small>
-      </label>
+      <FormCheckbox
+        id="contact-consent"
+        name="consent"
+        errorId="contact-consent-error"
+        required
+        class="contact-form__consent"
+      >
+        <Fragment slot="label">I agree that NNCO may use these details to respond to my enquiry.</Fragment>
+        <a href="/privacy">Privacy</a>
+      </FormCheckbox>
     </div>
 
     <div class="contact-form__footer">

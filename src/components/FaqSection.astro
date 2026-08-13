@@ -8,24 +8,17 @@ interface Props {
   items: readonly FaqItem[];
   title?: string;
   id?: string;
-  tone?: "paper" | "surface" | "dark";
 }
 
 const {
   items,
   title = "Common questions",
   id = "faq",
-  tone = "paper",
 } = Astro.props;
 const titleId = `${id}-title`;
 ---
 
-<SectionFrame
-  id={id}
-  tone={tone}
-  labelledBy={titleId}
-  class="faq-section"
->
+<SectionFrame id={id} labelledBy={titleId} class="faq-section">
   <SectionAnatomy title={title} titleId={titleId}>
     <FaqList items={items} groupName={`${id}-questions`} />
   </SectionAnatomy>

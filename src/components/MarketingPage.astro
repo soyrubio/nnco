@@ -2,17 +2,20 @@
 import BlockArrow from "./BlockArrow.astro";
 import Button from "./Button.astro";
 import ClosingSection from "./ClosingSection.astro";
-import CompanyAccordion from "./CompanyAccordion.astro";
 import EditorialCard from "./EditorialCard.astro";
+import EditorialCardLayer from "./EditorialCardLayer.astro";
+import ExpandedDetailList from "./ExpandedDetailList.astro";
 import FaqSection from "./FaqSection.astro";
 import Footer from "./Footer.astro";
 import Header from "./Header.astro";
 import PageHero from "./PageHero.astro";
+import PrivateAiBoundary from "./PrivateAiBoundary.astro";
 import SectionAnatomy from "./SectionAnatomy.astro";
 import SectionFrame from "./SectionFrame.astro";
 import type { LinkAction } from "./types";
 import { faqByPage } from "@/data/faq";
 import type { MarketingPageData } from "@/data/programme";
+import { waysOfWorking } from "@/data/site";
 import BaseLayout from "@/layouts/BaseLayout.astro";
 import { buildFaqSchema } from "@/lib/schema";
 
@@ -98,14 +101,7 @@ const schemas = [serviceSchema, faqSchema, breadcrumbSchema].filter(
                   {page.sections[0].paragraphs?.map((paragraph) => <p>{paragraph}</p>)}
                 </div>
               </div>
-              <img
-                class="infrastructure-plate__image"
-                src="/assets/nnco-private-ai-pixelated.png"
-                alt=""
-                width="1248"
-                height="1248"
-                loading="lazy"
-              />
+              <PrivateAiBoundary />
             </div>
           </SectionAnatomy>
         </SectionFrame>
@@ -117,15 +113,20 @@ const schemas = [serviceSchema, faqSchema, breadcrumbSchema].filter(
         const titleId = `section-${index + 1 + sectionOffset}`;
         return (
           <SectionFrame
-            tone={index % 3 === 1 ? "surface" : "paper"}
             labelledBy={titleId}
             class="editorial-section"
           >
-            <SectionAnatomy title={section.title} titleId={titleId}>
+            <SectionAnatomy
+              title={section.title}
+              titleId={titleId}
+              contentWidth={section.render === "ways-of-working" ? "50" : undefined}
+            >
               {section.paragraphs?.map((paragraph) => (
                 <p class="editorial-section__body">{paragraph}</p>
               ))}
-              {section.render === "ways-of-working" && <CompanyAccordion />}
+              {section.render === "ways-of-working" && (
+                <ExpandedDetailList items={waysOfWorking} />
+              )}
               {section.groups && (
                 <div class="editorial-group-grid">
                   {section.groups.map((group) => (
@@ -139,7 +140,9 @@ const schemas = [serviceSchema, faqSchema, breadcrumbSchema].filter(
                 </div>
               )}
               {section.items && (
-                <div class:list={["editorial-card-grid", `editorial-card-grid--${section.items.length}`]}>
+                <EditorialCardLayer
+                  colSize={section.items.length === 2 || section.items.length === 4 ? 2 : 3}
+                >
                   {section.items.map((item) => (
                     <EditorialCard
                       title={item.title}
@@ -147,7 +150,7 @@ const schemas = [serviceSchema, faqSchema, breadcrumbSchema].filter(
                       href={item.href}
                     />
                   ))}
-                </div>
+                </EditorialCardLayer>
               )}
               {section.links && (
                 <div class="editorial-links">
@@ -164,12 +167,12 @@ const schemas = [serviceSchema, faqSchema, breadcrumbSchema].filter(
       })
     }
 
+    <FaqSection items={faq} />
+
     <ClosingSection
       description={page.closing}
       actions={[{ href: "/contact", label: "Book a 30-minute call" }]}
     />
-
-    <FaqSection items={faq} />
   </main>
   <Footer />
 </BaseLayout>
