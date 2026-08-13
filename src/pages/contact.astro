@@ -1,51 +1,80 @@
 ---
 import BaseLayout from "@/layouts/BaseLayout.astro";
+import Button from "@/components/Button.astro";
 import ContactForm from "@/components/ContactForm.astro";
+import FaqSection from "@/components/FaqSection.astro";
 import Footer from "@/components/Footer.astro";
 import Header from "@/components/Header.astro";
 import PageHero from "@/components/PageHero.astro";
 import SectionAnatomy from "@/components/SectionAnatomy.astro";
 import SectionFrame from "@/components/SectionFrame.astro";
+import TerminalSection from "@/components/TerminalSection.astro";
+import { faqByPage } from "@/data/faq";
+import { buildFaqSchema } from "@/lib/schema";
+
+export const prerender = true;
+
+const faq = faqByPage.contact;
+const faqSchema = buildFaqSchema(faq, "/contact");
 ---
 
 <BaseLayout
-  title="Contact | NNCO"
-  description="Tell NNCO which workflow, regulatory boundary, or infrastructure decision you are working through."
+  title="Book a 30-minute call | NNCO"
+  description="Tell us which workflow, data boundary or regulatory constraint you are working through. Thirty minutes, no slides, NDA ready before the call if you want one."
+  canonicalPath="/contact"
+  schemas={[faqSchema]}
 >
   <Header />
-  <main>
-    <PageHero title="Start with the difficult constraint." />
+  <main class="editorial-page">
+    <PageHero title="Contact" />
 
-    <SectionFrame labelledBy="contact-form-title" class="contact-section">
-      <SectionAnatomy
-        title="Working Session"
-        titleId="contact-form-title"
-      >
-        <ContactForm />
-      </SectionAnatomy>
-    </SectionFrame>
-
-    <SectionFrame
-      tone="surface"
-      labelledBy="alternate-title"
-      class="alternate-contacts"
-    >
-      <SectionAnatomy title="Contacts" titleId="alternate-title">
-        <p class="section-note">
-          Placeholder addresses. Final contact details are not yet published.
-        </p>
+    <SectionFrame labelledBy="direct-title" class="alternate-contacts">
+      <SectionAnatomy title="Direct" titleId="direct-title">
         <div class="alternate-contact-grid">
-          <article>
+          <div class="alternate-contact-grid__row">
             <h3>General</h3>
-            <span>general@example.invalid</span>
-          </article>
-          <article>
+            <div class="alternate-contact-grid__details">
+              <a class="alternate-contact-grid__email" href="mailto:general@nnco.ai">general@nnco.ai</a>
+            </div>
+          </div>
+          <hr class="alternate-contact-grid__separator" />
+          <div class="alternate-contact-grid__row">
             <h3>Security</h3>
-            <span>security@example.invalid</span>
-          </article>
+            <div class="alternate-contact-grid__details">
+              <a class="alternate-contact-grid__email" href="mailto:security@nnco.ai">security@nnco.ai</a>
+              <p>
+                Vulnerability reports and security questions. See our <a href="/security">disclosure policy</a>.
+              </p>
+            </div>
+          </div>
+          <hr class="alternate-contact-grid__separator" />
+          <div class="alternate-contact-grid__row">
+            <h3>Mutual NDA</h3>
+            <div class="alternate-contact-grid__nda-content">
+              <p class="editorial-section__body">
+                We can sign a mutual NDA before the first call. It is not a condition
+                of talking to us, and most first conversations do not need one, but if
+                what you are working on is sensitive it is easier to have it in place
+                from the start.
+              </p>
+              <div class="editorial-links">
+                <Button href="mailto:general@nnco.ai?subject=NDA" variant="secondary">Request an NDA</Button>
+              </div>
+            </div>
+          </div>
         </div>
       </SectionAnatomy>
     </SectionFrame>
+
+    <FaqSection items={faq} />
+
+    <TerminalSection
+      title="Book a call"
+      titleId="contact-form-title"
+      class="contact-section"
+    >
+      <ContactForm />
+    </TerminalSection>
   </main>
   <Footer />
 </BaseLayout>

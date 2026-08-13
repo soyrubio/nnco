@@ -1,12 +1,18 @@
 ---
 import BaseLayout from "@/layouts/BaseLayout.astro";
-import { DiscoveryCockpit } from "@/components/DiscoveryCockpit";
+import { DiscoveryLauncher } from "@/components/DiscoveryLauncher";
+import Header from "@/components/Header.astro";
 import "@/styles/discovery.css";
+
+export const prerender = false;
 ---
 
 <BaseLayout
-  title="Signal operational intelligence scan | NNCO"
-  description="Map one workflow, identify the hidden friction and receive an evidence-linked diagnostic preview."
+  title="AI workflow diagnostic | NNCO"
+  description="Use a company website or select a sector, answer five focused questions, and get a two-page AI workflow diagnostic. About one minute, no call required."
+  canonicalPath="/discovery"
+  themeColor="#111111"
 >
-  <DiscoveryCockpit client:load />
+  <Header variant="discovery" />
+  <DiscoveryLauncher client:load />
 </BaseLayout>

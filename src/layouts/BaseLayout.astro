@@ -1,17 +1,78 @@
 ---
+import FontSwitcher from "@/components/FontSwitcher.astro";
+import PageLoader from "@/components/PageLoader.astro";
+import Schema from "@/components/Schema.astro";
+import { FAVICON_ASSET, PRIMARY_LOGO } from "@/lib/brand-assets";
+import {
+  FONT_PREFERENCE_STORAGE_KEY,
+  storedFontPreferenceValues,
+} from "@/lib/font-preference";
 import "@/styles/global.css";
+
+interface PreloadImage {
+  href: string;
+  media?: string;
+  type?: string;
+}
 
 interface Props {
   title?: string;
   description?: string;
   image?: string;
+  themeColor?: string;
+  preloadImages?: PreloadImage[];
+  canonicalPath?: string;
+  schemas?: Record<string, unknown>[];
+  ogType?: "website" | "article";
+  articlePublishedTime?: string;
+  articleModifiedTime?: string;
+  noindex?: boolean;
 }
 
 const {
-  title = "NNCO | Production AI for regulated institutions",
-  description = "NNCO designs and implements production AI for banks, insurers, and healthcare providers.",
+  title = "AI consulting and development for large institutions | NNCO",
+  description = "NNCO designs, integrates and operates AI systems for large institutions, from the initial AI audit through production operation.",
   image = "/assets/nnco-hero-mosaic-hifi.png",
+  themeColor = "#f5f5f5",
+  preloadImages = [],
+  canonicalPath = Astro.url.pathname,
+  schemas = [],
+  ogType = "website",
+  articlePublishedTime,
+  articleModifiedTime,
+  noindex = false,
 } = Astro.props;
+
+const siteOrigin = "https://nnco.ai";
+const canonicalUrl = new URL(canonicalPath, siteOrigin).toString();
+const imageUrl = new URL(image, siteOrigin).toString();
+const organisationSchema = {
+  "@type": "Organization",
+  "@id": `${siteOrigin}/#organization`,
+  name: "NNCO",
+  url: siteOrigin,
+  logo: new URL(PRIMARY_LOGO.src, siteOrigin).toString(),
+  description:
+    "NNCO is an AI consulting and development company. It designs, integrates and operates AI systems for large institutions, from an initial AI audit to running the system in production.",
+  email: "general@nnco.ai",
+  address: {
+    "@type": "PostalAddress",
+    addressLocality: "Prague",
+    addressCountry: "CZ",
+  },
+  areaServed: "EU",
+  knowsAbout: [
+    "AI implementation",
+    "on-premise AI deployment",
+    "AI governance",
+    "KYC automation",
+    "claims processing automation",
+    "EU AI Act",
+  ],
+};
+const graph = [organisationSchema, ...schemas];
+const loaderTone =
+  themeColor.trim().toLowerCase() === "#111111" ? "dark" : "light";
 ---
 
 <!doctype html>
@@ -19,26 +80,97 @@ const {
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width" />
+    <script
+      is:inline
+      define:vars={{
+        fontPreferenceStorageKey: FONT_PREFERENCE_STORAGE_KEY,
+        fontPreferenceValues: storedFontPreferenceValues,
+      }}
+    >
+      try {
+        const storedFont = localStorage.getItem(fontPreferenceStorageKey);
+        if (fontPreferenceValues.includes(storedFont)) {
+          document.documentElement.dataset.font = storedFont;
+        }
+      } catch {}
+    </script>
     <meta name="generator" content={Astro.generator} />
     <meta name="description" content={description} />
-    <meta name="theme-color" content="#f5f5f5" />
-    <meta property="og:type" content="website" />
+    <meta name="theme-color" content={themeColor} />
+    {noindex && <meta name="robots" content="noindex, nofollow" />}
+    <link rel="canonical" href={canonicalUrl} />
+    <meta property="og:type" content={ogType} />
+    <meta property="og:site_name" content="NNCO" />
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
-    <meta property="og:image" content={image} />
+    <meta property="og:url" content={canonicalUrl} />
+    <meta property="og:image" content={imageUrl} />
+    {
+      ogType === "article" && articlePublishedTime && (
+        <meta property="article:published_time" content={articlePublishedTime} />
+      )
+    }
+    {
+      ogType === "article" && articleModifiedTime && (
+        <meta property="article:modified_time" content={articleModifiedTime} />
+      )
+    }
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content={title} />
     <meta name="twitter:description" content={description} />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="twitter:image" content={imageUrl} />
+    <link rel="icon" type="image/svg+xml" href={FAVICON_ASSET} />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Geist:ital,wght@0,100..900;1,100..900&display=swap"
       rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Geist:ital,wght@0,100..900;1,100..900&family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap"
     />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&icon_names=arrow_forward,keyboard_arrow_down,keyboard_arrow_up&display=block"
+    />
+    {
+      preloadImages.map(({ href, media, type }) => (
+        <link
+          rel="preload"
+          as="image"
+          href={href}
+          media={media}
+          type={type}
+          fetchpriority="high"
+        />
+      ))
+    }
+    <Schema graph={graph} />
     <title>{title}</title>
+    <script is:inline>
+      try {
+        if (sessionStorage.getItem("nnco:cover-seen") === "true") {
+          document.documentElement.classList.add("skip-page-loader");
+        }
+      } catch {}
+    </script>
+    <noscript>
+      <style>
+        .page-loader {
+          display: none !important;
+        }
+      </style>
+    </noscript>
   </head>
   <body>
-    <slot />
+    <PageLoader tone={loaderTone} />
+    <div data-page-content>
+      <slot />
+      <FontSwitcher />
+    </div>
+    <script is:inline>
+      if (!document.documentElement.classList.contains("skip-page-loader")) {
+        document
+          .querySelector("[data-page-content]")
+          ?.setAttribute("inert", "");
+      }
+    </script>
   </body>
 </html>

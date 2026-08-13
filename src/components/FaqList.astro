@@ -1,0 +1,90 @@
+---
+import DisclosureChevron from "./DisclosureChevron.astro";
+import type { FaqItem } from "@/data/faq";
+
+interface Props {
+  items: readonly FaqItem[];
+  groupName?: string;
+}
+
+const { items, groupName = "common-questions" } = Astro.props;
+---
+
+<div class="faq-list">
+  {
+    items.map((item) => (
+      <details name={groupName}>
+        <summary>
+          <span class="faq-list__question">{item.question}</span>
+          <DisclosureChevron />
+        </summary>
+        <div class="faq-list__answer">
+          <p>{item.answer}</p>
+        </div>
+      </details>
+    ))
+  }
+</div>
+
+<style>
+  .faq-list details + details {
+    border-top: var(--content-rule-thickness) solid var(--ink);
+  }
+
+  .faq-list summary {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    gap: 2rem;
+    padding: 1.5rem 0;
+    cursor: pointer;
+    font-size: var(--type-size-item-heading);
+    font-weight: var(--type-weight-medium);
+    line-height: var(--type-leading-item);
+    list-style: none;
+  }
+
+  .faq-list details:first-child summary {
+    padding-top: 0;
+  }
+
+  .faq-list summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .faq-list summary:focus-visible {
+    outline: 2px solid currentColor;
+    outline-offset: -2px;
+  }
+
+  .faq-list__question {
+    max-width: 42ch;
+  }
+
+  .faq-list__answer {
+    max-width: 52rem;
+    padding: 0 clamp(3rem, 8vw, 8rem) 2.25rem 0;
+  }
+
+  .faq-list__answer p {
+    margin-bottom: 0;
+    color: var(--muted);
+    font-size: var(--type-size-body-large);
+    line-height: var(--type-leading-relaxed);
+  }
+
+  @media (max-width: 767px) {
+    .faq-list summary {
+      gap: 1.25rem;
+      padding: 1.25rem 0;
+    }
+
+    .faq-list details:first-child summary {
+      padding-top: 0;
+    }
+
+    .faq-list__answer {
+      padding: 0 0 1.75rem;
+    }
+  }
+</style>

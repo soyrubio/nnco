@@ -1,155 +1,371 @@
 ---
 import Button from "./Button.astro";
+import FormCheckbox from "./form/FormCheckbox.astro";
+import FormControl from "./form/FormControl.astro";
+import {
+  CONTACT_AREAS,
+  CONTACT_CONSENT_VERSION,
+  CONTACT_EMAIL_PATTERN_SOURCE,
+  CONTACT_FIELD_LIMITS,
+  CONTACT_SECTORS,
+} from "@/lib/contact-contract";
 ---
 
-<contact-form class="contact-form-shell">
+<contact-form class="contact-form-shell" data-consent-version={CONTACT_CONSENT_VERSION}>
   <form class="contact-form" data-contact-form novalidate>
     <div class="contact-form__grid">
-      <label class="field">
-        <span>Name</span>
-        <input name="name" autocomplete="name" required />
-        <small data-error-for="name"></small>
-      </label>
+      <FormControl label="Name" name="name" errorId="contact-name-error">
+        <input
+          name="name"
+          autocomplete="name"
+          required
+          minlength={CONTACT_FIELD_LIMITS.name.minLength}
+          maxlength={CONTACT_FIELD_LIMITS.name.maxLength}
+          aria-describedby="contact-name-error"
+        />
+      </FormControl>
 
-      <label class="field">
-        <span>Work email</span>
+      <FormControl label="Work email" name="email" errorId="contact-email-error">
         <input
           name="email"
           type="email"
           autocomplete="email"
           inputmode="email"
           required
+          maxlength={CONTACT_FIELD_LIMITS.workEmail.maxLength}
+          pattern={CONTACT_EMAIL_PATTERN_SOURCE}
+          aria-describedby="contact-email-error"
         />
-        <small data-error-for="email"></small>
-      </label>
+      </FormControl>
 
-      <label class="field">
-        <span>Institution</span>
-        <input name="institution" autocomplete="organization" required />
-        <small data-error-for="institution"></small>
-      </label>
+      <FormControl
+        label="Organisation"
+        name="institution"
+        errorId="contact-institution-error"
+      >
+        <input
+          name="institution"
+          autocomplete="organization"
+          required
+          minlength={CONTACT_FIELD_LIMITS.organisation.minLength}
+          maxlength={CONTACT_FIELD_LIMITS.organisation.maxLength}
+          aria-describedby="contact-institution-error"
+        />
+      </FormControl>
 
-      <label class="field">
-        <span>Sector</span>
-        <select name="sector" required>
+      <FormControl label="Sector" name="sector" errorId="contact-sector-error">
+        <select name="sector" required aria-describedby="contact-sector-error">
           <option value="">Select sector</option>
-          <option>Banking</option>
-          <option>Insurance</option>
-          <option>Healthcare</option>
-          <option>Other regulated industry</option>
+          {CONTACT_SECTORS.map((sector) => <option value={sector}>{sector}</option>)}
         </select>
-        <small data-error-for="sector"></small>
-      </label>
+      </FormControl>
 
-      <label class="field">
-        <span>Area of interest</span>
-        <select name="area" required>
-          <option value="">Select area</option>
-          <option>Transformation</option>
-          <option>Use case</option>
-          <option>Infrastructure</option>
-          <option>Ongoing operation</option>
+      <FormControl label="What is this about?" name="area" errorId="contact-area-error">
+        <select name="area" required aria-describedby="contact-area-error">
+          <option value="">Select one</option>
+          {CONTACT_AREAS.map((area) => <option value={area}>{area}</option>)}
         </select>
-        <small data-error-for="area"></small>
-      </label>
+      </FormControl>
 
-      <label class="field contact-form__message">
-        <span>Message</span>
+      <FormControl
+        label="What are you working on?"
+        name="message"
+        errorId="contact-message-error"
+        class="contact-form__message"
+      >
         <textarea
           name="message"
           rows="6"
-          minlength="10"
+          minlength={CONTACT_FIELD_LIMITS.message.minLength}
+          maxlength={CONTACT_FIELD_LIMITS.message.maxLength}
+          placeholder="The workflow, where it slows down, and any constraint you already know about."
           required
+          aria-describedby="contact-message-error"
         ></textarea>
-        <small data-error-for="message"></small>
-      </label>
+      </FormControl>
+
+      <FormCheckbox
+        id="contact-consent"
+        name="consent"
+        errorId="contact-consent-error"
+        required
+        class="contact-form__consent"
+      >
+        <Fragment slot="label">I agree that NNCO may use these details to respond to my enquiry.</Fragment>
+        <a href="/privacy">Privacy</a>
+      </FormCheckbox>
     </div>
 
     <div class="contact-form__footer">
-      <Button type="submit">Request a Working Session</Button>
+      <div class="contact-form__submit">
+        <Button type="submit">Send</Button>
+        <p>We reply within one business day.</p>
+      </div>
       <p data-form-status role="status" aria-live="polite"></p>
     </div>
   </form>
 </contact-form>
 
 <script>
+  import {
+    CONTACT_FIELD_LIMITS,
+    isContactArea,
+    isContactSector,
+    isContactTextWithinLimits,
+    isValidContactEmail,
+  } from "@/lib/contact-contract";
+  import {
+    resolveRequestIdentity,
+    type RequestIdentity,
+  } from "@/lib/request-identity";
+
   class NncoContactForm extends HTMLElement {
+    private connectionController: AbortController | null = null;
+    private requestController: AbortController | null = null;
+    private requestIdentity: RequestIdentity | null = null;
+
     connectedCallback() {
+      this.connectionController?.abort();
+      this.requestController?.abort();
+
+      const connectionController = new AbortController();
+      this.connectionController = connectionController;
+      this.requestController = null;
+
       const form = this.querySelector<HTMLFormElement>("[data-contact-form]");
       const status = this.querySelector<HTMLElement>("[data-form-status]");
-      const submit = form?.querySelector<HTMLButtonElement>(
-        'button[type="submit"]',
-      );
+      const submit = form?.querySelector<HTMLButtonElement>('button[type="submit"]');
+      const consentVersion = this.dataset.consentVersion;
 
-      if (!form || !status || !submit) return;
+      if (!form || !status || !submit || !consentVersion) return;
+
+      let responseEpoch = 0;
+      let isSubmitting = false;
+
+      const resetSubmissionUi = () => {
+        isSubmitting = false;
+        submit.disabled = false;
+        submit.textContent = "Send";
+        if (status.classList.contains("is-loading")) {
+          status.className = "";
+          status.textContent = "";
+        }
+      };
+
+      resetSubmissionUi();
 
       const clearErrors = () => {
         form.querySelectorAll<HTMLElement>("[data-error-for]").forEach((item) => {
           item.textContent = "";
         });
-        form
-          .querySelectorAll<HTMLElement>("[aria-invalid]")
-          .forEach((field) => field.removeAttribute("aria-invalid"));
+        form.querySelectorAll<HTMLElement>("[aria-invalid]").forEach((field) =>
+          field.removeAttribute("aria-invalid"),
+        );
+      };
+
+      const errorMessageFor = (
+        field: HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement,
+      ) => {
+        if (field.name === "consent") {
+          return "We need this to be able to reply.";
+        }
+        if (field.name === "email" && !isValidContactEmail(field.value)) {
+          return "Enter a valid work email address.";
+        }
+        if (
+          field.name === "message" &&
+          field.value.trim().length < CONTACT_FIELD_LIMITS.message.minLength
+        ) {
+          return "Add a sentence or two so we can come prepared.";
+        }
+        return "This field is required.";
+      };
+
+      const clearFieldError = (
+        field: HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement,
+      ) => {
+        field.removeAttribute("aria-invalid");
+        const target = form.querySelector<HTMLElement>(
+          `[data-error-for="${field.name}"]`,
+        );
+        if (target) target.textContent = "";
+      };
+
+      const clearTerminalStatus = () => {
+        if (
+          !status.classList.contains("is-error") &&
+          !status.classList.contains("is-success")
+        ) {
+          return;
+        }
+        status.className = "";
+        status.textContent = "";
       };
 
       const showError = (field: HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement) => {
         field.setAttribute("aria-invalid", "true");
-        const target = form.querySelector<HTMLElement>(
-          `[data-error-for="${field.name}"]`,
-        );
+        const target = form.querySelector<HTMLElement>(`[data-error-for="${field.name}"]`);
         if (!target) return;
-        target.textContent =
-          field.validity.typeMismatch
-            ? "Enter a valid work email."
-            : field.validity.tooShort
-              ? "Add at least 10 characters."
-            : "This field is required.";
+        target.textContent = errorMessageFor(field);
       };
 
-      form.addEventListener("submit", (event) => {
-        event.preventDefault();
-        clearErrors();
-        status.className = "";
-        status.textContent = "";
-
-        const invalidFields = Array.from(
-          form.querySelectorAll<
-            HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
-          >(":invalid"),
-        );
-
-        if (invalidFields.length > 0) {
-          invalidFields.forEach(showError);
-          invalidFields[0].focus();
-          status.className = "is-error";
-          status.textContent = "Check the highlighted fields.";
-          return;
+      const hasValidValue = (
+        field: HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement,
+      ) => {
+        switch (field.name) {
+          case "name":
+            return isContactTextWithinLimits(field.value, CONTACT_FIELD_LIMITS.name);
+          case "email":
+            return isValidContactEmail(field.value);
+          case "institution":
+            return isContactTextWithinLimits(
+              field.value,
+              CONTACT_FIELD_LIMITS.organisation,
+            );
+          case "sector":
+            return isContactSector(field.value);
+          case "area":
+            return isContactArea(field.value);
+          case "message":
+            return isContactTextWithinLimits(field.value, CONTACT_FIELD_LIMITS.message);
+          default:
+            return field.checkValidity();
         }
+      };
 
-        const data = new FormData(form);
-        const email = String(data.get("email") ?? "");
-        submit.disabled = true;
-        submit.textContent = "Requesting...";
-        status.className = "is-loading";
-        status.textContent = "Preparing your request.";
+      form.addEventListener(
+        "input",
+        (event) => {
+          this.requestIdentity = null;
+          responseEpoch += 1;
 
-        window.setTimeout(() => {
-          submit.disabled = false;
-          submit.textContent = "Request a Working Session";
+          const field = event.target;
+          if (
+            field instanceof HTMLInputElement ||
+            field instanceof HTMLSelectElement ||
+            field instanceof HTMLTextAreaElement
+          ) {
+            clearFieldError(field);
+          }
+          clearTerminalStatus();
 
-          if (email.endsWith("@example.invalid")) {
+          const activeRequest = this.requestController;
+          this.requestController = null;
+          activeRequest?.abort();
+
+          if (!isSubmitting) return;
+          resetSubmissionUi();
+        },
+        { signal: connectionController.signal },
+      );
+
+      form.addEventListener(
+        "submit",
+        async (event) => {
+          event.preventDefault();
+          if (isSubmitting) return;
+
+          clearErrors();
+          status.className = "";
+          status.textContent = "";
+
+          const invalidFields = Array.from(
+            form.querySelectorAll<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>(
+              "input, select, textarea",
+            ),
+          ).filter((field) => !field.checkValidity() || !hasValidValue(field));
+          if (invalidFields.length > 0) {
+            invalidFields.forEach(showError);
+            invalidFields[0].focus();
             status.className = "is-error";
-            status.textContent =
-              "The local simulation could not complete. Try another address.";
+            status.textContent = "Check the highlighted fields.";
             return;
           }
 
-          form.reset();
-          status.className = "is-success";
-          status.textContent =
-            "Request recorded locally. No message has been sent.";
-        }, 900);
-      });
+          const data = new FormData(form);
+          const payloadValues = {
+            schemaVersion: 1,
+            name: String(data.get("name") ?? ""),
+            workEmail: String(data.get("email") ?? ""),
+            organisation: String(data.get("institution") ?? ""),
+            sector: String(data.get("sector") ?? ""),
+            area: String(data.get("area") ?? ""),
+            message: String(data.get("message") ?? ""),
+            consent: { accepted: true, version: consentVersion },
+          };
+          const payloadSignature = JSON.stringify(payloadValues);
+          this.requestIdentity = resolveRequestIdentity(
+            this.requestIdentity,
+            payloadSignature,
+            () => crypto.randomUUID(),
+          );
+          const payload = {
+            ...payloadValues,
+            requestId: this.requestIdentity.requestId,
+          };
+          const submissionEpoch = responseEpoch + 1;
+          responseEpoch = submissionEpoch;
+          isSubmitting = true;
+
+          const requestController = new AbortController();
+          this.requestController?.abort();
+          this.requestController = requestController;
+          const ownsSubmission = () =>
+            !connectionController.signal.aborted &&
+            !requestController.signal.aborted &&
+            this.requestController === requestController &&
+            responseEpoch === submissionEpoch;
+
+          submit.disabled = true;
+          submit.textContent = "Sending.";
+          status.className = "is-loading";
+          status.textContent = "Sending.";
+
+          try {
+            const response = await fetch("/api/contact-requests", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(payload),
+              signal: requestController.signal,
+            });
+            const result = await response.json().catch(() => null);
+            if (!ownsSubmission()) return;
+            if (result?.error?.code === "IDEMPOTENCY_CONFLICT") {
+              this.requestIdentity = null;
+            }
+            if (
+              !response.ok ||
+              result?.ok !== true ||
+              result.requestId !== payload.requestId
+            ) {
+              throw new Error("handoff failed");
+            }
+
+            form.reset();
+            this.requestIdentity = null;
+            status.className = "is-success";
+            status.textContent = "Received. We will reply within one business day.";
+          } catch {
+            if (!ownsSubmission()) return;
+            status.className = "is-error";
+            status.textContent =
+              "That did not send. Email us at general@nnco.ai and we will pick it up from there.";
+          } finally {
+            if (ownsSubmission()) {
+              this.requestController = null;
+              resetSubmissionUi();
+            }
+          }
+        },
+        { signal: connectionController.signal },
+      );
+    }
+
+    disconnectedCallback() {
+      this.connectionController?.abort();
+      this.connectionController = null;
+      this.requestController?.abort();
+      this.requestController = null;
     }
   }
 

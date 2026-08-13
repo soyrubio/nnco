@@ -1,28 +1,43 @@
 ---
-const loaderFrames = [
-  "/assets/nnco-loader-frame-01.svg",
-  "/assets/nnco-loader-frame-02.svg",
-  "/assets/nnco-loader-frame-03.svg",
-] as const;
+import {
+  LOADER_FRAME_CADENCE_MS,
+  LOADER_FRAMES,
+  PAGE_LOADER_EXIT_MS,
+  PAGE_LOADER_MINIMUM_MS,
+  PAGE_LOADER_SAFETY_MS,
+} from "@/lib/loader";
+
+interface Props {
+  tone?: "light" | "dark";
+}
+
+const { tone = "light" } = Astro.props;
 ---
 
 <div
-  class="page-loader"
+  class:list={["page-loader", `page-loader--${tone}`]}
   data-page-loader
+  data-frame-cadence={LOADER_FRAME_CADENCE_MS}
+  data-minimum-visible={PAGE_LOADER_MINIMUM_MS}
+  data-exit-duration={PAGE_LOADER_EXIT_MS}
+  data-load-safety={PAGE_LOADER_SAFETY_MS}
   role="status"
   aria-live="polite"
   aria-label="Loading NNCO"
 >
   <span
-    class="page-loader__sequence"
+    class:list={[
+      "nnco-loader-mark",
+      { "nnco-loader-mark--on-dark": tone === "dark" },
+    ]}
     data-page-loader-sequence
     aria-hidden="true"
   >
     {
-      loaderFrames.map((src, index) => (
+      LOADER_FRAMES.map((src, index) => (
         <img
           class:list={[
-            "page-loader__frame",
+            "nnco-loader-mark__frame",
             { "is-active": index === 0 },
           ]}
           src={src}
@@ -37,42 +52,22 @@ const loaderFrames = [
   </span>
 </div>
 
-<style>
-  .page-loader__sequence {
-    position: relative;
-    display: block;
-    width: clamp(112px, 12vw, 176px);
-    aspect-ratio: 1;
-    overflow: hidden;
-  }
-
-  .page-loader__frame {
-    position: absolute;
-    inset: 0;
-    display: block;
-    width: 100%;
-    height: 100%;
-    animation: none;
-    transform: none;
-    transition: none;
-    visibility: hidden;
-  }
-
-  .page-loader__frame.is-active {
-    visibility: visible;
-  }
-</style>
-
 <script>
-  const frameCadenceMs = 240;
-  const minimumVisibleMs = 3000;
-  const exitDurationMs = 240;
-  const loadSafetyMs = 8000;
   const loader = document.querySelector<HTMLElement>("[data-page-loader]");
 
-  if (loader) {
+  if (loader && document.documentElement.classList.contains("skip-page-loader")) {
+    document
+      .querySelector<HTMLElement>("[data-page-content]")
+      ?.removeAttribute("inert");
+    loader.remove();
+    window.dispatchEvent(new Event("nnco:page-ready"));
+  } else if (loader) {
+    const frameCadenceMs = Number(loader.dataset.frameCadence);
+    const minimumVisibleMs = Number(loader.dataset.minimumVisible);
+    const exitDurationMs = Number(loader.dataset.exitDuration);
+    const loadSafetyMs = Number(loader.dataset.loadSafety);
     const frames = Array.from(
-      loader.querySelectorAll<HTMLElement>(".page-loader__frame"),
+      loader.querySelectorAll<HTMLElement>(".nnco-loader-mark__frame"),
     );
     const motionPreference = window.matchMedia(
       "(prefers-reduced-motion: reduce)",
@@ -83,6 +78,13 @@ const loaderFrames = [
     let dismissed = false;
     let removalTimer = 0;
     let minimumTimer = 0;
+
+    const restorePageInteraction = () => {
+      document
+        .querySelector<HTMLElement>("[data-page-content]")
+        ?.removeAttribute("inert");
+      document.body.classList.remove("is-page-loading");
+    };
 
     const showFrame = (index: number) => {
       frames.forEach((frame, candidate) => {
@@ -115,6 +117,7 @@ const loaderFrames = [
 
     const finishExit = () => {
       cleanup();
+      restorePageInteraction();
       loader.remove();
       window.dispatchEvent(new Event("nnco:page-ready"));
     };
@@ -122,6 +125,10 @@ const loaderFrames = [
     const beginExit = () => {
       if (dismissed) return;
       dismissed = true;
+
+      try {
+        sessionStorage.setItem("nnco:cover-seen", "true");
+      } catch {}
 
       if (motionPreference.matches) {
         finishExit();
@@ -155,6 +162,7 @@ const loaderFrames = [
       "astro:before-swap",
       () => {
         cleanup();
+        restorePageInteraction();
       },
       { once: true },
     );

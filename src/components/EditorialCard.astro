@@ -1,0 +1,45 @@
+---
+import CardAffordance from "./CardAffordance.astro";
+import ModularGlyph, {
+  type ModularGlyphCell,
+  type ModularGlyphSymmetry,
+} from "./ModularGlyph.astro";
+
+interface Props {
+  title: string;
+  text: string;
+  href?: string;
+  glyph?: {
+    cells: readonly ModularGlyphCell[];
+    symmetry: ModularGlyphSymmetry;
+  };
+}
+
+const {
+  title,
+  text,
+  href,
+  glyph,
+} = Astro.props;
+
+const Element = href ? "a" : "article";
+---
+
+<Element
+  class:list={[
+    "editorial-card",
+    glyph && "editorial-card--with-glyph",
+  ]}
+  href={href}
+>
+  {
+    glyph && (
+      <div class="editorial-card__glyph">
+        <ModularGlyph cells={glyph.cells} symmetry={glyph.symmetry} />
+      </div>
+    )
+  }
+  <h3>{title}</h3>
+  <p>{text}</p>
+  {href && <CardAffordance />}
+</Element>

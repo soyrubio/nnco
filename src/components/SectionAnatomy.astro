@@ -1,17 +1,30 @@
 ---
+import SectionRow from "./SectionRow.astro";
+
 interface Props {
   title: string;
   titleId?: string;
+  contentWidth?: "50" | "75" | "100";
   class?: string;
 }
 
-const { title, titleId, class: className } = Astro.props;
+const {
+  title,
+  titleId,
+  contentWidth,
+  class: className,
+} = Astro.props;
 ---
 
-<div class:list={["section-anatomy", className]}>
+<div
+  class:list={[
+    "section-anatomy",
+    contentWidth && `section-anatomy--content-${contentWidth}`,
+    className,
+  ]}
+>
   <span class="section-anatomy__rule" aria-hidden="true"></span>
-  <h2 class="section-anatomy__title" id={titleId}>{title}</h2>
-  <div class="section-anatomy__content">
+  <SectionRow title={title} titleId={titleId}>
     <slot />
-  </div>
+  </SectionRow>
 </div>

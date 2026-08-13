@@ -1,0 +1,46 @@
+---
+import BlockArrow from "./BlockArrow.astro";
+import Button from "./Button.astro";
+import TerminalSection from "./TerminalSection.astro";
+import type { LinkAction } from "./types";
+
+interface Props {
+  description: string;
+  actions: readonly LinkAction[];
+  title?: string;
+  id?: string;
+}
+
+const {
+  description,
+  actions,
+  title = "Start here",
+  id = "closing",
+} = Astro.props;
+const titleId = `${id}-title`;
+---
+
+<TerminalSection
+  id={id}
+  title={title}
+  titleId={titleId}
+  class="closing-section closing-section--surface"
+>
+  <div class="closing-callout">
+    <p>{description}</p>
+    <div class="closing-callout__actions">
+      {
+        actions.map((action) => (
+          <Button
+            href={action.href}
+            variant={action.variant ?? "secondary"}
+            aria-label={action.ariaLabel}
+          >
+            {action.label}
+            {(action.arrow ?? true) && <BlockArrow />}
+          </Button>
+        ))
+      }
+    </div>
+  </div>
+</TerminalSection>

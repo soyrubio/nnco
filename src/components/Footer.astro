@@ -1,23 +1,26 @@
 ---
 import BrandLogo from "./BrandLogo.astro";
-import { siteNavigation } from "@/data/site";
+import { footerGroups } from "@/data/site";
 ---
 
 <footer class="site-footer">
   <div class="content-rail site-footer__inner">
     <div class="site-footer__identity">
       <BrandLogo />
-      <p>Production AI for regulated institutions.</p>
+      <p>AI consulting and development for large institutions.</p>
     </div>
 
-    <nav aria-label="Footer navigation">
-      <a href="/">Home</a>
+    <nav class="site-footer__navigation" aria-label="Footer navigation">
       {
-        siteNavigation.map((item) => (
-          <a href={item.href}>{item.label}</a>
+        footerGroups.map((group) => (
+          <div>
+            <p>{group.label}</p>
+            {group.links.map((link) => (
+              <a href={link.href}>{link.label}</a>
+            ))}
+          </div>
         ))
       }
-      <a href="/discovery">Start diagnostic</a>
     </nav>
 
     <p class="site-footer__copyright">

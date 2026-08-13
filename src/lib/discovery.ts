@@ -7,7 +7,7 @@
  * later moved to a persistence adapter without changing the product model.
  */
 
-export type Segment = "finance" | "healthcare" | "other";
+export type Segment = "finance" | "insurance" | "healthcare" | "other";
 
 type MilestoneId = "context" | "workflow" | "friction" | "readiness" | "review";
 type DiscoveryStatus =
@@ -17,6 +17,7 @@ type DiscoveryStatus =
   | "analyzing"
   | "preview_ready"
   | "lead_submitted";
+type SettableDiscoveryStatus = "analyzing" | "preview_ready";
 type EvidenceStatus = "reported" | "inferred" | "confirmed";
 type AnswerSource = "form" | "chat";
 
@@ -29,6 +30,17 @@ export interface Milestone {
 }
 
 export type DiscoveryValue = string | number | boolean | string[] | null;
+
+export const DISCOVERY_SHORT_TEXT_MAX_LENGTH = 240;
+export const DISCOVERY_LONG_TEXT_MAX_LENGTH = 1_200;
+export const DISCOVERY_MESSAGE_MAX_LENGTH = 1_200;
+export const DISCOVERY_MAX_REVISION = 2_147_483_647;
+
+const DISCOVERY_MAX_MESSAGES = 128;
+const DISCOVERY_MAX_OBSERVATIONS = 64;
+const DISCOVERY_MAX_MANUAL_WORKFLOWS = 16;
+const DISCOVERY_MAX_IDENTIFIER_LENGTH = 128;
+const DISCOVERY_MAX_DERIVED_ITEMS = 128;
 
 export interface ChatEvidencePatch {
   kind: "answer" | "observation";
@@ -172,7 +184,6 @@ export interface ReportProblem {
 
 interface ReportPage {
   pageNumber: 1 | 2;
-  eyebrow: string;
   title: string;
   sections: Array<{
     label: string;
@@ -254,8 +265,13 @@ export type DiscoveryAction = (
         confidence: number;
       }>;
     }
+  | {
+      type: "TRUNCATE_FROM_QUESTION";
+      questionId: string;
+      milestone: MilestoneId;
+    }
   | { type: "SET_MILESTONE"; milestone: MilestoneId }
-  | { type: "SET_STATUS"; status: DiscoveryStatus }
+  | { type: "SET_STATUS"; status: SettableDiscoveryStatus }
   | {
       type: "CONFIRM_LEAD_REQUEST";
       handoffId: string;
@@ -275,35 +291,35 @@ const MILESTONES: readonly Milestone[] = [
     id: "context",
     label: "Context",
     index: 1,
-    description: "Load the right operational module.",
-    estimatedMinutes: 1,
+    description: "Who you are and which part of the operation we are looking at.",
+    estimatedMinutes: 3,
   },
   {
     id: "workflow",
     label: "Workflow",
     index: 2,
-    description: "Map one workflow as it runs today.",
-    estimatedMinutes: 2,
+    description: "The process as it runs today, start to finish.",
+    estimatedMinutes: 4,
   },
   {
     id: "friction",
     label: "Friction",
     index: 3,
-    description: "Locate manual work, exceptions and impact.",
-    estimatedMinutes: 2,
+    description: "Where the manual work, the exceptions and the waiting are.",
+    estimatedMinutes: 3,
   },
   {
     id: "readiness",
-    label: "Readiness",
+    label: "Constraints",
     index: 4,
-    description: "Test systems, controls and delivery conditions.",
-    estimatedMinutes: 2,
+    description: "Systems, data boundaries and what has to be evidenced.",
+    estimatedMinutes: 4,
   },
   {
     id: "review",
     label: "Review",
     index: 5,
-    description: "Confirm the evidence before analysis.",
+    description: "Check what you told us before we analyse it.",
     estimatedMinutes: 1,
   },
 ];
@@ -313,7 +329,7 @@ const SEGMENT_QUESTIONS: readonly DiscoveryQuestion[] = [
     id: "context.organisationType",
     milestone: "context",
     sector: "all",
-    prompt: "What kind of organisation are we mapping?",
+    prompt: "Which type of organisation do you represent?",
     shortLabel: "Organisation",
     fieldType: "single_select",
     options: [
@@ -340,21 +356,26 @@ const SEGMENT_QUESTIONS: readonly DiscoveryQuestion[] = [
       { value: "501-2000", label: "501-2,000" },
       { value: "2000+", label: "2,000+" },
     ],
-    required: true,
+    required: false,
     allowUnknown: true,
   },
   {
     id: "context.sector",
     milestone: "context",
     sector: "all",
-    prompt: "Which operational module should we load?",
+    prompt: "Which area best describes your work?",
     shortLabel: "Sector",
     fieldType: "single_select",
     options: [
       {
         value: "finance",
-        label: "Finance",
+        label: "Banking",
         description: "Reconciliation, lending, reporting and compliance.",
+      },
+      {
+        value: "insurance",
+        label: "Insurance",
+        description: "Claims, policies, underwriting and case handling.",
       },
       {
         value: "healthcare",
@@ -364,7 +385,7 @@ const SEGMENT_QUESTIONS: readonly DiscoveryQuestion[] = [
       {
         value: "other",
         label: "Other",
-        description: "A general workflow and exception diagnostic.",
+        description: "A workflow outside the sectors above.",
       },
     ],
     required: true,
@@ -397,7 +418,7 @@ const SEGMENT_QUESTIONS: readonly DiscoveryQuestion[] = [
     fieldType: "short_text",
     required: true,
     allowUnknown: true,
-    placeholder: "For example: monthly reporting or patient intake",
+    placeholder: "e.g. monthly reporting or patient intake",
   },
 ];
 
@@ -408,11 +429,10 @@ const COMMON_DISCOVERY: readonly DiscoveryQuestion[] = [
     sector: "all",
     prompt: "Where does this workflow start, and what marks it as complete?",
     shortLabel: "Start and finish",
-    help: "Approximate answers are enough. Map one workflow first.",
     fieldType: "long_text",
     required: true,
     allowUnknown: true,
-    placeholder: "It starts when… It is complete when…",
+    placeholder: "Approximate answers are enough. Map one workflow first.",
   },
   {
     id: "workflow.handoffs",
@@ -591,6 +611,27 @@ const HEALTHCARE_INPUTS: DiscoveryQuestion = {
   allowUnknown: true,
 };
 
+const INSURANCE_INPUTS: DiscoveryQuestion = {
+  id: "workflow.inputs",
+  milestone: "workflow",
+  sector: "insurance",
+  prompt: "Which sources feed this insurance workflow?",
+  shortLabel: "Sources",
+  help: "Select categories only. Do not enter claim or policy records.",
+  fieldType: "multi_select",
+  options: [
+    { value: "messages", label: "Email or messages" },
+    { value: "documents", label: "Documents or PDF" },
+    { value: "claims-policy", label: "Claims or policy system" },
+    { value: "crm-case", label: "CRM or case system" },
+    { value: "spreadsheet", label: "Spreadsheets" },
+    { value: "portal", label: "External portals" },
+    { value: "warehouse", label: "Database or warehouse" },
+  ],
+  required: true,
+  allowUnknown: true,
+};
+
 const OTHER_INPUTS: DiscoveryQuestion = {
   id: "workflow.inputs",
   milestone: "workflow",
@@ -613,6 +654,7 @@ const OTHER_INPUTS: DiscoveryQuestion = {
 
 const SECTOR_QUESTION_PACKS: Record<Segment, readonly DiscoveryQuestion[]> = {
   finance: [FINANCE_INPUTS],
+  insurance: [INSURANCE_INPUTS],
   healthcare: [HEALTHCARE_INPUTS],
   other: [OTHER_INPUTS],
 };
@@ -641,6 +683,46 @@ const SEMANTIC_BUCKET_BY_QUESTION: Record<
   "goal.horizon": "goals",
   "goal.investmentPosture": "goals",
 };
+
+export function calculateJourneyProgress(
+  snapshot: DiscoverySnapshot,
+  activeQuestionId: string | undefined,
+  isReview = false,
+): number {
+  if (isReview) return 100;
+
+  const journeyQuestionIds = getQuestions(snapshot).map(
+    (question) => question.id,
+  );
+  const activeIndex = activeQuestionId
+    ? journeyQuestionIds.indexOf(activeQuestionId)
+    : 0;
+  const safeIndex = Math.max(0, activeIndex);
+  const currentQuestionComplete =
+    activeQuestionId &&
+    hasCapturedValue(snapshot.answers[activeQuestionId]?.value)
+      ? 1
+      : 0;
+  const completedPosition = safeIndex + currentQuestionComplete;
+  const percentage = Math.round(
+    (completedPosition / journeyQuestionIds.length) * 100,
+  );
+
+  return Math.min(100, Math.max(10, percentage));
+}
+
+export function getDiscoveryQuestionIdsFrom(
+  questionId: string,
+  snapshot: DiscoverySnapshot,
+): string[] {
+  const journeyQuestionIds = getQuestions(snapshot).map(
+    (question) => question.id,
+  );
+  const boundaryIndex = journeyQuestionIds.indexOf(questionId);
+  return boundaryIndex < 0
+    ? []
+    : journeyQuestionIds.slice(boundaryIndex);
+}
 
 export function createInitialSnapshot(
   occurredAt: string = new Date().toISOString(),
@@ -687,14 +769,56 @@ export function createInitialSnapshot(
 
 export function getQuestions(snapshot: DiscoverySnapshot): DiscoveryQuestion[] {
   const sector = snapshot.profile.sector || "other";
-  const sectorQuestions = SECTOR_QUESTION_PACKS[sector];
+  const workflowQuestions = COMMON_DISCOVERY.filter(
+    (question) => question.milestone === "workflow",
+  );
+  const frictionQuestions = COMMON_DISCOVERY.filter(
+    (question) => question.milestone === "friction",
+  );
+  const constraintQuestions = COMMON_DISCOVERY.filter(
+    (question) => question.milestone === "readiness",
+  );
 
   return [
-    ...SEGMENT_QUESTIONS.map(cloneQuestion),
-    cloneQuestion(COMMON_DISCOVERY[0]),
-    ...sectorQuestions.map(cloneQuestion),
-    ...COMMON_DISCOVERY.slice(1).map(cloneQuestion),
-  ];
+    ...SEGMENT_QUESTIONS,
+    ...workflowQuestions,
+    ...SECTOR_QUESTION_PACKS[sector],
+    ...frictionQuestions,
+    ...constraintQuestions,
+  ].map(cloneQuestion);
+}
+
+export function isValidDiscoveryQuestionValue(
+  question: DiscoveryQuestion,
+  value: DiscoveryValue,
+): boolean {
+  if (isUnknownValue(value)) return question.allowUnknown;
+
+  if (question.fieldType === "single_select") {
+    return (
+      typeof value === "string" &&
+      (value.length === 0 ||
+        Boolean(question.options?.some((option) => option.value === value)))
+    );
+  }
+  if (question.fieldType === "multi_select") {
+    return (
+      Array.isArray(value) &&
+      value.length <= (question.options?.length ?? 0) &&
+      value.every((entry) =>
+        question.options?.some((option) => option.value === entry),
+      )
+    );
+  }
+  if (question.fieldType === "number") {
+    return typeof value === "number" && Number.isFinite(value);
+  }
+  if (typeof value !== "string") return false;
+  const maximumLength =
+    question.fieldType === "long_text"
+      ? DISCOVERY_LONG_TEXT_MAX_LENGTH
+      : DISCOVERY_SHORT_TEXT_MAX_LENGTH;
+  return value.length <= maximumLength;
 }
 
 export function proposeChatPatches({
@@ -708,9 +832,11 @@ export function proposeChatPatches({
 }): ChatEvidencePatch[] {
   const normalized = message.toLocaleLowerCase("en");
   const correctionIntent = /\b(correct|change|update|actually)\b/.test(normalized);
+  const explicitEligibleList = questions.length === 1;
   const active = questions.filter(
     (question) =>
-      question.milestone === snapshot.activeMilestone &&
+      (explicitEligibleList ||
+        question.milestone === snapshot.activeMilestone) &&
       (correctionIntent ||
         !hasMeaningfulValue(snapshot.answers[question.id]?.value)),
   );
@@ -865,11 +991,9 @@ export function calculateCoverage(snapshot: DiscoverySnapshot): Coverage {
     estimatedMinutesRemaining,
     knownCoreSignals,
     validationSignals,
-    readyForPreview:
-      hasCapturedValue(snapshot.answers["workflow.scope"]?.value) &&
-      hasCapturedValue(snapshot.answers["friction.repetition"]?.value) &&
-      hasCapturedValue(snapshot.answers["friction.exceptions"]?.value) &&
-      hasCapturedValue(snapshot.answers["goal.outcome"]?.value),
+    readyForPreview: requiredQuestions.every((question) =>
+      hasCapturedValue(snapshot.answers[question.id]?.value),
+    ),
   };
 }
 
@@ -877,6 +1001,7 @@ export function discoveryReducer(
   snapshot: DiscoverySnapshot,
   action: DiscoveryAction,
 ): DiscoverySnapshot {
+  if (snapshot.revision >= DISCOVERY_MAX_REVISION) return snapshot;
   const nextRevision = snapshot.revision + 1;
   const updatedAt = validTimestamp(action.occurredAt);
   if (!updatedAt) return snapshot;
@@ -908,10 +1033,16 @@ export function discoveryReducer(
         updatedAt,
       );
     case "ADD_MESSAGE":
+      if (
+        !action.content.trim() ||
+        action.content.trim().length > DISCOVERY_MESSAGE_MAX_LENGTH
+      ) {
+        return snapshot;
+      }
       return {
         ...snapshot,
         messages: [
-          ...snapshot.messages,
+          ...snapshot.messages.slice(-(DISCOVERY_MAX_MESSAGES - 1)),
           {
             id: messageId(nextRevision, action.role),
             role: action.role,
@@ -940,6 +1071,8 @@ export function discoveryReducer(
           const statement = observation.statement.trim();
           if (
             !statement ||
+            statement.length > DISCOVERY_LONG_TEXT_MAX_LENGTH ||
+            !Number.isFinite(observation.confidence) ||
             !getQuestions(next).some(
               (question) => question.id === observation.questionId,
             )
@@ -962,7 +1095,51 @@ export function discoveryReducer(
         );
       return deriveSemanticState({
         ...next,
-        observations: [...next.observations, ...observations],
+        observations: [...next.observations, ...observations].slice(
+          -DISCOVERY_MAX_OBSERVATIONS,
+        ),
+        revision: nextRevision,
+        updatedAt,
+      });
+    }
+    case "TRUNCATE_FROM_QUESTION": {
+      const clearedQuestionIds = new Set(
+        getDiscoveryQuestionIdsFrom(action.questionId, snapshot),
+      );
+      if (clearedQuestionIds.size === 0) return snapshot;
+
+      const answers = Object.fromEntries(
+        Object.entries(snapshot.answers).filter(
+          ([questionId]) => !clearedQuestionIds.has(questionId),
+        ),
+      );
+      const profile: Profile = {
+        organisationType: valueToText(
+          answers["context.organisationType"]?.value ?? null,
+        ),
+        sizeBand: valueToText(answers["context.sizeBand"]?.value ?? null),
+        sector: normalizeSegment(answers["context.sector"]?.value ?? null),
+        role: valueToText(answers["context.role"]?.value ?? null),
+        focusArea: valueToText(answers["context.focusArea"]?.value ?? null),
+      };
+      const clearsWorkflowState = clearedQuestionIds.has("workflow.scope");
+
+      return deriveSemanticState({
+        ...snapshot,
+        status: statusForMilestone(action.milestone),
+        activeMilestone: action.milestone,
+        leadRequestStatus: "not_started",
+        leadConfirmation: null,
+        profile,
+        answers,
+        observations: snapshot.observations.filter(
+          (observation) => !clearedQuestionIds.has(observation.questionId),
+        ),
+        workflows: clearsWorkflowState
+          ? snapshot.workflows.filter(
+              (fact) => !fact.id.startsWith("workflow-manual-"),
+            )
+          : snapshot.workflows,
         revision: nextRevision,
         updatedAt,
       });
@@ -983,7 +1160,7 @@ export function discoveryReducer(
       return {
         ...next,
         activeMilestone: action.milestone,
-        status: action.milestone === "review" ? "review" : "discovering",
+        status: statusForMilestone(action.milestone),
         revision: nextRevision,
         updatedAt,
       };
@@ -992,16 +1169,17 @@ export function discoveryReducer(
       return {
         ...snapshot,
         activeMilestone: action.milestone,
-        status:
-          action.milestone === "context"
-            ? "segmenting"
-            : action.milestone === "review"
-              ? "review"
-              : "discovering",
+        status: statusForMilestone(action.milestone),
         revision: nextRevision,
         updatedAt,
       };
     case "SET_STATUS":
+      if (
+        action.status !== "analyzing" &&
+        action.status !== "preview_ready"
+      ) {
+        return snapshot;
+      }
       return {
         ...snapshot,
         status: action.status,
@@ -1010,13 +1188,21 @@ export function discoveryReducer(
       };
     case "CONFIRM_LEAD_REQUEST": {
       const confirmedAt = validTimestamp(action.confirmedAt);
-      if (!confirmedAt || !action.handoffId.trim()) return snapshot;
+      const handoffId =
+        typeof action.handoffId === "string" ? action.handoffId.trim() : "";
+      if (
+        !confirmedAt ||
+        !handoffId ||
+        handoffId.length > DISCOVERY_MAX_IDENTIFIER_LENGTH
+      ) {
+        return snapshot;
+      }
       return {
         ...snapshot,
         status: "lead_submitted",
         leadRequestStatus: "confirmed",
         leadConfirmation: {
-          handoffId: action.handoffId.trim(),
+          handoffId,
           confirmedAt,
         },
         revision: nextRevision,
@@ -1024,22 +1210,38 @@ export function discoveryReducer(
       };
     }
     case "ADD_WORKFLOW": {
+      const manualWorkflows = snapshot.workflows.filter((fact) =>
+        fact.id.startsWith("workflow-manual-"),
+      );
+      if (manualWorkflows.length >= DISCOVERY_MAX_MANUAL_WORKFLOWS) {
+        return snapshot;
+      }
       const fact: DiscoveryFact = {
         id: `workflow-manual-${nextRevision}`,
-        label: action.name.trim() || "Additional workflow",
-        detail: action.detail?.trim() || "Scope to be confirmed.",
+        label:
+          action.name.trim().slice(0, DISCOVERY_SHORT_TEXT_MAX_LENGTH) ||
+          "Additional workflow",
+        detail:
+          action.detail?.trim().slice(0, DISCOVERY_LONG_TEXT_MAX_LENGTH) ||
+          "Scope to be confirmed.",
         evidenceRefs: [],
         status: "reported",
         confidence: 0.7,
       };
-      return {
+      return deriveSemanticState({
         ...snapshot,
-        workflows: [...snapshot.workflows, fact],
+        workflows: [...manualWorkflows, fact],
         revision: nextRevision,
         updatedAt,
-      };
+      });
     }
   }
+}
+
+function statusForMilestone(milestone: MilestoneId): DiscoveryStatus {
+  if (milestone === "context") return "segmenting";
+  if (milestone === "review") return "review";
+  return "discovering";
 }
 
 export function buildReportPreview(snapshot: DiscoverySnapshot): ReportPreview {
@@ -1050,8 +1252,10 @@ export function buildReportPreview(snapshot: DiscoverySnapshot): ReportPreview {
     "Workflow to be confirmed";
   const problems = buildProblems(snapshot);
   const readiness = buildReadiness(snapshot);
-  const keyEvidence = snapshot.evidence
-    .filter((item) => !item.questionId.startsWith("context."))
+  const reportEvidence = snapshot.evidence.filter(
+    (item) => !item.questionId.startsWith("context."),
+  );
+  const keyEvidence = reportEvidence
     .slice(0, 6)
     .map((item) => ({
       id: item.id,
@@ -1063,7 +1267,7 @@ export function buildReportPreview(snapshot: DiscoverySnapshot): ReportPreview {
   const organisation =
     labelForOption("context.organisationType", snapshot.profile.organisationType, snapshot) ||
     "Organisation not specified";
-  const sectorLabel = titleCase(sector);
+  const sectorLabel = sector === "finance" ? "Banking" : titleCase(sector);
   const summary = buildSummary(snapshot, problems, sectorLabel, focus);
   const generatedAt = snapshot.updatedAt;
 
@@ -1092,7 +1296,6 @@ export function buildReportPreview(snapshot: DiscoverySnapshot): ReportPreview {
     pages: [
       {
         pageNumber: 1,
-        eyebrow: "Signal / Executive snapshot",
         title: "Where the operation loses signal",
         sections: [
           { label: "Situation", content: summary },
@@ -1115,7 +1318,6 @@ export function buildReportPreview(snapshot: DiscoverySnapshot): ReportPreview {
       },
       {
         pageNumber: 2,
-        eyebrow: "Signal / Priority field",
         title: "Three areas to validate first",
         sections: problems.map((problem) => ({
           label: `${problem.priority} · ${problem.impact} impact / ${problem.feasibility} feasibility`,
@@ -1124,10 +1326,10 @@ export function buildReportPreview(snapshot: DiscoverySnapshot): ReportPreview {
       },
     ],
     lockedSections: [
-      "Solution variants by priority",
-      "Data and integration requirements",
-      "Risk, timing and indicative ranges",
-      "90-day delivery path",
+      "What AI could take over",
+      "Constraints",
+      "Sequence",
+      "What this analysis cannot tell you",
     ],
     disclaimer:
       "This preview is an evidence-led diagnostic, not an offer. Findings are inferred from reported answers and require validation. Estimates are indicative and do not constitute an offer.",
@@ -1150,13 +1352,21 @@ function applyAnswer(
   revision: number,
   updatedAt: string,
 ): DiscoverySnapshot {
-  if (!getQuestions(snapshot).some((question) => question.id === questionId)) {
+  const question = getQuestions(snapshot).find(
+    (candidate) => candidate.id === questionId,
+  );
+  const normalizedValue = normalizeValue(value);
+  if (
+    !question ||
+    !isValidDiscoveryQuestionValue(question, normalizedValue) ||
+    !Number.isFinite(confidence)
+  ) {
     return snapshot;
   }
 
   const answer: DiscoveryAnswer = {
     questionId,
-    value: normalizeValue(value),
+    value: normalizedValue,
     source,
     status: "reported",
     confidence: roundConfidence(confidence),
@@ -1164,17 +1374,21 @@ function applyAnswer(
   };
   const sectorChanged =
     questionId === "context.sector" &&
-    normalizeSegment(value) !== snapshot.profile.sector;
+    normalizeSegment(normalizedValue) !== snapshot.profile.sector;
   const answers = { ...snapshot.answers };
+  let observations = snapshot.observations;
   if (sectorChanged) {
     const sectorQuestionIds = new Set(
       Object.values(SECTOR_QUESTION_PACKS)
         .flat()
-        .map((question) => question.id),
+        .map((sectorQuestion) => sectorQuestion.id),
     );
     for (const sectorQuestionId of sectorQuestionIds) {
       delete answers[sectorQuestionId];
     }
+    observations = observations.filter(
+      (observation) => !sectorQuestionIds.has(observation.questionId),
+    );
   }
   answers[questionId] = answer;
   const profileField = PROFILE_FIELD_BY_QUESTION[questionId];
@@ -1182,22 +1396,20 @@ function applyAnswer(
     ? {
         ...snapshot.profile,
         [profileField]:
-          profileField === "sector" ? normalizeSegment(value) : valueToText(value),
+          profileField === "sector"
+            ? normalizeSegment(normalizedValue)
+            : valueToText(normalizedValue),
       }
     : snapshot.profile;
   const status =
-    snapshot.status === "segmenting" &&
-    profile.organisationType &&
-    profile.sizeBand &&
-    profile.sector &&
-    profile.role &&
-    profile.focusArea
+    snapshot.status === "segmenting" && profile.sector
       ? "discovering"
       : snapshot.status;
 
   return deriveSemanticState({
     ...snapshot,
     answers,
+    observations,
     profile,
     status,
     revision,
@@ -1444,7 +1656,7 @@ function buildSummary(
   const target = outcome
     ? `The desired outcome was reported as: ${sentence(outcome)}`
     : "The desired outcome still requires confirmation.";
-  return `${lead} ${scopeStatement} ${finding} ${target}`;
+  return `${lead} ${scopeStatement} ${finding} ${target}`.trim();
 }
 
 function evidenceConfidence(snapshot: DiscoverySnapshot, questionIds: string[]): number {
@@ -1531,9 +1743,25 @@ function normalizeValue(value: DiscoveryValue): DiscoveryValue {
   return value;
 }
 
+function isNormalizedDiscoveryValue(value: DiscoveryValue): boolean {
+  const normalized = normalizeValue(value);
+  if (Array.isArray(value) && Array.isArray(normalized)) {
+    return (
+      value.length === normalized.length &&
+      value.every((entry, index) => entry === normalized[index])
+    );
+  }
+  return value === normalized;
+}
+
 function normalizeSegment(value: DiscoveryValue): Segment | "" {
   const text = valueToText(value);
-  return text === "finance" || text === "healthcare" || text === "other" ? text : "";
+  return text === "finance" ||
+    text === "insurance" ||
+    text === "healthcare" ||
+    text === "other"
+    ? text
+    : "";
 }
 
 function valueToText(value: DiscoveryValue): string {
@@ -1583,95 +1811,222 @@ export function isDiscoverySnapshot(value: unknown): value is DiscoverySnapshot 
     "preview_ready",
     "lead_submitted",
   ];
-  const validFacts = (facts: unknown) =>
-    Array.isArray(facts) &&
-    facts.every(
-      (fact) =>
-        Boolean(fact) &&
-        typeof fact === "object" &&
-        typeof (fact as DiscoveryFact).id === "string" &&
-        typeof (fact as DiscoveryFact).label === "string" &&
-        typeof (fact as DiscoveryFact).detail === "string" &&
-        Array.isArray((fact as DiscoveryFact).evidenceRefs) &&
-        (fact as DiscoveryFact).evidenceRefs.every(
-          (reference) => typeof reference === "string",
-        ) &&
-        isEvidenceStatus((fact as DiscoveryFact).status) &&
-        isConfidence((fact as DiscoveryFact).confidence),
-    );
+  if (
+    !hasOnlyKeys(candidate, [
+      "schemaVersion",
+      "caseId",
+      "status",
+      "leadRequestStatus",
+      "leadConfirmation",
+      "activeMilestone",
+      "profile",
+      "answers",
+      "observations",
+      "messages",
+      "workflows",
+      "systems",
+      "dataAssets",
+      "painPoints",
+      "constraints",
+      "goals",
+      "evidence",
+      "createdAt",
+      "updatedAt",
+      "revision",
+    ]) ||
+    !profile ||
+    !hasOnlyKeys(profile, [
+      "organisationType",
+      "sizeBand",
+      "sector",
+      "role",
+      "focusArea",
+    ]) ||
+    typeof profile.organisationType !== "string" ||
+    typeof profile.sizeBand !== "string" ||
+    (profile.sector !== "" &&
+      profile.sector !== "finance" &&
+      profile.sector !== "insurance" &&
+      profile.sector !== "healthcare" &&
+      profile.sector !== "other") ||
+    typeof profile.role !== "string" ||
+    typeof profile.focusArea !== "string"
+  ) {
+    return false;
+  }
+
+  const snapshot = candidate as DiscoverySnapshot;
+  const questions = getQuestions(snapshot);
+  const questionById = new Map(
+    questions.map((question) => [question.id, question]),
+  );
   const validAnswers =
-    Boolean(answers) &&
+    isRecord(answers) &&
+    Object.keys(answers).length <= questions.length &&
     Object.entries(answers ?? {}).every(
       ([questionId, answer]) =>
         Boolean(answer) &&
+        hasOnlyKeys(answer, [
+          "questionId",
+          "value",
+          "source",
+          "status",
+          "confidence",
+          "updatedAt",
+        ]) &&
         answer.questionId === questionId &&
         isDiscoveryValue(answer.value) &&
+        isNormalizedDiscoveryValue(answer.value) &&
+        Boolean(questionById.get(questionId)) &&
+        isValidDiscoveryQuestionValue(
+          questionById.get(questionId) as DiscoveryQuestion,
+          answer.value,
+        ) &&
         (answer.source === "form" || answer.source === "chat") &&
-        isEvidenceStatus(answer.status) &&
+        answer.status === "reported" &&
         isConfidence(answer.confidence) &&
+        roundConfidence(answer.confidence) === answer.confidence &&
         Boolean(validTimestamp(answer.updatedAt)),
     );
   const validMessages =
     Array.isArray(candidate.messages) &&
+    candidate.messages.length <= DISCOVERY_MAX_MESSAGES &&
+    hasUniqueIds(candidate.messages) &&
     candidate.messages.every(
       (message) =>
         Boolean(message) &&
         typeof message === "object" &&
+        hasOnlyKeys(message, ["id", "role", "content", "createdAt"]) &&
         typeof (message as DiscoveryMessage).id === "string" &&
+        isBoundedText(
+          (message as DiscoveryMessage).id,
+          1,
+          DISCOVERY_MAX_IDENTIFIER_LENGTH,
+        ) &&
         ((message as DiscoveryMessage).role === "user" ||
           (message as DiscoveryMessage).role === "agent") &&
         typeof (message as DiscoveryMessage).content === "string" &&
+        isBoundedText(
+          (message as DiscoveryMessage).content,
+          1,
+          DISCOVERY_MESSAGE_MAX_LENGTH,
+        ) &&
+        (message as DiscoveryMessage).content ===
+          (message as DiscoveryMessage).content.trim() &&
         Boolean(validTimestamp((message as DiscoveryMessage).createdAt)),
     );
   const validEvidence =
     Array.isArray(candidate.evidence) &&
+    candidate.evidence.length <= DISCOVERY_MAX_DERIVED_ITEMS &&
+    hasUniqueIds(candidate.evidence) &&
     candidate.evidence.every(
       (item) =>
         Boolean(item) &&
         typeof item === "object" &&
+        hasOnlyKeys(item, [
+          "id",
+          "label",
+          "statement",
+          "questionId",
+          "source",
+          "status",
+          "confidence",
+        ]) &&
         typeof (item as DiscoveryEvidence).id === "string" &&
+        isBoundedText(
+          (item as DiscoveryEvidence).id,
+          1,
+          DISCOVERY_MAX_IDENTIFIER_LENGTH,
+        ) &&
         typeof (item as DiscoveryEvidence).label === "string" &&
+        isBoundedText(
+          (item as DiscoveryEvidence).label,
+          1,
+          DISCOVERY_SHORT_TEXT_MAX_LENGTH,
+        ) &&
         typeof (item as DiscoveryEvidence).statement === "string" &&
+        isBoundedText(
+          (item as DiscoveryEvidence).statement,
+          1,
+          DISCOVERY_LONG_TEXT_MAX_LENGTH,
+        ) &&
         typeof (item as DiscoveryEvidence).questionId === "string" &&
+        questionById.has((item as DiscoveryEvidence).questionId) &&
         ((item as DiscoveryEvidence).source === "form" ||
           (item as DiscoveryEvidence).source === "chat") &&
-        isEvidenceStatus((item as DiscoveryEvidence).status) &&
-        isConfidence((item as DiscoveryEvidence).confidence),
+        (item as DiscoveryEvidence).status === "reported" &&
+        isConfidence((item as DiscoveryEvidence).confidence) &&
+        roundConfidence((item as DiscoveryEvidence).confidence) ===
+          (item as DiscoveryEvidence).confidence,
     );
   const validObservations =
     Array.isArray(candidate.observations) &&
+    candidate.observations.length <= DISCOVERY_MAX_OBSERVATIONS &&
+    hasUniqueIds(candidate.observations) &&
     candidate.observations.every(
       (item) =>
         Boolean(item) &&
         typeof item === "object" &&
+        hasOnlyKeys(item, [
+          "id",
+          "questionId",
+          "statement",
+          "source",
+          "status",
+          "confidence",
+          "createdAt",
+        ]) &&
         typeof (item as DiscoveryObservation).id === "string" &&
+        isBoundedText(
+          (item as DiscoveryObservation).id,
+          1,
+          DISCOVERY_MAX_IDENTIFIER_LENGTH,
+        ) &&
         typeof (item as DiscoveryObservation).questionId === "string" &&
+        questionById.has((item as DiscoveryObservation).questionId) &&
         typeof (item as DiscoveryObservation).statement === "string" &&
-        (item as DiscoveryObservation).statement.trim().length > 0 &&
+        isBoundedText(
+          (item as DiscoveryObservation).statement,
+          1,
+          DISCOVERY_LONG_TEXT_MAX_LENGTH,
+        ) &&
+        (item as DiscoveryObservation).statement ===
+          (item as DiscoveryObservation).statement.trim() &&
         (item as DiscoveryObservation).source === "chat" &&
         (item as DiscoveryObservation).status === "reported" &&
         isConfidence((item as DiscoveryObservation).confidence) &&
+        roundConfidence((item as DiscoveryObservation).confidence) ===
+          (item as DiscoveryObservation).confidence &&
         Boolean(validTimestamp((item as DiscoveryObservation).createdAt)),
     );
   const validLeadConfirmation =
     candidate.leadConfirmation === null ||
-    (Boolean(candidate.leadConfirmation) &&
+    (candidate.leadConfirmation !== undefined &&
+      hasOnlyKeys(candidate.leadConfirmation, ["handoffId", "confirmedAt"]) &&
       typeof candidate.leadConfirmation?.handoffId === "string" &&
-      candidate.leadConfirmation.handoffId.length > 0 &&
+      isBoundedText(
+        candidate.leadConfirmation.handoffId,
+        1,
+        DISCOVERY_MAX_IDENTIFIER_LENGTH,
+      ) &&
       Boolean(validTimestamp(candidate.leadConfirmation.confirmedAt)));
-  return (
+  const validBase =
     candidate.schemaVersion === 2 &&
     typeof candidate.caseId === "string" &&
-    candidate.caseId.length > 0 &&
-    Boolean(profile) &&
+    /^SIG-[A-Z0-9]{6}$/.test(candidate.caseId) &&
     typeof profile?.organisationType === "string" &&
+    profile.organisationType.length <= DISCOVERY_SHORT_TEXT_MAX_LENGTH &&
     typeof profile.sizeBand === "string" &&
+    profile.sizeBand.length <= DISCOVERY_SHORT_TEXT_MAX_LENGTH &&
     (profile.sector === "" ||
       profile.sector === "finance" ||
+      profile.sector === "insurance" ||
       profile.sector === "healthcare" ||
       profile.sector === "other") &&
     typeof profile.role === "string" &&
+    profile.role.length <= DISCOVERY_SHORT_TEXT_MAX_LENGTH &&
     typeof profile.focusArea === "string" &&
+    profile.focusArea.length <= DISCOVERY_SHORT_TEXT_MAX_LENGTH &&
     validAnswers &&
     validObservations &&
     validMessages &&
@@ -1690,15 +2045,215 @@ export function isDiscoverySnapshot(value: unknown): value is DiscoverySnapshot 
     (candidate.leadRequestStatus === "confirmed"
       ? candidate.leadConfirmation !== null
       : candidate.leadConfirmation === null) &&
-    Number.isInteger(candidate.revision) &&
+    (candidate.status !== "lead_submitted" ||
+      candidate.leadRequestStatus === "confirmed") &&
+    Number.isSafeInteger(candidate.revision) &&
     (candidate.revision ?? -1) >= 0 &&
+    (candidate.revision ?? DISCOVERY_MAX_REVISION + 1) <=
+      DISCOVERY_MAX_REVISION &&
     Boolean(validTimestamp(candidate.createdAt)) &&
-    Boolean(validTimestamp(candidate.updatedAt))
+    Boolean(validTimestamp(candidate.updatedAt));
+
+  if (!validBase) return false;
+
+  const expectedProfile: Profile = {
+    organisationType: valueToText(
+      snapshot.answers["context.organisationType"]?.value ?? null,
+    ),
+    sizeBand: valueToText(snapshot.answers["context.sizeBand"]?.value ?? null),
+    sector: normalizeSegment(snapshot.answers["context.sector"]?.value ?? null),
+    role: valueToText(snapshot.answers["context.role"]?.value ?? null),
+    focusArea: valueToText(snapshot.answers["context.focusArea"]?.value ?? null),
+  };
+  if (!sameProfile(snapshot.profile, expectedProfile)) return false;
+
+  const manualWorkflows = snapshot.workflows.filter((fact) =>
+    fact.id.startsWith("workflow-manual-"),
+  );
+  if (
+    manualWorkflows.length > DISCOVERY_MAX_MANUAL_WORKFLOWS ||
+    !manualWorkflows.every((fact) => validManualWorkflow(fact, snapshot.revision))
+  ) {
+    return false;
+  }
+
+  const expected = deriveSemanticState(snapshot);
+  return (
+    sameFactArrays(snapshot.workflows, expected.workflows) &&
+    sameFactArrays(snapshot.systems, expected.systems) &&
+    sameFactArrays(snapshot.dataAssets, expected.dataAssets) &&
+    sameFactArrays(snapshot.painPoints, expected.painPoints) &&
+    sameFactArrays(snapshot.constraints, expected.constraints) &&
+    sameFactArrays(snapshot.goals, expected.goals) &&
+    sameEvidenceArrays(snapshot.evidence, expected.evidence)
   );
 }
 
-function validTimestamp(value: string | undefined): string | null {
-  if (!value || !Number.isFinite(Date.parse(value))) return null;
+function validFacts(value: unknown): value is DiscoveryFact[] {
+  return (
+    Array.isArray(value) &&
+    value.length <= DISCOVERY_MAX_DERIVED_ITEMS &&
+    hasUniqueIds(value) &&
+    value.every(
+      (fact) =>
+        Boolean(fact) &&
+        typeof fact === "object" &&
+        hasOnlyKeys(fact, [
+          "id",
+          "label",
+          "detail",
+          "evidenceRefs",
+          "status",
+          "confidence",
+        ]) &&
+        typeof (fact as DiscoveryFact).id === "string" &&
+        isBoundedText(
+          (fact as DiscoveryFact).id,
+          1,
+          DISCOVERY_MAX_IDENTIFIER_LENGTH,
+        ) &&
+        typeof (fact as DiscoveryFact).label === "string" &&
+        isBoundedText(
+          (fact as DiscoveryFact).label,
+          1,
+          DISCOVERY_SHORT_TEXT_MAX_LENGTH,
+        ) &&
+        typeof (fact as DiscoveryFact).detail === "string" &&
+        isBoundedText(
+          (fact as DiscoveryFact).detail,
+          1,
+          DISCOVERY_LONG_TEXT_MAX_LENGTH,
+        ) &&
+        Array.isArray((fact as DiscoveryFact).evidenceRefs) &&
+        (fact as DiscoveryFact).evidenceRefs.length <=
+          DISCOVERY_MAX_DERIVED_ITEMS &&
+        (fact as DiscoveryFact).evidenceRefs.every(
+          (reference) =>
+            typeof reference === "string" &&
+            isBoundedText(reference, 1, DISCOVERY_MAX_IDENTIFIER_LENGTH),
+        ) &&
+        isEvidenceStatus((fact as DiscoveryFact).status) &&
+        isConfidence((fact as DiscoveryFact).confidence) &&
+        roundConfidence((fact as DiscoveryFact).confidence) ===
+          (fact as DiscoveryFact).confidence,
+    )
+  );
+}
+
+function validManualWorkflow(
+  fact: DiscoveryFact,
+  revision: number,
+): boolean {
+  const match = /^workflow-manual-(\d+)$/.exec(fact.id);
+  return (
+    Boolean(match) &&
+    Number(match?.[1]) <= revision &&
+    fact.evidenceRefs.length === 0 &&
+    fact.status === "reported" &&
+    fact.confidence === 0.7
+  );
+}
+
+function sameProfile(left: Profile, right: Profile): boolean {
+  return (
+    left.organisationType === right.organisationType &&
+    left.sizeBand === right.sizeBand &&
+    left.sector === right.sector &&
+    left.role === right.role &&
+    left.focusArea === right.focusArea
+  );
+}
+
+function sameFactArrays(
+  left: DiscoveryFact[],
+  right: DiscoveryFact[],
+): boolean {
+  return (
+    left.length === right.length &&
+    left.every((fact, index) => {
+      const expected = right[index];
+      return (
+        Boolean(expected) &&
+        fact.id === expected.id &&
+        fact.label === expected.label &&
+        fact.detail === expected.detail &&
+        fact.status === expected.status &&
+        fact.confidence === expected.confidence &&
+        sameStringArrays(fact.evidenceRefs, expected.evidenceRefs)
+      );
+    })
+  );
+}
+
+function sameEvidenceArrays(
+  left: DiscoveryEvidence[],
+  right: DiscoveryEvidence[],
+): boolean {
+  return (
+    left.length === right.length &&
+    left.every((item, index) => {
+      const expected = right[index];
+      return (
+        Boolean(expected) &&
+        item.id === expected.id &&
+        item.label === expected.label &&
+        item.statement === expected.statement &&
+        item.questionId === expected.questionId &&
+        item.source === expected.source &&
+        item.status === expected.status &&
+        item.confidence === expected.confidence
+      );
+    })
+  );
+}
+
+function sameStringArrays(left: string[], right: string[]): boolean {
+  return (
+    left.length === right.length &&
+    left.every((value, index) => value === right[index])
+  );
+}
+
+function hasOnlyKeys(
+  value: object,
+  allowedKeys: readonly string[],
+): boolean {
+  const allowed = new Set(allowedKeys);
+  return Object.keys(value).every((key) => allowed.has(key));
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
+function hasUniqueIds(value: unknown[]): boolean {
+  const ids = value.map((item) =>
+    item && typeof item === "object" && "id" in item
+      ? (item as { id?: unknown }).id
+      : undefined,
+  );
+  return (
+    ids.every((id) => typeof id === "string") &&
+    new Set(ids).size === ids.length
+  );
+}
+
+function isBoundedText(
+  value: string,
+  minimumLength: number,
+  maximumLength: number,
+): boolean {
+  return value.length >= minimumLength && value.length <= maximumLength;
+}
+
+function validTimestamp(value: unknown): string | null {
+  if (
+    typeof value !== "string" ||
+    !value ||
+    !Number.isFinite(Date.parse(value))
+  ) {
+    return null;
+  }
   return new Date(value).toISOString();
 }
 
@@ -1792,4 +2347,3 @@ export function containsSensitiveDataCue(message: string): boolean {
     /(?:\d[\s-]*){13,19}/.test(message)
   );
 }
-

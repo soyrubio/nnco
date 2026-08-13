@@ -1,91 +1,163 @@
-export const siteNavigation = [
-  { href: "/what-we-do", label: "What We Do" },
-  { href: "/company", label: "Company" },
-  { href: "/news", label: "News" },
-  { href: "/contact", label: "Contact" },
+interface NavigationLink {
+  href: string;
+  label: string;
+  description?: string;
+}
+
+interface NavigationMenu {
+  label: string;
+  links: readonly NavigationLink[];
+}
+
+type NavigationItem = NavigationLink | NavigationMenu;
+
+export const programmeLinks = [
+  {
+    href: "/ai-first-enterprise",
+    label: "AI-First Enterprise",
+    description: "The programme, from audit to operation.",
+  },
+  {
+    href: "/ai-first-enterprise/ai-audit",
+    label: "AI Audit",
+    description: "Find where AI is worth building first.",
+  },
+  {
+    href: "/ai-first-enterprise/private-ai",
+    label: "Private AI",
+    description: "Your models, inside your boundary.",
+  },
+  {
+    href: "/ai-first-enterprise/operation",
+    label: "Operation",
+    description: "Someone has to own it after launch.",
+  },
 ] as const;
 
 export const sectors = [
   {
     name: "Banking",
-    anchor: "banking",
+    shortName: "Banking",
+    href: "/banking",
     description:
-      "Risk, compliance, KYC, internal knowledge, and secure AI infrastructure.",
+      "Onboarding and KYC, transaction monitoring, credit files, regulatory reporting.",
   },
   {
     name: "Insurance",
-    anchor: "insurance",
+    shortName: "Insurance",
+    href: "/insurance",
     description:
-      "Claims, underwriting, document review, and fraud investigation.",
+      "Claims intake and review, underwriting support, fraud investigation, policy correspondence.",
   },
   {
     name: "Healthcare",
-    anchor: "healthcare",
+    shortName: "Healthcare",
+    href: "/healthcare",
     description:
-      "Administrative workflows where privacy, traceability, and human oversight are mandatory.",
+      "Administrative and operational workflows. Clinical decisions stay with clinicians.",
+  },
+  {
+    name: "Capital Markets & Asset Management",
+    shortName: "Capital Markets",
+    href: "/capital-markets",
+    description:
+      "Fund reporting, due diligence document review, investor reporting, compliance monitoring.",
   },
 ] as const;
 
-export const engagements = [
+export const siteNavigation: readonly NavigationItem[] = [
   {
-    title: "AI Transformation",
-    description:
-      "Institution-wide capability building across governance, implementation, and adoption.",
+    label: "AI-First Enterprise",
+    links: programmeLinks,
   },
   {
-    title: "Workflow Projects",
-    description:
-      "Risk, compliance, claims, KYC, underwriting, and internal-knowledge systems.",
+    label: "Industries",
+    links: sectors.map(({ href, shortName, description }) => ({
+      href,
+      label: shortName,
+      description,
+    })),
   },
-  {
-    title: "On-Premise Infrastructure",
-    description:
-      "Private AI clusters with institutional control over data, deployment, and access.",
-  },
-  {
-    title: "Operation",
-    description:
-      "Monitoring, model replacement, governance, and continued improvement after launch.",
-  },
+  { href: "/company", label: "Company" },
+  { href: "/blog", label: "Blog" },
+  { href: "/contact", label: "Contact" },
 ] as const;
 
-export const workflowAreas = [
-  "Risk and compliance copilots",
-  "KYC and AML investigation support",
-  "Claims intake and review",
-  "Underwriting assistance",
-  "Regulatory document analysis",
-  "Internal knowledge systems",
-  "Customer-service quality review",
+export const footerGroups = [
+  {
+    label: "Company",
+    links: [
+      { href: "/company", label: "About" },
+      { href: "/blog", label: "Blog" },
+      { href: "/privacy", label: "Privacy" },
+      { href: "/security", label: "Security" },
+    ],
+  },
+  { label: "Programme", links: programmeLinks },
+  {
+    label: "Industries",
+    links: sectors.map(({ href, shortName }) => ({
+      href,
+      label: shortName,
+    })),
+  },
+  {
+    label: "Contact",
+    links: [
+      { href: "/contact", label: "Book a call" },
+      { href: "/discovery", label: "Start the diagnostic" },
+      { href: "mailto:general@nnco.ai", label: "general@nnco.ai" },
+    ],
+  },
 ] as const;
 
 export const waysOfWorking = [
   {
-    title: "Start from the institution",
+    title: "The audit comes before the proposal",
     description:
-      "The first meeting is a design-partner session. We study the workflow before proposing the system.",
+      "We do not scope a build from a first meeting. The audit looks at how the work runs today, who touches it, where the exceptions go, and what the constraints actually are. Then we propose.",
   },
   {
-    title: "Compliance from day one",
+    title: "Constraints shape the architecture",
     description:
-      "Regulatory and supervisory constraints shape the architecture, scope, and evidence model from the beginning.",
+      "Data classification, residency, access rights, retention, supervisory expectations and audit requirements are inputs to the design. Retrofitting them after the build has started is what kills pilots.",
   },
   {
-    title: "Deploy into reality",
+    title: "We stay after launch",
     description:
-      "We integrate with existing systems, permissions, data boundaries, and operating teams.",
+      "Monitoring, drift, model replacement, and changes when the regulation or the process changes. A system with no owner degrades quietly until people stop trusting it.",
   },
   {
-    title: "Stay after launch",
+    title: "We say when something is not worth building",
     description:
-      "We monitor, improve, and replace components as requirements and models change.",
+      "Some workflows are not worth automating, and some are not allowed to be. Hearing that in week two of an audit is cheaper than hearing it in month six of a build.",
   },
 ] as const;
 
 export const team = [
-  { name: "Marek Kříž", role: "CEO" },
-  { name: "Josef Gattermayer", role: "Cofounder and advisor to CTO" },
-  { name: "Dominik Veselý", role: "Founding advisor and interim COO" },
-  { name: "Josef Bazal", role: "Founding product manager" },
-  { name: "Lukáš Rajnoha", role: "Founding engineer" },
+  {
+    name: "Marek Kříž",
+    role: "Co-Founder & CEO",
+    bio: "Founder, CEO or CGO at Investown and Zaloto, and at the software house Devx. Most of that decade was spent inside licensed financial businesses, which is where the questions a supervisor actually asks stop being theoretical.",
+  },
+  {
+    name: "Dominik Veselý",
+    role: "Co-Founder & COO",
+    bio: "COO at the software house Ackee, which was sold to Expandia. Ran delivery for a company whose clients were banks, insurers and public institutions, where the deployment is the product.",
+  },
+  {
+    name: "Josef Gattermayer",
+    role: "Co-Founder, AI & R&D",
+    bio: "CTO at Ackee, then founder of Ackee Blockchain, a security audit firm. Audit work is the discipline of proving that a system does what it claims, which is the same discipline an AI system needs before a regulator looks at it.",
+  },
+  {
+    name: "Josef Bazal",
+    role: "Founding Product Manager",
+    bio: "Product Manager at Ackee Blockchain. Turns an operational problem into a specification that survives contact with the people who have to use it.",
+  },
+  {
+    name: "Lukáš Rajnoha",
+    role: "Founding Engineer",
+    bio: "Engineer at Ackee Blockchain. Builds the systems and the infrastructure they run on.",
+  },
 ] as const;

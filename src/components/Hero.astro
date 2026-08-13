@@ -2,50 +2,206 @@
 import BlockArrow from "./BlockArrow.astro";
 import Button from "./Button.astro";
 
-interface Props {
-  image?: string;
-}
-
-const {
-  image = "/assets/nnco-hero-mosaic-hifi.png",
-} = Astro.props;
+const desktopFrames = Array.from(
+  { length: 11 },
+  (_, index) =>
+    `/assets/hero-sequence/desktop/frame-${String(index + 1).padStart(2, "0")}.webp`,
+);
+const mobileFrames = Array.from(
+  { length: 11 },
+  (_, index) =>
+    `/assets/hero-sequence/mobile/frame-${String(index + 1).padStart(2, "0")}.webp`,
+);
 ---
 
 <section class="hero" aria-labelledby="hero-title" data-marketing-hero>
   <div class="content-rail hero__inner">
-    <div class="hero__copy" data-reveal-group>
-      <h1 id="hero-title" data-reveal="ready">
-        <span class="hero__headline-line">
-          <strong class="hero__headline-emphasis">We build production AI</strong>
-        </span>
-        <span class="hero__headline-line">for regulated institutions.</span>
+    <div class="hero__copy">
+      <h1 id="hero-title">
+        <span class="hero__headline-line">We design, integrate and</span>
+        <span class="hero__headline-line">operate AI systems.</span>
       </h1>
+      <p class="hero__introduction">
+        We show large institutions where AI pays off first, then build it and
+        run it in production. Including where data cannot leave the building
+        and every decision has to survive an audit.
+      </p>
       <div class="hero__actions">
         <Button href="/contact">
-          Talk to Our Team
+          Book a 30-minute call
           <BlockArrow />
         </Button>
         <Button
-          href="/what-we-do"
+          href="/discovery"
           variant="secondary"
         >
-          Work With Us
+          Start the diagnostic
           <BlockArrow />
         </Button>
       </div>
     </div>
   </div>
 
-  <div class="hero__media" aria-hidden="true">
-    <img
-      class="hero__image"
-      src={image}
-      alt=""
-      width="1536"
-      height="1024"
-      loading="eager"
-      fetchpriority="high"
-    />
+  <div
+    class="hero__media"
+    aria-hidden="true"
+    data-hero-sequence
+    data-desktop-frames={desktopFrames.join(" ")}
+    data-mobile-frames={mobileFrames.join(" ")}
+  >
+    <picture class="hero__picture">
+      <source
+        data-hero-sequence-mobile
+        media="(max-width: 767px)"
+        srcset={mobileFrames[0]}
+        width="48"
+        height="85"
+      />
+      <img
+        class="hero__image"
+        data-hero-sequence-image
+        src={desktopFrames[0]}
+        alt=""
+        width="128"
+        height="72"
+        loading="eager"
+        fetchpriority="high"
+        decoding="async"
+      />
+    </picture>
   </div>
   <div class="hero__scrim" aria-hidden="true"></div>
+  <div class="hero__top-gradient" aria-hidden="true"></div>
 </section>
+
+<script>
+  import { scroll } from "motion";
+
+  const hero = document.querySelector<HTMLElement>("[data-marketing-hero]");
+  const sequenceRoot =
+    document.querySelector<HTMLElement>("[data-hero-sequence]");
+
+  if (hero && sequenceRoot && sequenceRoot.dataset.sequenceReady !== "true") {
+    sequenceRoot.dataset.sequenceReady = "true";
+
+    const image = sequenceRoot.querySelector<HTMLImageElement>(
+      "[data-hero-sequence-image]",
+    );
+    const mobileSource = sequenceRoot.querySelector<HTMLSourceElement>(
+      "[data-hero-sequence-mobile]",
+    );
+    const desktopFrames = (sequenceRoot.dataset.desktopFrames ?? "")
+      .split(" ")
+      .filter(Boolean);
+    const mobileFrames = (sequenceRoot.dataset.mobileFrames ?? "")
+      .split(" ")
+      .filter(Boolean);
+    const mobileViewport = window.matchMedia("(max-width: 767px)");
+    const reducedMotion = window.matchMedia(
+      "(prefers-reduced-motion: reduce)",
+    );
+    const loadedSequences = new Set<string>();
+    const loadingSequences = new Map<string, Promise<boolean>>();
+    let stopScroll: (() => void) | undefined;
+    let desiredFrame = 0;
+
+    const getActiveSequence = () =>
+      mobileViewport.matches ? mobileFrames : desktopFrames;
+
+    const preloadSequence = async (frames: string[]) => {
+      const key = frames[0];
+      if (!key || loadedSequences.has(key)) return true;
+      const loading = loadingSequences.get(key);
+      if (loading) return loading;
+
+      const promise = Promise.all(
+        frames.slice(1).map(
+          (src) =>
+            new Promise<boolean>((resolve) => {
+              const preload = new Image();
+              preload.onload = () => resolve(true);
+              preload.onerror = () => resolve(false);
+              preload.src = src;
+            }),
+        ),
+      ).then((results) => {
+        const didLoad = results.every(Boolean);
+        if (didLoad) loadedSequences.add(key);
+        loadingSequences.delete(key);
+        return didLoad;
+      });
+
+      loadingSequences.set(key, promise);
+      return promise;
+    };
+
+    const applyFrame = (index: number) => {
+      if (!image || !mobileSource) return;
+      const frames = getActiveSequence();
+      const src = frames[index];
+      if (!src) return;
+
+      if (mobileViewport.matches) {
+        mobileSource.srcset = src;
+      } else {
+        image.src = src;
+      }
+    };
+
+    const prepareActiveSequence = async () => {
+      const frames = getActiveSequence();
+      if (frames.length !== 11 || !(await preloadSequence(frames))) return;
+      if (getActiveSequence()[0] !== frames[0]) return;
+      applyFrame(desiredFrame);
+    };
+
+    const syncFrameToScroll = (progress: number) => {
+      const frames = getActiveSequence();
+      desiredFrame = Math.round(progress * (frames.length - 1));
+      if (loadedSequences.has(frames[0])) applyFrame(desiredFrame);
+    };
+
+    const startScrollSequence = () => {
+      stopScroll?.();
+      stopScroll = scroll(syncFrameToScroll, {
+        target: hero,
+        offset: ["start start", "end start"],
+      });
+    };
+
+    const handleMotionPreference = () => {
+      if (reducedMotion.matches) {
+        stopScroll?.();
+        stopScroll = undefined;
+        desiredFrame = 0;
+        applyFrame(0);
+        return;
+      }
+
+      void prepareActiveSequence();
+      startScrollSequence();
+    };
+
+    const handleViewportChange = () => {
+      void prepareActiveSequence();
+    };
+
+    if (!reducedMotion.matches) {
+      void prepareActiveSequence();
+      startScrollSequence();
+    }
+
+    document.addEventListener(
+      "astro:before-swap",
+      () => {
+        stopScroll?.();
+        reducedMotion.removeEventListener("change", handleMotionPreference);
+        mobileViewport.removeEventListener("change", handleViewportChange);
+      },
+      { once: true },
+    );
+
+    reducedMotion.addEventListener("change", handleMotionPreference);
+    mobileViewport.addEventListener("change", handleViewportChange);
+  }
+</script>

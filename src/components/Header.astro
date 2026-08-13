@@ -2,64 +2,232 @@
 import BlockArrow from "./BlockArrow.astro";
 import BrandLogo from "./BrandLogo.astro";
 import Button from "./Button.astro";
+import DisclosureChevron from "./DisclosureChevron.astro";
 import { siteNavigation } from "@/data/site";
+import {
+  isExactNavigationPage,
+  isNavigationSection,
+} from "@/lib/navigation";
 
 interface Props {
   currentPath?: string;
   overHero?: boolean;
+  variant?: "default" | "discovery";
 }
 
-const { currentPath = Astro.url.pathname, overHero = false } = Astro.props;
-
+const {
+  currentPath = Astro.url.pathname,
+  overHero = false,
+  variant = "default",
+} = Astro.props;
+const isDiscovery = variant === "discovery";
+const isExactPage = (href: string) => isExactNavigationPage(currentPath, href);
+const isAncestorSection = (href: string) =>
+  !isExactPage(href) && isNavigationSection(currentPath, href);
+let headerMode: "solid" | "hero" | "discovery" = "solid";
+if (overHero) headerMode = "hero";
+if (isDiscovery) headerMode = "discovery";
 ---
 
 <header
-  class:list={["site-header", { "site-header--over-hero": overHero }]}
-  data-site-header={overHero ? "hero" : "solid"}
+  class:list={[
+    "site-header",
+    {
+      "site-header--over-hero": overHero,
+      "site-header--discovery": isDiscovery,
+    },
+  ]}
+  data-site-header={headerMode}
 >
-  <div class="content-rail site-header__inner">
+  <div class="nnco-navbar-rail site-header__inner">
     <BrandLogo eager />
 
-    <nav class="site-nav" aria-label="Primary navigation">
-      {
-        siteNavigation.map((item) => (
-          <a
-            href={item.href}
-            aria-current={
-              currentPath === item.href || currentPath === `${item.href}/`
-                ? "page"
-                : undefined
-            }
-          >
-            {item.label}
-          </a>
-        ))
-      }
-    </nav>
+    {
+      isDiscovery ? (
+        <Button href="/" size="small">
+          Back to NNC
+          <BlockArrow />
+        </Button>
+      ) : (
+        <>
+          <nav class="site-nav" aria-label="Primary navigation">
+            {siteNavigation.map((item) =>
+              "href" in item ? (
+                <a
+                  href={item.href}
+                  aria-current={isExactPage(item.href) ? "page" : undefined}
+                  data-current-section={isAncestorSection(item.href) ? "true" : undefined}
+                >
+                  {item.label}
+                </a>
+              ) : (
+                <details class="site-nav-dropdown" data-navigation-dropdown>
+                  <summary
+                    data-current-section={item.links.some((link) =>
+                      isNavigationSection(currentPath, link.href)
+                    ) ? "true" : undefined}
+                  >
+                    <span>{item.label}</span>
+                    <DisclosureChevron />
+                  </summary>
+                  <div class="site-nav-dropdown__panel">
+                    {item.links.map((link) => (
+                      <a
+                        href={link.href}
+                        aria-current={isExactPage(link.href) ? "page" : undefined}
+                        data-current-section={isAncestorSection(link.href) ? "true" : undefined}
+                      >
+                        <strong>{link.label}</strong>
+                        {link.description && <span>{link.description}</span>}
+                      </a>
+                    ))}
+                  </div>
+                </details>
+              ),
+            )}
+          </nav>
 
-    <details class="site-menu">
-      <summary>Menu</summary>
-      <nav class="site-menu__panel" aria-label="Mobile primary navigation">
-        {
-          siteNavigation.map((item) => (
-            <a
-              href={item.href}
-              aria-current={
-                currentPath === item.href || currentPath === `${item.href}/`
-                  ? "page"
-                  : undefined
-              }
-            >
-              {item.label}
-            </a>
-          ))
-        }
-      </nav>
-    </details>
+          <details class="site-menu" data-navigation-menu>
+            <summary>
+              <span>Menu</span>
+              <DisclosureChevron />
+            </summary>
+            <nav class="site-menu__panel" aria-label="Mobile primary navigation">
+              {siteNavigation.map((item) =>
+                "href" in item ? (
+                  <a
+                    href={item.href}
+                    aria-current={isExactPage(item.href) ? "page" : undefined}
+                    data-current-section={isAncestorSection(item.href) ? "true" : undefined}
+                  >
+                    {item.label}
+                  </a>
+                ) : (
+                  <div class="site-menu__group">
+                    <strong>{item.label}</strong>
+                    <div class="site-menu__links">
+                      {item.links.map((link) => (
+                        <a
+                          href={link.href}
+                          aria-current={isExactPage(link.href) ? "page" : undefined}
+                          data-current-section={isAncestorSection(link.href) ? "true" : undefined}
+                        >
+                          {link.label}
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                ),
+              )}
+            </nav>
+          </details>
 
-    <Button href="/discovery" size="small">
-      Start diagnostic
-      <BlockArrow />
-    </Button>
+          <Button href="/discovery" size="small" class="site-header__cta">
+            Start diagnosis
+            <BlockArrow />
+          </Button>
+        </>
+      )
+    }
   </div>
+  <div class="nnco-header-rule" aria-hidden="true"></div>
 </header>
+
+<script>
+  const initialiseHeaderNavigation = (header: HTMLElement) => {
+    if (header.dataset.navigationReady === "true") return;
+    header.dataset.navigationReady = "true";
+
+    const dropdowns = Array.from(
+      header.querySelectorAll<HTMLDetailsElement>("[data-navigation-dropdown]"),
+    );
+    const mobileMenu =
+      header.querySelector<HTMLDetailsElement>("[data-navigation-menu]");
+    const hoverCapable = window.matchMedia("(hover: hover) and (pointer: fine)");
+    const mobileNavigation = window.matchMedia("(max-width: 1180px)");
+    const closeDropdowns = (exception?: HTMLDetailsElement) => {
+      dropdowns.forEach((dropdown) => {
+        if (dropdown !== exception) dropdown.open = false;
+      });
+    };
+    const closeNavigation = (exception?: HTMLDetailsElement) => {
+      closeDropdowns(exception);
+      if (mobileMenu && mobileMenu !== exception) mobileMenu.open = false;
+    };
+
+    dropdowns.forEach((dropdown) => {
+      let closeTimer = 0;
+
+      const cancelClose = () => {
+        window.clearTimeout(closeTimer);
+        closeTimer = 0;
+      };
+
+      dropdown.addEventListener("toggle", () => {
+        cancelClose();
+        if (!dropdown.open) return;
+        closeNavigation(dropdown);
+      });
+
+      dropdown.addEventListener("pointerenter", () => {
+        if (!hoverCapable.matches) return;
+        cancelClose();
+        dropdown.open = true;
+      });
+
+      dropdown.addEventListener("pointerleave", () => {
+        if (!hoverCapable.matches) return;
+        cancelClose();
+        closeTimer = window.setTimeout(() => {
+          dropdown.open = false;
+        }, 140);
+      });
+
+      dropdown.addEventListener("focusout", (event) => {
+        if (event.relatedTarget instanceof Node && dropdown.contains(event.relatedTarget)) return;
+        if (!dropdown.matches(":hover")) dropdown.open = false;
+      });
+    });
+
+    mobileMenu?.addEventListener("toggle", () => {
+      if (!mobileMenu.open) return;
+      closeNavigation(mobileMenu);
+    });
+
+    document.addEventListener("pointerdown", (event) => {
+      const openNavigation = [mobileMenu, ...dropdowns].find(
+        (item): item is HTMLDetailsElement => Boolean(item?.open),
+      );
+      if (
+        openNavigation &&
+        event.target instanceof Node &&
+        openNavigation.contains(event.target)
+      ) {
+        return;
+      }
+      closeNavigation();
+    });
+
+    header.addEventListener("keydown", (event) => {
+      if (event.key !== "Escape") return;
+      const openNavigation = [mobileMenu, ...dropdowns].find(
+        (item): item is HTMLDetailsElement => Boolean(item?.open),
+      );
+      if (!openNavigation) return;
+      event.preventDefault();
+      openNavigation.open = false;
+      openNavigation.querySelector<HTMLElement>("summary")?.focus();
+    });
+
+    mobileNavigation.addEventListener("change", () => closeNavigation());
+  };
+
+  const initialiseHeaders = () => {
+    document
+      .querySelectorAll<HTMLElement>("[data-site-header]")
+      .forEach(initialiseHeaderNavigation);
+  };
+
+  initialiseHeaders();
+  document.addEventListener("astro:page-load", initialiseHeaders);
+</script>

@@ -1,0 +1,178 @@
+---
+import BlockArrow from "./BlockArrow.astro";
+import Button from "./Button.astro";
+import ClosingSection from "./ClosingSection.astro";
+import EditorialCard from "./EditorialCard.astro";
+import EditorialCardLayer from "./EditorialCardLayer.astro";
+import ExpandedDetailList from "./ExpandedDetailList.astro";
+import FaqSection from "./FaqSection.astro";
+import Footer from "./Footer.astro";
+import Header from "./Header.astro";
+import PageHero from "./PageHero.astro";
+import PrivateAiBoundary from "./PrivateAiBoundary.astro";
+import SectionAnatomy from "./SectionAnatomy.astro";
+import SectionFrame from "./SectionFrame.astro";
+import type { LinkAction } from "./types";
+import { faqByPage } from "@/data/faq";
+import type { MarketingPageData } from "@/data/programme";
+import { waysOfWorking } from "@/data/site";
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import { buildFaqSchema } from "@/lib/schema";
+
+interface Props {
+  page: MarketingPageData;
+  industry?: boolean;
+}
+
+const { page, industry = false } = Astro.props;
+const faq = faqByPage[page.faqKey];
+const usesPrivateAiPlate = page.path === "/ai-first-enterprise/private-ai";
+const visibleSections = usesPrivateAiPlate ? page.sections.slice(1) : page.sections;
+const sectionOffset = usesPrivateAiPlate ? 1 : 0;
+const heroActions: LinkAction[] = [];
+if (page.primaryAction) {
+  heroActions.push({ ...page.primaryAction, variant: "primary" });
+}
+if (page.secondaryAction) {
+  heroActions.push({ ...page.secondaryAction, variant: "secondary" });
+}
+const faqSchema = buildFaqSchema(faq, page.path);
+const serviceSchema = page.service
+  ? {
+      "@type": "Service",
+      "@id": `https://nnco.ai${page.path}#service`,
+      name: page.service.name,
+      serviceType: page.service.serviceType,
+      description: page.service.description,
+      provider: { "@id": "https://nnco.ai/#organization" },
+      areaServed: "EU",
+    }
+  : undefined;
+const breadcrumbSchema = industry
+  ? {
+      "@type": "BreadcrumbList",
+      itemListElement: [
+        {
+          "@type": "ListItem",
+          position: 1,
+          name: "Home",
+          item: "https://nnco.ai/",
+        },
+        {
+          "@type": "ListItem",
+          position: 2,
+          name: "Industries",
+        },
+        {
+          "@type": "ListItem",
+          position: 3,
+          name: page.service?.name ?? page.title,
+          item: `https://nnco.ai${page.path}`,
+        },
+      ],
+    }
+  : undefined;
+const schemas = [serviceSchema, faqSchema, breadcrumbSchema].filter(
+  Boolean,
+) as Record<string, unknown>[];
+---
+
+<BaseLayout
+  title={page.metaTitle}
+  description={page.metaDescription}
+  canonicalPath={page.path}
+  schemas={schemas}
+>
+  <Header />
+  <main class="editorial-page">
+    <PageHero
+      title={page.title}
+      introduction={page.introduction}
+      actions={heroActions}
+    />
+
+    {
+      usesPrivateAiPlate && (
+        <SectionFrame tone="dark" labelledBy="private-ai-overview" class="private-ai-section">
+          <SectionAnatomy title={page.sections[0].title} titleId="private-ai-overview">
+            <div class="infrastructure-plate">
+              <div class="infrastructure-plate__content">
+                <div class="infrastructure-plate__copy">
+                  {page.sections[0].paragraphs?.map((paragraph) => <p>{paragraph}</p>)}
+                </div>
+              </div>
+              <PrivateAiBoundary />
+            </div>
+          </SectionAnatomy>
+        </SectionFrame>
+      )
+    }
+
+    {
+      visibleSections.map((section, index) => {
+        const titleId = `section-${index + 1 + sectionOffset}`;
+        return (
+          <SectionFrame
+            labelledBy={titleId}
+            class="editorial-section"
+          >
+            <SectionAnatomy
+              title={section.title}
+              titleId={titleId}
+              contentWidth={section.render === "ways-of-working" ? "50" : undefined}
+            >
+              {section.paragraphs?.map((paragraph) => (
+                <p class="editorial-section__body">{paragraph}</p>
+              ))}
+              {section.render === "ways-of-working" && (
+                <ExpandedDetailList items={waysOfWorking} />
+              )}
+              {section.groups && (
+                <div class="editorial-group-grid">
+                  {section.groups.map((group) => (
+                    <div class="editorial-group">
+                      <h3>{group.title}</h3>
+                      <ul>
+                        {group.items.map((item) => <li>{item}</li>)}
+                      </ul>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {section.items && (
+                <EditorialCardLayer
+                  colSize={section.items.length === 2 || section.items.length === 4 ? 2 : 3}
+                >
+                  {section.items.map((item) => (
+                    <EditorialCard
+                      title={item.title}
+                      text={item.text}
+                      href={item.href}
+                    />
+                  ))}
+                </EditorialCardLayer>
+              )}
+              {section.links && (
+                <div class="editorial-links">
+                  {section.links.map((link) => (
+                    <Button href={link.href} variant="secondary">
+                      {link.label} <BlockArrow />
+                    </Button>
+                  ))}
+                </div>
+              )}
+            </SectionAnatomy>
+          </SectionFrame>
+        );
+      })
+    }
+
+    <FaqSection items={faq} />
+
+    <ClosingSection
+      description={page.closing}
+      actions={[{ href: "/contact", label: "Book a 30-minute call" }]}
+    />
+  </main>
+  <Footer />
+</BaseLayout>

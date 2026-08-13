@@ -1,0 +1,8 @@
+---
+import MarketingPage from "@/components/MarketingPage.astro";
+import { programmeSubpages } from "@/data/programme";
+
+export const prerender = true;
+---
+
+<MarketingPage page={programmeSubpages["ai-audit"]} />

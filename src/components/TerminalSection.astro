@@ -1,0 +1,29 @@
+---
+import SectionAnatomy from "./SectionAnatomy.astro";
+
+interface Props {
+  title: string;
+  titleId: string;
+  id?: string;
+  class?: string;
+}
+
+const {
+  title,
+  titleId,
+  id,
+  class: className,
+} = Astro.props;
+---
+
+<section
+  id={id}
+  class:list={["terminal-section", className]}
+  aria-labelledby={titleId}
+>
+  <div class="content-rail terminal-section__inner">
+    <SectionAnatomy title={title} titleId={titleId}>
+      <slot />
+    </SectionAnatomy>
+  </div>
+</section>

@@ -1,0 +1,27 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import Footer from "@/components/Footer.astro";
+import Header from "@/components/Header.astro";
+import PageHero from "@/components/PageHero.astro";
+
+export const prerender = true;
+---
+
+<BaseLayout title="Page not found | NNCO" description="The requested page does not exist." noindex>
+  <Header />
+  <main class="editorial-page">
+    <PageHero
+      title="Page not found"
+      introduction="The link may be old, or the page may have moved."
+      actionsLabel="Useful pages"
+      actions={[
+        { href: "/", label: "Home", variant: "secondary", arrow: false },
+        { href: "/ai-first-enterprise", label: "AI-First Enterprise", variant: "secondary", arrow: false },
+        { href: "/banking", label: "Banking", variant: "secondary", arrow: false },
+        { href: "/blog", label: "Blog", variant: "secondary", arrow: false },
+        { href: "/contact", label: "Contact", variant: "secondary", arrow: false },
+      ]}
+    />
+  </main>
+  <Footer />
+</BaseLayout>

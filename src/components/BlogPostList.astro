@@ -1,0 +1,30 @@
+---
+import CardAffordance from "./CardAffordance.astro";
+import type { BlogPostListItem } from "@/lib/blog";
+
+interface Props {
+  posts: readonly BlogPostListItem[];
+  ariaLabel?: string;
+}
+
+const { posts, ariaLabel = "NNCO blog posts" } = Astro.props;
+---
+
+<ul class="news-list" aria-label={ariaLabel}>
+  {
+    posts.map((post) => (
+      <li>
+        <a class="news-row" href={`/blog/${post.slug}`}>
+          <div class="news-row__content">
+            <h3>{post.title}</h3>
+            <p>{post.summary}</p>
+          </div>
+          <time class="news-row__date" datetime={post.publishedAt}>
+            {post.publishedLabel}
+          </time>
+          <CardAffordance />
+        </a>
+      </li>
+    ))
+  }
+</ul>
