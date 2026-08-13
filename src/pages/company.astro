@@ -3,7 +3,8 @@ import BaseLayout from "@/layouts/BaseLayout.astro";
 import BlockArrow from "@/components/BlockArrow.astro";
 import Button from "@/components/Button.astro";
 import ClosingSection from "@/components/ClosingSection.astro";
-import CompanyAccordion from "@/components/CompanyAccordion.astro";
+import EditorialCard from "@/components/EditorialCard.astro";
+import EditorialCardLayer from "@/components/EditorialCardLayer.astro";
 import FaqSection from "@/components/FaqSection.astro";
 import Footer from "@/components/Footer.astro";
 import Header from "@/components/Header.astro";
@@ -11,7 +12,8 @@ import PageHero from "@/components/PageHero.astro";
 import SectionAnatomy from "@/components/SectionAnatomy.astro";
 import SectionFrame from "@/components/SectionFrame.astro";
 import { faqByPage } from "@/data/faq";
-import { team } from "@/data/site";
+import { homeBuildItems } from "@/data/home";
+import { team, waysOfWorking } from "@/data/site";
 import { buildFaqSchema } from "@/lib/schema";
 
 export const prerender = true;
@@ -33,51 +35,56 @@ const faqSchema = buildFaqSchema(faq, "/company");
       introduction="NNCO is an AI consulting and development company. The people behind it spent the last decade building software businesses, running a regulated fintech and shipping systems that other companies depend on. We started NNCO because the hard part of enterprise AI turned out to be the part we already knew."
     />
 
-    <SectionFrame labelledBy="why-title" class="company-about">
+    <SectionFrame labelledBy="why-title">
       <SectionAnatomy title="Implementation gap" titleId="why-title">
-        <div class="company-about__layout">
-          <img
-            src="/assets/nnco-operational-field.png"
-            alt=""
-            width="1536"
-            height="1024"
-            loading="lazy"
-          />
-          <div class="company-about__copy">
-            <p>
-              Large institutions have been running AI pilots for two years.
-              Very few of them run anything in production. The pattern is
-              consistent enough to be boring: a workshop picks a use case, an
-              agency builds a convincing demonstration, and then the project
-              meets the systems it would have to integrate with, the data it is
-              not allowed to move, the evidence somebody has to be able to
-              produce afterwards, and the question of who owns it once the
-              agency leaves. The demonstration was never wrong. It was just the
-              easy tenth of the work.
-            </p>
-            <p>
-              That gap is an implementation problem, and it looks exactly like
-              the problems we spent the last decade solving: integrating with
-              systems nobody wants to touch, shipping into an environment with
-              real users and real consequences, and staying responsible for it
-              afterwards. We had done that inside a licensed lending platform,
-              inside a software company delivering for banks and insurers, and
-              in security audits where being approximately right is the same as
-              being wrong.
-            </p>
-            <p>
-              So NNCO does the whole arc. We find where AI is worth building, we
-              build it, we deploy it inside your constraints, and we run it
-              after launch. Strategy without deployment is a document.
-              Deployment without an understanding of the rules is a pilot that
-              gets stopped.
-            </p>
+        <div class="company-about__copy">
+          <p class="company-about__lead">
+            Large institutions have been running AI pilots for two years. Very
+            few of them run anything in production. The pattern is consistent
+            enough to be boring: a workshop picks a use case, an agency builds
+            a convincing demonstration, and then the project meets the systems
+            it would have to integrate with, the data it is not allowed to
+            move, the evidence somebody has to be able to produce afterwards,
+            and the question of who owns it once the agency leaves. The
+            demonstration was never wrong. It was just the easy tenth of the
+            work.
+          </p>
+          <div class="company-about__panel">
+            <div class="company-about__panel-copy">
+              <p>
+                That gap is an implementation problem, and it looks exactly like
+                the problems we spent the last decade solving: integrating with
+                systems nobody wants to touch, shipping into an environment with
+                real users and real consequences, and staying responsible for it
+                afterwards. We had done that inside a licensed lending platform,
+                inside a software company delivering for banks and insurers, and
+                in security audits where being approximately right is the same as
+                being wrong.
+              </p>
+              <p>
+                So NNCO does the whole arc. We find where AI is worth building, we
+                build it, we deploy it inside your constraints, and we run it after
+                launch. Strategy without deployment is a document. Deployment
+                without an understanding of the rules is a pilot that gets stopped.
+              </p>
+            </div>
+            <div class="company-about__panel-glyph" aria-hidden="true">
+              <img
+                class="company-implementation-glyph"
+                src="/assets/company-implementation-glyph.svg"
+                alt=""
+                width="1100"
+                height="1100"
+                loading="lazy"
+                decoding="async"
+              />
+            </div>
           </div>
         </div>
       </SectionAnatomy>
     </SectionFrame>
 
-    <SectionFrame tone="surface" labelledBy="position-title" class="editorial-section">
+    <SectionFrame labelledBy="position-title" class="editorial-section">
       <SectionAnatomy title="Our position" titleId="position-title">
         <p class="editorial-section__body">
           Consultancies produce the strategy and hand over the implementation.
@@ -90,12 +97,22 @@ const faqSchema = buildFaqSchema(faq, "/company");
     </SectionFrame>
 
     <SectionFrame labelledBy="work-title" class="company-work">
-      <SectionAnatomy title="How we work" titleId="work-title">
-        <CompanyAccordion />
+      <SectionAnatomy title="How we work" titleId="work-title" contentWidth="50">
+        <EditorialCardLayer colSize={1}>
+          {
+            waysOfWorking.map((item, index) => (
+              <EditorialCard
+                title={item.title}
+                text={item.description}
+                glyph={homeBuildItems[index % homeBuildItems.length].glyph}
+              />
+            ))
+          }
+        </EditorialCardLayer>
       </SectionAnatomy>
     </SectionFrame>
 
-    <SectionFrame id="team" tone="surface" labelledBy="team-title" class="team-section">
+    <SectionFrame id="team" labelledBy="team-title" class="team-section">
       <SectionAnatomy title="Team" titleId="team-title">
         <p class="editorial-section__body">
           We have built products together before, which is the difference
@@ -116,14 +133,13 @@ const faqSchema = buildFaqSchema(faq, "/company");
       </SectionAnatomy>
     </SectionFrame>
 
-    <SectionFrame labelledBy="discretion-title" class="editorial-section">
+    <SectionFrame tone="dark" labelledBy="discretion-title" class="editorial-section">
       <SectionAnatomy title="Client confidentiality" titleId="discretion-title">
         <p class="editorial-section__body">
-          We sign an NDA before you describe anything internal. What we build
-          for one institution is not visible to another, including the
-          architecture and the detail that came with it. Whether to speak about
-          the work publicly is the client's decision, and the answer is usually
-          no.
+          We sign an NDA before you describe anything internal. What we build for
+          one institution is not visible to another, including the architecture
+          and the detail that came with it. Whether to speak about the work
+          publicly is the client's decision, and the answer is usually no.
         </p>
         <p class="editorial-section__body">
           We are precise about how we work and quiet about who we work for.
@@ -134,7 +150,7 @@ const faqSchema = buildFaqSchema(faq, "/company");
       </SectionAnatomy>
     </SectionFrame>
 
-    <SectionFrame tone="surface" labelledBy="where-title" class="editorial-section">
+    <SectionFrame labelledBy="where-title" class="editorial-section">
       <SectionAnatomy title="European reach" titleId="where-title">
         <p class="editorial-section__body">
           Engagements run in Czech, Slovak and English. The regulatory context
@@ -148,12 +164,12 @@ const faqSchema = buildFaqSchema(faq, "/company");
       </SectionAnatomy>
     </SectionFrame>
 
+    <FaqSection items={faq} />
+
     <ClosingSection
       description="No slides, and you talk to the people who would do the work. If it is not something we should build, you will hear that on the call rather than in a proposal."
       actions={[{ href: "/contact", label: "Book a 30-minute call" }]}
     />
-
-    <FaqSection items={faq} />
   </main>
   <Footer />
 </BaseLayout>

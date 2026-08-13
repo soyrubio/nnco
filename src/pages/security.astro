@@ -5,6 +5,7 @@ import Header from "@/components/Header.astro";
 import PageHero from "@/components/PageHero.astro";
 import SectionAnatomy from "@/components/SectionAnatomy.astro";
 import SectionFrame from "@/components/SectionFrame.astro";
+import TerminalSection from "@/components/TerminalSection.astro";
 
 export const prerender = true;
 ---
@@ -29,7 +30,7 @@ export const prerender = true;
         </p>
       </SectionAnatomy>
     </SectionFrame>
-    <SectionFrame tone="surface" labelledBy="ask-title" class="editorial-section">
+    <SectionFrame labelledBy="ask-title" class="editorial-section">
       <SectionAnatomy title="What we ask" titleId="ask-title">
         <p class="editorial-section__body">
           Give us reasonable time to fix it before publishing. Do not
@@ -38,14 +39,16 @@ export const prerender = true;
         </p>
       </SectionAnatomy>
     </SectionFrame>
-    <SectionFrame labelledBy="bounty-title" class="editorial-section">
-      <SectionAnatomy title="What we do not offer" titleId="bounty-title">
-        <p class="editorial-section__body">
-          We do not run a paid bug bounty. We will credit you if you want to be
-          credited.
-        </p>
-      </SectionAnatomy>
-    </SectionFrame>
+    <TerminalSection
+      title="What we do not offer"
+      titleId="bounty-title"
+      class="editorial-section"
+    >
+      <p class="editorial-section__body">
+        We do not run a paid bug bounty. We will credit you if you want to be
+        credited.
+      </p>
+    </TerminalSection>
   </main>
   <Footer />
 </BaseLayout>

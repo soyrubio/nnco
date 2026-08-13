@@ -75,10 +75,13 @@ const mobileFrames = Array.from(
 </section>
 
 <script>
+  import { scroll } from "motion";
+
+  const hero = document.querySelector<HTMLElement>("[data-marketing-hero]");
   const sequenceRoot =
     document.querySelector<HTMLElement>("[data-hero-sequence]");
 
-  if (sequenceRoot && sequenceRoot.dataset.sequenceReady !== "true") {
+  if (hero && sequenceRoot && sequenceRoot.dataset.sequenceReady !== "true") {
     sequenceRoot.dataset.sequenceReady = "true";
 
     const image = sequenceRoot.querySelector<HTMLImageElement>(
@@ -97,13 +100,10 @@ const mobileFrames = Array.from(
     const reducedMotion = window.matchMedia(
       "(prefers-reduced-motion: reduce)",
     );
-    const holdMs = 100;
-    const cadenceMs = [50, 60, 70, 80, 90, 100, 120, 150, 200, 280];
     const loadedSequences = new Set<string>();
-    const timers: number[] = [];
-    let holdTimer = 0;
-    let hasPlayed = false;
-    let activeFrame = 0;
+    const loadingSequences = new Map<string, Promise<boolean>>();
+    let stopScroll: (() => void) | undefined;
+    let desiredFrame = 0;
 
     const getActiveSequence = () =>
       mobileViewport.matches ? mobileFrames : desktopFrames;
@@ -111,8 +111,10 @@ const mobileFrames = Array.from(
     const preloadSequence = async (frames: string[]) => {
       const key = frames[0];
       if (!key || loadedSequences.has(key)) return true;
+      const loading = loadingSequences.get(key);
+      if (loading) return loading;
 
-      const results = await Promise.all(
+      const promise = Promise.all(
         frames.slice(1).map(
           (src) =>
             new Promise<boolean>((resolve) => {
@@ -122,16 +124,15 @@ const mobileFrames = Array.from(
               preload.src = src;
             }),
         ),
-      );
-      const didLoad = results.every(Boolean);
-      if (didLoad) loadedSequences.add(key);
-      return didLoad;
-    };
+      ).then((results) => {
+        const didLoad = results.every(Boolean);
+        if (didLoad) loadedSequences.add(key);
+        loadingSequences.delete(key);
+        return didLoad;
+      });
 
-    const clearSequenceTimers = () => {
-      window.clearTimeout(holdTimer);
-      holdTimer = 0;
-      timers.splice(0).forEach((timer) => window.clearTimeout(timer));
+      loadingSequences.set(key, promise);
+      return promise;
     };
 
     const applyFrame = (index: number) => {
@@ -140,7 +141,6 @@ const mobileFrames = Array.from(
       const src = frames[index];
       if (!src) return;
 
-      activeFrame = index;
       if (mobileViewport.matches) {
         mobileSource.srcset = src;
       } else {
@@ -148,62 +148,55 @@ const mobileFrames = Array.from(
       }
     };
 
-    const playSequence = async () => {
-      if (hasPlayed || reducedMotion.matches || !image || !mobileSource) return;
-      hasPlayed = true;
-      const readyAt = performance.now();
-
-      let frames = getActiveSequence();
+    const prepareActiveSequence = async () => {
+      const frames = getActiveSequence();
       if (frames.length !== 11 || !(await preloadSequence(frames))) return;
-      const currentFrames = getActiveSequence();
-      if (currentFrames[0] !== frames[0]) {
-        frames = currentFrames;
-        if (frames.length !== 11 || !(await preloadSequence(frames))) return;
-      }
-      if (reducedMotion.matches) return;
+      if (getActiveSequence()[0] !== frames[0]) return;
+      applyFrame(desiredFrame);
+    };
 
-      const remainingHold = Math.max(0, holdMs - (performance.now() - readyAt));
-      holdTimer = window.setTimeout(() => {
-        holdTimer = 0;
-        let elapsed = 0;
-        frames.slice(1).forEach((_, index) => {
-          elapsed += cadenceMs[index];
-          timers.push(window.setTimeout(() => applyFrame(index + 1), elapsed));
-        });
-      }, remainingHold);
+    const syncFrameToScroll = (progress: number) => {
+      const frames = getActiveSequence();
+      desiredFrame = Math.round(progress * (frames.length - 1));
+      if (loadedSequences.has(frames[0])) applyFrame(desiredFrame);
+    };
+
+    const startScrollSequence = () => {
+      stopScroll?.();
+      stopScroll = scroll(syncFrameToScroll, {
+        target: hero,
+        offset: ["start start", "end start"],
+      });
     };
 
     const handleMotionPreference = () => {
-      if (!reducedMotion.matches) return;
-      clearSequenceTimers();
-      applyFrame(0);
+      if (reducedMotion.matches) {
+        stopScroll?.();
+        stopScroll = undefined;
+        desiredFrame = 0;
+        applyFrame(0);
+        return;
+      }
+
+      void prepareActiveSequence();
+      startScrollSequence();
     };
 
     const handleViewportChange = () => {
-      if (!hasPlayed) return;
-      clearSequenceTimers();
-      applyFrame(activeFrame);
+      void prepareActiveSequence();
     };
 
     if (!reducedMotion.matches) {
-      void preloadSequence(getActiveSequence());
-    }
-
-    if (document.querySelector("[data-page-loader]")) {
-      window.addEventListener("nnco:page-ready", playSequence, { once: true });
-    } else {
-      window.requestAnimationFrame(() => {
-        void playSequence();
-      });
+      void prepareActiveSequence();
+      startScrollSequence();
     }
 
     document.addEventListener(
       "astro:before-swap",
       () => {
-        clearSequenceTimers();
+        stopScroll?.();
         reducedMotion.removeEventListener("change", handleMotionPreference);
         mobileViewport.removeEventListener("change", handleViewportChange);
-        window.removeEventListener("nnco:page-ready", playSequence);
       },
       { once: true },
     );

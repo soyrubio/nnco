@@ -1,0 +1,16 @@
+---
+interface Props {
+  label: string;
+  name: string;
+  errorId: string;
+  class?: string;
+}
+
+const { label, name, errorId, class: className } = Astro.props;
+---
+
+<label class:list={["form-control", className]}>
+  <span class="form-control__label">{label}</span>
+  <slot />
+  <small id={errorId} data-error-for={name}></small>
+</label>

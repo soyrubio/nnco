@@ -21,7 +21,7 @@ export function checkSlidingWindowRateLimit(
   now = Date.now(),
 ): number | null {
   const forwarded = request.headers.get("x-forwarded-for");
-  const key = forwarded?.split(",")[0]?.trim() || clientAddress || "local";
+  const key = clientAddress?.trim() || forwarded?.split(",")[0]?.trim() || "local";
   const recent = (store.get(key) ?? []).filter(
     (timestamp) => timestamp > now - windowMs,
   );
