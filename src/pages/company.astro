@@ -30,58 +30,53 @@ const faqSchema = buildFaqSchema(faq, "/company");
 >
   <Header />
   <main class="editorial-page">
-    <PageHero
-      title="Company"
-      introduction="NNCO is an AI consulting and development company. The people behind it spent the last decade building software businesses, running a regulated fintech and shipping systems that other companies depend on. We started NNCO because the hard part of enterprise AI turned out to be the part we already knew."
-    />
+    <PageHero title="Company" />
 
     <SectionFrame labelledBy="why-title">
       <SectionAnatomy title="Implementation gap" titleId="why-title">
-        <div class="company-about__copy">
-          <p class="company-about__lead">
-            Large institutions have been running AI pilots for two years. Very
-            few of them run anything in production. The pattern is consistent
-            enough to be boring: a workshop picks a use case, an agency builds
-            a convincing demonstration, and then the project meets the systems
-            it would have to integrate with, the data it is not allowed to
-            move, the evidence somebody has to be able to produce afterwards,
-            and the question of who owns it once the agency leaves. The
-            demonstration was never wrong. It was just the easy tenth of the
-            work.
-          </p>
-          <div class="company-about__panel">
-            <div class="company-about__panel-copy">
-              <p>
-                That gap is an implementation problem, and it looks exactly like
-                the problems we spent the last decade solving: integrating with
-                systems nobody wants to touch, shipping into an environment with
-                real users and real consequences, and staying responsible for it
-                afterwards. We had done that inside a licensed lending platform,
-                inside a software company delivering for banks and insurers, and
-                in security audits where being approximately right is the same as
-                being wrong.
-              </p>
-              <p>
-                So NNCO does the whole arc. We find where AI is worth building, we
-                build it, we deploy it inside your constraints, and we run it after
-                launch. Strategy without deployment is a document. Deployment
-                without an understanding of the rules is a pilot that gets stopped.
-              </p>
-            </div>
-            <div class="company-about__panel-glyph" aria-hidden="true">
-              <img
-                class="company-implementation-glyph"
-                src="/assets/company-implementation-glyph.svg"
-                alt=""
-                width="1100"
-                height="1100"
-                loading="lazy"
-                decoding="async"
-              />
-            </div>
-          </div>
-        </div>
+        <p class="company-about__lead">
+          Large institutions have been running AI pilots for two years. Very
+          few of them run anything in production. The pattern is consistent
+          enough to be boring: a workshop picks a use case, an agency builds
+          a convincing demonstration, and then the project meets the systems
+          it would have to integrate with, the data it is not allowed to
+          move, the evidence somebody has to be able to produce afterwards,
+          and the question of who owns it once the agency leaves. The
+          demonstration was never wrong. It was just the easy tenth of the
+          work.
+        </p>
       </SectionAnatomy>
+      <div class="company-about__panel">
+        <div class="company-about__panel-copy">
+          <p>
+            That gap is an implementation problem, and it looks exactly like
+            the problems we spent the last decade solving: integrating with
+            systems nobody wants to touch, shipping into an environment with
+            real users and real consequences, and staying responsible for it
+            afterwards. We had done that inside a licensed lending platform,
+            inside a software company delivering for banks and insurers, and
+            in security audits where being approximately right is the same as
+            being wrong.
+          </p>
+          <p>
+            So NNCO does the whole arc. We find where AI is worth building, we
+            build it, we deploy it inside your constraints, and we run it after
+            launch. Strategy without deployment is a document. Deployment
+            without an understanding of the rules is a pilot that gets stopped.
+          </p>
+        </div>
+        <div class="company-about__panel-glyph" aria-hidden="true">
+          <img
+            class="company-implementation-glyph"
+            src="/assets/company-implementation-glyph.svg"
+            alt=""
+            width="1100"
+            height="1100"
+            loading="lazy"
+            decoding="async"
+          />
+        </div>
+      </div>
     </SectionFrame>
 
     <SectionFrame labelledBy="position-title" class="editorial-section">

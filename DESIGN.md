@@ -193,14 +193,19 @@ The structure is deliberately blocky:
 - Company Implementation gap remains one standard ruled section. Its enlarged
   opening paragraph uses a loose 1.2 line-height and -0.035em
   tracking. A generous responsive 3.5rem to 6rem gap separates it from the two
-  supporting paragraphs below, which sit in a sharp grey panel contained
-  entirely by the section's right content column. Inside that panel,
-  copy takes 60% and the implementation glyph takes 40%; both collapse to one
-  column below 768px. The supplied implementation glyph builds a 3x3 field
-  from the Group 97 cell geometry: its top-left 2x2 cells are solid ink and the
-  five cells completing the right and bottom edges use `--ink-soft` outlines
-  with a 4-unit SVG stroke. Its desktop height follows the adjacent copy rather
-  than imposing a separate row height.
+  supporting paragraphs below. The title and opening paragraph retain the
+  standard left/right section split, while the supporting copy sits in a sharp
+  black panel spanning the complete content rail after a pronounced top gap.
+  The panel uses a generous horizontal inset, a tighter vertical inset and a
+  wide gap between the two columns. Inside that panel,
+  subtly enlarged, vertically centered copy takes 60% and the taller white
+  implementation glyph takes 40%; both
+  collapse to one column below 768px. The glyph's secondary solid cells use
+  white at 20% opacity. The supplied implementation glyph builds a 3x3 field
+  from the Group 97 cell geometry: its top-left 2x2 cells are solid white and
+  the five cells completing the right and bottom edges are solid white at 20%
+  opacity. Its desktop container retains a taller
+  responsive minimum height.
 - `Footer`: shared rail and restrained identity/navigation groups.
 - `FontSwitcher`: one compact, fixed bottom-right utility rendered visibly by
   `BaseLayout` on every route, including Discovery. Its `Typeface` label
