@@ -5,7 +5,7 @@ interface Props {
   visible?: boolean;
 }
 
-const { visible = false } = Astro.props;
+const { visible = true } = Astro.props;
 ---
 
 <div class="font-switcher" data-font-switcher hidden={!visible}>
