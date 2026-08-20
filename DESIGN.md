@@ -166,12 +166,40 @@ The structure is deliberately blocky:
   active tab remains regular because its inverted surface supplies emphasis.
   Dropdown controls hard-switch between the outlined Google Material Symbols
   `keyboard_arrow_down` and `keyboard_arrow_up`; interface text inherits the
-  shared typeface token. Desktop dropdown panels stay compact, with typography
-  close to the navigation scale rather than page-heading scale. Their surface
-  follows the header tone: paper with ink text on light headers, and ink with
-  paper text on dark or transparent hero headers. Hover and current items
-  invert within that active palette. Desktop controls are vertically centred;
-  dropdown panels and their pointer bridge share one 0.75rem offset.
+  shared typeface token. On desktop, a dropdown reveals a full-viewport-width
+  under-nav over the existing page content. Its content remains on the shared
+  rail: the dropdown title occupies the left two-sixths and a vertical sequence
+  of links occupies the right four-sixths. Each link keeps its concise
+  description. Link titles use the shared item-heading role and descriptions
+  use regular body typography. Rows have no horizontal padding and only the
+  interior boundaries carry a fine rule, leaving the first edge and final edge
+  open. The panel ends with the same rail-aligned 5px separator as the header.
+  Its surface follows the header tone: paper with ink text on light headers,
+  and ink with paper text on dark or transparent hero headers. Current items
+  keep the same presentation as every other row. Hover keeps the row surface
+  unchanged, softens only its text and retains the shared card-style forward
+  arrow on the right. Desktop dropdown
+  buttons control one shared panel attached directly below the header's 5px
+  separator. That placement makes the header edge itself the continuous pointer
+  path and prevents the moving panel from painting over the logo or navigation
+  row. The panel reveals from `0fr` to `1fr` over 300ms with an ease-in-out
+  curve, then fades its contents in over 200ms with the same curve. Closing
+  first fades the contents and then reverses the grid
+  reveal, for a balanced 500ms sequence; reduced-motion users receive it
+  instantly. Pointer and focus entry on either a trigger or the panel cancel the
+  same pending close, while departure retains a short 120ms tolerance. Moving
+  directly to another dropdown trigger keeps the shared panel open and swaps
+  only its category content, without replaying the reveal. The outgoing copy
+  fades for 90ms before the swap and the incoming copy resolves over 120ms.
+  When the two categories have different natural heights, the shared clip interpolates
+  between them over 300ms with an ease-in-out curve. Reduced-motion users keep
+  the instant content and height change. The panel's bottom 5px separator is
+  pinned to that moving clip edge and shares its surface, so the rule and
+  background emerge as one edge beneath the header and travel together through
+  both the opening panel and category-height changes.
+  On phones, Menu uses the same full-width overlay, downward and upward motion,
+  open outer list edges and rail-aligned bottom separator. Its established
+  grouped information hierarchy remains intact in one column.
 - `DisclosureChevron`: the shared, decorative Material Symbols down/up pair for
   native header and FAQ disclosures. Open state hard-switches the glyph without
   rotation, fading or motion.
@@ -441,9 +469,10 @@ The structure is deliberately blocky:
 
 - Motion exists only for interaction feedback and state transitions.
 - Fades and crossfades are not used except for the shared navigation header's
-  560ms background-colour transition and the homepage Private AI scene's boundary
-  handoff. Its grey-to-white boundary is the only scroll-linked colour
-  interpolation; every other surface change remains instant.
+  560ms background-colour transition, its mega-menu content reveal, and the
+  homepage Private AI scene's boundary handoff. Its grey-to-white boundary is
+  the only scroll-linked colour interpolation; every other surface change
+  remains instant.
 - Discovery questions use a keyed 300ms horizontal entry only: forward
   arrives from the right and Back arrives from the left. There is no opacity,
   scale, bounce, stagger or option-selection motion.

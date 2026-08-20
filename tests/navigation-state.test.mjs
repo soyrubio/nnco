@@ -8,10 +8,14 @@ import {
 } from "../src/lib/navigation.ts";
 
 const headerUrl = new URL("../src/components/Header.astro", import.meta.url);
+const sectionFrameUrl = new URL("../src/components/SectionFrame.astro", import.meta.url);
+const marketingBehaviorUrl = new URL("../src/components/MarketingBehavior.astro", import.meta.url);
 const stylesUrl = new URL("../src/styles/global.css", import.meta.url);
 const blogArticleUrl = new URL("../src/pages/blog/[slug].astro", import.meta.url);
-const [headerSource, stylesSource, blogArticleSource] = await Promise.all([
+const [headerSource, sectionFrameSource, marketingBehaviorSource, stylesSource, blogArticleSource] = await Promise.all([
   readFile(headerUrl, "utf8"),
+  readFile(sectionFrameUrl, "utf8"),
+  readFile(marketingBehaviorUrl, "utf8"),
   readFile(stylesUrl, "utf8"),
   readFile(blogArticleUrl, "utf8"),
 ]);
@@ -58,16 +62,19 @@ test("navigation section state accepts only exact paths and slash-delimited desc
 test("header keeps ancestor styling separate from exact page semantics", () => {
   assert.match(headerSource, /aria-current=\{isExactPage\(/);
   assert.match(headerSource, /data-current-section=\{isAncestorSection\(/);
-  assert.match(headerSource, /<summary\s+data-current-section=/);
-  assert.doesNotMatch(headerSource, /<summary\s+aria-current=/);
+  assert.match(
+    headerSource,
+    /class="site-nav-dropdown-trigger"[\s\S]*?data-current-section=/,
+  );
+  assert.match(headerSource, /class="site-nav-dropdown-trigger"[\s\S]*?aria-expanded="false"/);
   assert.match(stylesSource, /\[data-current-section="true"\]/);
   assert.doesNotMatch(blogArticleSource, /<Header\s+currentPath="\/blog"/);
 });
 
-test("dropdown toggle cancels any pending pointerleave close before applying state", () => {
+test("dropdown entry cancels any pending pointerleave close before applying state", () => {
   assert.match(
     headerSource,
-    /dropdown\.addEventListener\("toggle", \(\) => \{\s+cancelClose\(\);\s+if \(!dropdown\.open\) return;/,
+    /const openMegaMenu = \(trigger: HTMLButtonElement\) => \{[\s\S]*?cancelMegaMenuClose\(\);[\s\S]*?megaMenu\.dataset\.navigationState = "open";/,
   );
 });
 
@@ -98,32 +105,92 @@ test("desktop dropdown palette follows the header tone", () => {
   );
   assert.match(
     stylesSource,
-    /\.site-nav-dropdown__panel\s*\{[^}]*background-color:\s*var\(--nav-dropdown-surface\);[^}]*color:\s*var\(--nav-dropdown-text\);/s,
+    /\.site-nav-mega__clip\s*\{[^}]*background:\s*var\(--nav-dropdown-surface\);/s,
   );
   assert.match(
     stylesSource,
-    /\.site-nav-dropdown__panel a:is\(:hover, :focus-visible\)\s*\{[^}]*background:\s*var\(--nav-dropdown-active-surface\);[^}]*color:\s*var\(--nav-dropdown-active-text\);/s,
+    /\.site-nav-mega a:is\(:hover, :focus-visible\) strong,[\s\S]*?> span:not\(\.card-affordance\)\s*\{[^}]*opacity:\s*0\.62;/s,
   );
   assert.doesNotMatch(
     stylesSource,
-    /\.site-header--over-hero\.is-over-dark \.site-nav a,/,
+    /\.site-nav-mega a:is\(:hover, :focus-visible\)[^{}]*\{[^}]*(?:background|color):/s,
+  );
+  assert.doesNotMatch(
+    stylesSource,
+    /\.site-header\.is-over-dark \.site-nav a,/,
   );
 });
 
-test("desktop dropdown outer border and item separators share one rule", () => {
+test("every dark section frame switches the shared marketing header tone", () => {
+  assert.match(
+    sectionFrameSource,
+    /data-header-tone=\{tone === "dark" \? "dark" : undefined\}/,
+  );
+  assert.match(
+    headerSource,
+    /querySelectorAll<HTMLElement>\('\[data-header-tone="dark"\]'\)/,
+  );
+  assert.match(headerSource, /new IntersectionObserver\(/);
+  assert.match(
+    headerSource,
+    /header\.classList\.toggle\("is-over-dark", activeDarkSections\.size > 0\)/,
+  );
+  assert.doesNotMatch(marketingBehaviorSource, /private-ai-section|is-over-dark/);
   assert.match(
     stylesSource,
-    /\.site-nav-dropdown__panel\s*\{[^}]*border:\s*1px solid var\(--nav-dropdown-rule\);/s,
+    /\.site-header\.is-over-dark\s*\{[^}]*background:\s*var\(--ink\);[^}]*color:\s*var\(--paper\);/s,
   );
   assert.match(
     stylesSource,
-    /\.site-nav-dropdown__panel a:nth-child\(odd\)\s*\{[^}]*border-right:\s*1px solid var\(--nav-dropdown-rule\);/s,
+    /\.site-header\.is-over-dark \.site-nav > a:is\(:hover, :focus-visible\),/,
+  );
+});
+
+test("desktop under-nav spans the viewport and keeps a ruled vertical link sequence", () => {
+  assert.match(
+    stylesSource,
+    /\.site-nav-mega\s*\{[^}]*position:\s*absolute;[^}]*top:\s*100%;[^}]*right:\s*0;[^}]*left:\s*0;[^}]*display:\s*grid;/s,
   );
   assert.match(
     stylesSource,
-    /\.site-nav-dropdown__panel a:nth-child\(-n \+ 2\)\s*\{[^}]*border-bottom:\s*1px solid var\(--nav-dropdown-rule\);/s,
+    /\.site-nav-mega__inner\s*\{[^}]*grid-template-columns:\s*minmax\(0, 2fr\) minmax\(0, 4fr\);/s,
   );
-  assert.doesNotMatch(stylesSource, /--nav-dropdown-border:/);
+  assert.match(
+    stylesSource,
+    /\.site-nav-mega__inner\[hidden\]\s*\{[^}]*display:\s*none;/s,
+  );
+  assert.match(
+    stylesSource,
+    /\.site-nav-mega__links\s*\{[^}]*display:\s*grid;/s,
+  );
+  assert.match(
+    stylesSource,
+    /\.site-nav-mega a \+ a\s*\{[^}]*border-top:\s*var\(--fine-rule-thickness\) solid currentColor;/s,
+  );
+  assert.match(
+    stylesSource,
+    /\.site-nav-mega a\s*\{[^}]*padding:\s*1\.5rem 0;/s,
+  );
+  assert.match(
+    stylesSource,
+    /\.site-nav-mega a:first-child\s*\{[^}]*padding-top:\s*0;[^}]*\}[\s\S]*?\.site-nav-mega a:last-child\s*\{[^}]*padding-bottom:\s*0;/s,
+  );
+  assert.match(
+    stylesSource,
+    /\.site-nav-mega a strong\s*\{[^}]*font-size:\s*var\(--type-size-item-heading\);[^}]*font-weight:\s*var\(--type-weight-medium\);/s,
+  );
+  assert.match(
+    stylesSource,
+    /\.site-nav-mega a > span:not\(\.card-affordance\)\s*\{[^}]*font-size:\s*var\(--type-size-body\);[^}]*font-weight:\s*var\(--type-weight-regular\);/s,
+  );
+  assert.match(
+    headerSource,
+    /class="site-nav-mega"[\s\S]*?class="content-rail site-nav-mega__inner"[\s\S]*?class="site-nav-mega__title"[\s\S]*?class="site-nav-mega__links"[\s\S]*?<CardAffordance \/>[\s\S]*?class="nnco-header-rule site-nav-mega__rule"/,
+  );
+  assert.doesNotMatch(
+    stylesSource,
+    /\.site-nav-mega\s+a:is\(\[aria-current="page"\], \[data-current-section="true"\]\)/,
+  );
 });
 
 test("desktop navigation and diagnosis action remain vertically centered", () => {
@@ -151,7 +218,7 @@ test("primary navigation is larger and lighter across desktop and mobile", () =>
   );
   assert.match(
     stylesSource,
-    /\.site-nav > a:is\(\[aria-current="page"\], \[data-current-section="true"\]\),[\s\S]*?> summary:is\(\[aria-current="page"\], \[data-current-section="true"\]\)\s*\{[^}]*font-weight:\s*var\(--type-weight-regular\);/s,
+    /\.site-nav > a:is\(\[aria-current="page"\], \[data-current-section="true"\]\),\s*\.site-nav-dropdown-trigger\[data-current-section="true"\]\s*\{[^}]*font-weight:\s*var\(--type-weight-regular\);/s,
   );
   assert.match(
     stylesSource,
@@ -163,20 +230,121 @@ test("primary navigation is larger and lighter across desktop and mobile", () =>
   );
   assert.match(
     stylesSource,
-    /\.site-menu__panel > a\s*\{[^}]*font-size:\s*var\(--type-size-body\);[^}]*font-weight:\s*var\(--type-weight-regular\);/s,
+    /\.site-menu__content > a\s*\{[^}]*font-size:\s*var\(--type-size-body\);[^}]*font-weight:\s*var\(--type-weight-regular\);/s,
   );
 });
 
-test("desktop dropdown and pointer bridge share the canonical gap", () => {
-  assert.match(stylesSource, /--nav-dropdown-gap:\s*0\.75rem;/);
-  assert.doesNotMatch(stylesSource, /--nav-dropdown-offset:/);
+test("desktop under-nav uses a shared, reversible grid reveal below the header", () => {
+  assert.match(stylesSource, /--nav-control-height:\s*36px;/);
   assert.match(
     stylesSource,
-    /\.site-nav-dropdown\[open\]::after\s*\{[^}]*height:\s*var\(--nav-dropdown-gap\);/s,
+    /\.site-nav-mega\s*\{[^}]*top:\s*100%;[^}]*grid-template-rows:\s*0fr;/s,
   );
   assert.match(
     stylesSource,
-    /\.site-nav-dropdown__panel\s*\{[^}]*top:\s*calc\(100% \+ var\(--nav-dropdown-gap\)\);/s,
+    /transition:\s*grid-template-rows 300ms ease-in-out 200ms;/s,
+  );
+  assert.match(
+    stylesSource,
+    /\.site-nav-mega\[data-navigation-state="open"\]\s*\{[^}]*grid-template-rows:\s*1fr;/s,
+  );
+  assert.match(
+    stylesSource,
+    /transition:\s*grid-template-rows 300ms ease-in-out;/s,
+  );
+  assert.match(
+    stylesSource,
+    /\.site-nav-mega__clip\s*\{[^}]*min-height:\s*0;[^}]*overflow:\s*hidden;/s,
+  );
+  assert.match(
+    stylesSource,
+    /\.site-nav-mega__fade\s*\{[^}]*opacity:\s*0;[^}]*transition:\s*opacity 200ms ease-in-out;[^}]*\}[\s\S]*?\.site-nav-mega\[data-navigation-state="open"\] \.site-nav-mega__fade\s*\{[^}]*opacity:\s*1;[^}]*transition-delay:\s*200ms;/s,
+  );
+  assert.match(
+    stylesSource,
+    /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.site-nav-mega,[\s\S]*?\.site-nav-mega__fade,[\s\S]*?transition:\s*none;/s,
+  );
+  assert.match(
+    headerSource,
+    /const scheduleMegaMenuClose = \(\) => \{[\s\S]*?window\.setTimeout\(closeMegaMenu, 120\);/,
+  );
+  assert.match(
+    headerSource,
+    /trigger\.addEventListener\("pointerenter", \(\) => \{[\s\S]*?openMegaMenu\(trigger\);[\s\S]*?trigger\.addEventListener\("pointerleave", \(\) => \{[\s\S]*?scheduleMegaMenuClose\(\);/,
+  );
+  assert.match(
+    headerSource,
+    /megaMenu\?\.addEventListener\("pointerenter", \(\) => \{[\s\S]*?cancelMegaMenuClose\(\);[\s\S]*?megaMenu\?\.addEventListener\("pointerleave", \(\) => \{[\s\S]*?scheduleMegaMenuClose\(\);/,
+  );
+});
+
+test("moving between desktop dropdowns quickly fades swapped content without replaying the panel", () => {
+  assert.match(
+    headerSource,
+    /const applyMegaMenuPanel = \([\s\S]*?const currentHeight = megaMenuClip\?\.getBoundingClientRect\(\)\.height[\s\S]*?panel\.hidden = panel\.dataset\.navigationPanel !== navigationKey;[\s\S]*?const nextHeight = megaMenuFade\.scrollHeight;/,
+  );
+  assert.match(
+    headerSource,
+    /megaMenuHeightAnimation = megaMenuClip\.animate\([\s\S]*?height: `\$\{currentHeight\}px`[\s\S]*?height: `\$\{nextHeight\}px`[\s\S]*?duration: 300, easing: "ease-in-out"/,
+  );
+  assert.match(
+    headerSource,
+    /!reducedNavigationMotion\.matches/,
+  );
+  assert.match(
+    headerSource,
+    /const outgoingAnimation = megaMenuFade\.animate\([\s\S]*?opacity: 0[\s\S]*?duration: 90, easing: "ease-in"[\s\S]*?const incomingAnimation = megaMenuFade\.animate\([\s\S]*?opacity: 1[\s\S]*?duration: 120, easing: "ease-out"/,
+  );
+  assert.match(
+    headerSource,
+    /selectMegaMenuPanel\(\s*navigationKey,\s*megaMenu\.dataset\.navigationState === "open",\s*\);/,
+  );
+  assert.match(
+    stylesSource,
+    /\.site-nav-mega__fade\s*\{[^}]*padding-bottom:\s*var\(--header-rule-height\);/s,
+  );
+  assert.match(
+    stylesSource,
+    /\.site-nav-mega__rule\s*\{[^}]*position:\s*absolute;[^}]*bottom:\s*0;[^}]*left:\s*50%;[^}]*transform:\s*translateX\(-50%\);/s,
+  );
+  assert.doesNotMatch(
+    stylesSource,
+    /\.site-nav-mega\[data-navigation-state="open"\]\s*\{[^}]*background:/s,
+  );
+  assert.match(
+    headerSource,
+    /dropdownTriggers\.forEach\(\(trigger\) => \{[\s\S]*?trigger\.addEventListener\("pointerenter",[\s\S]*?openMegaMenu\(trigger\);/,
+  );
+  assert.match(
+    headerSource,
+    /trigger\.addEventListener\("click", \(\) => openMegaMenu\(trigger\)\);/,
+  );
+  assert.doesNotMatch(
+    headerSource,
+    /activeDropdownTrigger === trigger[\s\S]*?closeMegaMenu\(\)/,
+  );
+});
+
+test("phone navigation uses the same full-width ruled motion surface", () => {
+  assert.match(
+    headerSource,
+    /class="site-menu__panel"[\s\S]*?class="site-menu__surface"[\s\S]*?class="content-rail site-menu__content"[\s\S]*?class="nnco-header-rule site-menu__rule"/,
+  );
+  assert.match(
+    stylesSource,
+    /\.site-menu__surface\s*\{[^}]*transform:\s*translateY\(-100%\);[^}]*transition:\s*transform 500ms ease-in-out;/s,
+  );
+  assert.match(
+    stylesSource,
+    /@media \(max-width: 767px\)[\s\S]*?\.site-menu__panel\s*\{[^}]*top:\s*calc\(100% \+ var\(--header-rule-height\)\);[^}]*left:\s*50%;[^}]*width:\s*100vw;[^}]*transform:\s*translateX\(-50%\);/s,
+  );
+  assert.match(
+    stylesSource,
+    /\.site-menu__content > \* \+ \*\s*\{[^}]*border-top:\s*var\(--fine-rule-thickness\) solid currentColor;/s,
+  );
+  assert.match(
+    stylesSource,
+    /\.site-menu__content > :first-child\s*\{[^}]*padding-top:\s*0;[^}]*\}[\s\S]*?\.site-menu__content > :last-child\s*\{[^}]*padding-bottom:\s*0;/s,
   );
 });
 

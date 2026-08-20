@@ -2,6 +2,7 @@
 import BlockArrow from "./BlockArrow.astro";
 import BrandLogo from "./BrandLogo.astro";
 import Button from "./Button.astro";
+import CardAffordance from "./CardAffordance.astro";
 import DisclosureChevron from "./DisclosureChevron.astro";
 import { siteNavigation } from "@/data/site";
 import {
@@ -27,6 +28,13 @@ const isAncestorSection = (href: string) =>
 let headerMode: "solid" | "hero" | "discovery" = "solid";
 if (overHero) headerMode = "hero";
 if (isDiscovery) headerMode = "discovery";
+const getNavigationKey = (label: string) =>
+  label.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+const navigationDropdowns = siteNavigation.flatMap((item) =>
+  "links" in item
+    ? [{ ...item, navigationKey: getNavigationKey(item.label) }]
+    : [],
+);
 ---
 
 <header
@@ -61,28 +69,19 @@ if (isDiscovery) headerMode = "discovery";
                   {item.label}
                 </a>
               ) : (
-                <details class="site-nav-dropdown" data-navigation-dropdown>
-                  <summary
-                    data-current-section={item.links.some((link) =>
-                      isNavigationSection(currentPath, link.href)
-                    ) ? "true" : undefined}
-                  >
-                    <span>{item.label}</span>
-                    <DisclosureChevron />
-                  </summary>
-                  <div class="site-nav-dropdown__panel">
-                    {item.links.map((link) => (
-                      <a
-                        href={link.href}
-                        aria-current={isExactPage(link.href) ? "page" : undefined}
-                        data-current-section={isAncestorSection(link.href) ? "true" : undefined}
-                      >
-                        <strong>{link.label}</strong>
-                        {link.description && <span>{link.description}</span>}
-                      </a>
-                    ))}
-                  </div>
-                </details>
+                <button
+                  type="button"
+                  class="site-nav-dropdown-trigger"
+                  data-navigation-dropdown-trigger={getNavigationKey(item.label)}
+                  data-current-section={item.links.some((link) =>
+                    isNavigationSection(currentPath, link.href)
+                  ) ? "true" : undefined}
+                  aria-expanded="false"
+                  aria-controls="site-navigation-mega-menu"
+                >
+                  <span>{item.label}</span>
+                  <DisclosureChevron />
+                </button>
               ),
             )}
           </nav>
@@ -92,34 +91,45 @@ if (isDiscovery) headerMode = "discovery";
               <span>Menu</span>
               <DisclosureChevron />
             </summary>
-            <nav class="site-menu__panel" aria-label="Mobile primary navigation">
-              {siteNavigation.map((item) =>
-                "href" in item ? (
-                  <a
-                    href={item.href}
-                    aria-current={isExactPage(item.href) ? "page" : undefined}
-                    data-current-section={isAncestorSection(item.href) ? "true" : undefined}
-                  >
-                    {item.label}
-                  </a>
-                ) : (
-                  <div class="site-menu__group">
-                    <strong>{item.label}</strong>
-                    <div class="site-menu__links">
-                      {item.links.map((link) => (
-                        <a
-                          href={link.href}
-                          aria-current={isExactPage(link.href) ? "page" : undefined}
-                          data-current-section={isAncestorSection(link.href) ? "true" : undefined}
-                        >
-                          {link.label}
-                        </a>
-                      ))}
-                    </div>
-                  </div>
-                ),
-              )}
-            </nav>
+            <div class="site-menu__panel">
+              <div class="site-menu__surface">
+                <nav
+                  class="content-rail site-menu__content"
+                  aria-label="Mobile primary navigation"
+                >
+                  {siteNavigation.map((item) =>
+                    "href" in item ? (
+                      <a
+                        href={item.href}
+                        aria-current={isExactPage(item.href) ? "page" : undefined}
+                        data-current-section={isAncestorSection(item.href) ? "true" : undefined}
+                      >
+                        {item.label}
+                      </a>
+                    ) : (
+                      <div class="site-menu__group">
+                        <strong>{item.label}</strong>
+                        <div class="site-menu__links">
+                          {item.links.map((link) => (
+                            <a
+                              href={link.href}
+                              aria-current={isExactPage(link.href) ? "page" : undefined}
+                              data-current-section={isAncestorSection(link.href) ? "true" : undefined}
+                            >
+                              {link.label}
+                            </a>
+                          ))}
+                        </div>
+                      </div>
+                    ),
+                  )}
+                </nav>
+                <span
+                  class="nnco-header-rule site-menu__rule"
+                  aria-hidden="true"
+                ></span>
+              </div>
+            </div>
           </details>
 
           <Button href="/discovery" size="small" class="site-header__cta">
@@ -131,6 +141,49 @@ if (isDiscovery) headerMode = "discovery";
     }
   </div>
   <div class="nnco-header-rule" aria-hidden="true"></div>
+  {
+    !isDiscovery && navigationDropdowns.length > 0 && (
+      <div
+        id="site-navigation-mega-menu"
+        class="site-nav-mega"
+        data-navigation-mega-menu
+        data-navigation-state="closed"
+        aria-hidden="true"
+        inert
+      >
+        <div class="site-nav-mega__clip">
+          <div class="site-nav-mega__fade">
+            {navigationDropdowns.map((item) => (
+              <div
+                class="content-rail site-nav-mega__inner"
+                data-navigation-panel={item.navigationKey}
+                hidden
+              >
+                <p class="site-nav-mega__title">{item.label}</p>
+                <div class="site-nav-mega__links">
+                  {item.links.map((link) => (
+                    <a
+                      href={link.href}
+                      aria-current={isExactPage(link.href) ? "page" : undefined}
+                      data-current-section={isAncestorSection(link.href) ? "true" : undefined}
+                    >
+                      <strong>{link.label}</strong>
+                      {link.description && <span>{link.description}</span>}
+                      <CardAffordance />
+                    </a>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+          <span
+            class="nnco-header-rule site-nav-mega__rule"
+            aria-hidden="true"
+          ></span>
+        </div>
+      </div>
+    )
+  }
 </header>
 
 <script>
@@ -138,70 +191,272 @@ if (isDiscovery) headerMode = "discovery";
     if (header.dataset.navigationReady === "true") return;
     header.dataset.navigationReady = "true";
 
-    const dropdowns = Array.from(
-      header.querySelectorAll<HTMLDetailsElement>("[data-navigation-dropdown]"),
+    const dropdownTriggers = Array.from(
+      header.querySelectorAll<HTMLButtonElement>(
+        "[data-navigation-dropdown-trigger]",
+      ),
     );
+    const megaMenu =
+      header.querySelector<HTMLElement>("[data-navigation-mega-menu]");
+    const megaMenuPanels = Array.from(
+      header.querySelectorAll<HTMLElement>("[data-navigation-panel]"),
+    );
+    const megaMenuClip =
+      megaMenu?.querySelector<HTMLElement>(".site-nav-mega__clip");
+    const megaMenuFade =
+      megaMenu?.querySelector<HTMLElement>(".site-nav-mega__fade");
     const mobileMenu =
       header.querySelector<HTMLDetailsElement>("[data-navigation-menu]");
     const hoverCapable = window.matchMedia("(hover: hover) and (pointer: fine)");
     const mobileNavigation = window.matchMedia("(max-width: 1180px)");
-    const closeDropdowns = (exception?: HTMLDetailsElement) => {
-      dropdowns.forEach((dropdown) => {
-        if (dropdown !== exception) dropdown.open = false;
-      });
+    const reducedNavigationMotion = window.matchMedia(
+      "(prefers-reduced-motion: reduce)",
+    );
+    const navigationAnimationDuration = 500;
+    let megaMenuCloseTimer = 0;
+    let mobileMenuCloseTimer = 0;
+    let activeDropdownTrigger: HTMLButtonElement | null = null;
+    let megaMenuHeightAnimation: Animation | null = null;
+    let megaMenuContentAnimation: Animation | null = null;
+    let megaMenuPanelChangeId = 0;
+
+    const cancelMegaMenuClose = () => {
+      window.clearTimeout(megaMenuCloseTimer);
+      megaMenuCloseTimer = 0;
     };
-    const closeNavigation = (exception?: HTMLDetailsElement) => {
-      closeDropdowns(exception);
-      if (mobileMenu && mobileMenu !== exception) mobileMenu.open = false;
+    const cancelMegaMenuHeightAnimation = () => {
+      megaMenuHeightAnimation?.cancel();
+      megaMenuHeightAnimation = null;
+    };
+    const cancelMegaMenuContentAnimation = () => {
+      megaMenuPanelChangeId += 1;
+      megaMenuContentAnimation?.cancel();
+      megaMenuContentAnimation = null;
+    };
+    const applyMegaMenuPanel = (
+      navigationKey: string | undefined,
+      animateHeight: boolean,
+    ) => {
+      const currentPanel = megaMenuPanels.find((panel) => !panel.hidden);
+      const currentHeight = megaMenuClip?.getBoundingClientRect().height ?? 0;
+      const currentNaturalHeight = megaMenuFade?.scrollHeight ?? 0;
+      const canAnimateHeight = Boolean(
+        animateHeight &&
+        currentPanel &&
+        megaMenuClip &&
+        megaMenuFade &&
+        !reducedNavigationMotion.matches &&
+        Math.abs(currentHeight - currentNaturalHeight) < 1,
+      );
+
+      cancelMegaMenuHeightAnimation();
+      megaMenuPanels.forEach((panel) => {
+        panel.hidden = panel.dataset.navigationPanel !== navigationKey;
+      });
+
+      if (!canAnimateHeight || !megaMenuClip || !megaMenuFade) {
+        return;
+      }
+
+      const nextHeight = megaMenuFade.scrollHeight;
+      if (Math.abs(currentHeight - nextHeight) < 1) return;
+
+      megaMenuHeightAnimation = megaMenuClip.animate(
+        [
+          { height: `${currentHeight}px` },
+          { height: `${nextHeight}px` },
+        ],
+        { duration: 300, easing: "ease-in-out" },
+      );
+      megaMenuHeightAnimation.addEventListener(
+        "finish",
+        () => {
+          megaMenuHeightAnimation = null;
+        },
+        { once: true },
+      );
+    };
+    const selectMegaMenuPanel = (
+      navigationKey: string | undefined,
+      animateContent: boolean,
+    ) => {
+      const currentPanel = megaMenuPanels.find((panel) => !panel.hidden);
+      cancelMegaMenuContentAnimation();
+      if (currentPanel?.dataset.navigationPanel === navigationKey) return;
+
+      const canAnimateContent = Boolean(
+        animateContent &&
+        currentPanel &&
+        megaMenuFade &&
+        !reducedNavigationMotion.matches,
+      );
+      if (!canAnimateContent || !megaMenuFade) {
+        applyMegaMenuPanel(navigationKey, animateContent);
+        return;
+      }
+
+      const panelChangeId = megaMenuPanelChangeId;
+      const renderedOpacity = Number.parseFloat(
+        window.getComputedStyle(megaMenuFade).opacity,
+      );
+      const currentOpacity = Number.isFinite(renderedOpacity)
+        ? renderedOpacity
+        : 1;
+      const outgoingAnimation = megaMenuFade.animate(
+        [{ opacity: currentOpacity }, { opacity: 0 }],
+        { duration: 90, easing: "ease-in", fill: "forwards" },
+      );
+      megaMenuContentAnimation = outgoingAnimation;
+      outgoingAnimation.addEventListener(
+        "finish",
+        () => {
+          if (panelChangeId !== megaMenuPanelChangeId) return;
+          applyMegaMenuPanel(navigationKey, animateContent);
+
+          const incomingAnimation = megaMenuFade.animate(
+            [{ opacity: 0 }, { opacity: 1 }],
+            { duration: 120, easing: "ease-out", fill: "forwards" },
+          );
+          megaMenuContentAnimation = incomingAnimation;
+          outgoingAnimation.cancel();
+          incomingAnimation.addEventListener(
+            "finish",
+            () => {
+              if (panelChangeId !== megaMenuPanelChangeId) return;
+              incomingAnimation.cancel();
+              megaMenuContentAnimation = null;
+            },
+            { once: true },
+          );
+        },
+        { once: true },
+      );
+    };
+    const openMegaMenu = (trigger: HTMLButtonElement) => {
+      if (!megaMenu) return;
+      cancelMegaMenuClose();
+
+      const navigationKey = trigger.dataset.navigationDropdownTrigger;
+      selectMegaMenuPanel(
+        navigationKey,
+        megaMenu.dataset.navigationState === "open",
+      );
+      dropdownTriggers.forEach((item) => {
+        item.setAttribute("aria-expanded", String(item === trigger));
+      });
+      activeDropdownTrigger = trigger;
+      megaMenu.inert = false;
+      megaMenu.setAttribute("aria-hidden", "false");
+      megaMenu.dataset.navigationState = "open";
+    };
+    const closeMegaMenu = () => {
+      if (!megaMenu) return;
+      if (megaMenu.dataset.navigationState === "closed") {
+        activeDropdownTrigger = null;
+        return;
+      }
+      cancelMegaMenuClose();
+      cancelMegaMenuContentAnimation();
+      cancelMegaMenuHeightAnimation();
+      megaMenu.dataset.navigationState = "closed";
+      megaMenu.inert = true;
+      megaMenu.setAttribute("aria-hidden", "true");
+      dropdownTriggers.forEach((trigger) => {
+        trigger.setAttribute("aria-expanded", "false");
+      });
+      activeDropdownTrigger = null;
+    };
+    const scheduleMegaMenuClose = () => {
+      cancelMegaMenuClose();
+      megaMenuCloseTimer = window.setTimeout(closeMegaMenu, 120);
+    };
+    const cancelMobileMenuClose = () => {
+      window.clearTimeout(mobileMenuCloseTimer);
+      mobileMenuCloseTimer = 0;
+    };
+    const openMobileMenu = () => {
+      if (!mobileMenu) return;
+      cancelMobileMenuClose();
+      mobileMenu.dataset.navigationState = "closed";
+      mobileMenu.open = true;
+      mobileMenu
+        .querySelector<HTMLElement>(".site-menu__surface")
+        ?.getBoundingClientRect();
+      mobileMenu.dataset.navigationState = "open";
+      closeMegaMenu();
+    };
+    const closeMobileMenu = () => {
+      if (
+        !mobileMenu?.open ||
+        mobileMenu.dataset.navigationState === "closed"
+      ) return;
+      cancelMobileMenuClose();
+      mobileMenu.dataset.navigationState = "closed";
+      mobileMenuCloseTimer = window.setTimeout(() => {
+        mobileMenu.open = false;
+        delete mobileMenu.dataset.navigationState;
+        mobileMenuCloseTimer = 0;
+      }, navigationAnimationDuration);
+    };
+    const closeNavigation = () => {
+      closeMegaMenu();
+      closeMobileMenu();
     };
 
-    dropdowns.forEach((dropdown) => {
-      let closeTimer = 0;
-
-      const cancelClose = () => {
-        window.clearTimeout(closeTimer);
-        closeTimer = 0;
-      };
-
-      dropdown.addEventListener("toggle", () => {
-        cancelClose();
-        if (!dropdown.open) return;
-        closeNavigation(dropdown);
-      });
-
-      dropdown.addEventListener("pointerenter", () => {
+    dropdownTriggers.forEach((trigger) => {
+      trigger.addEventListener("click", () => openMegaMenu(trigger));
+      trigger.addEventListener("pointerenter", () => {
         if (!hoverCapable.matches) return;
-        cancelClose();
-        dropdown.open = true;
+        openMegaMenu(trigger);
       });
-
-      dropdown.addEventListener("pointerleave", () => {
+      trigger.addEventListener("pointerleave", () => {
         if (!hoverCapable.matches) return;
-        cancelClose();
-        closeTimer = window.setTimeout(() => {
-          dropdown.open = false;
-        }, 140);
+        scheduleMegaMenuClose();
       });
-
-      dropdown.addEventListener("focusout", (event) => {
-        if (event.relatedTarget instanceof Node && dropdown.contains(event.relatedTarget)) return;
-        if (!dropdown.matches(":hover")) dropdown.open = false;
-      });
+      trigger.addEventListener("focus", () => openMegaMenu(trigger));
+      trigger.addEventListener("blur", scheduleMegaMenuClose);
     });
 
-    mobileMenu?.addEventListener("toggle", () => {
-      if (!mobileMenu.open) return;
-      closeNavigation(mobileMenu);
+    megaMenu?.addEventListener("pointerenter", () => {
+      if (!hoverCapable.matches) return;
+      cancelMegaMenuClose();
     });
+    megaMenu?.addEventListener("pointerleave", () => {
+      if (!hoverCapable.matches) return;
+      scheduleMegaMenuClose();
+    });
+    megaMenu?.addEventListener("focusin", cancelMegaMenuClose);
+    megaMenu?.addEventListener("focusout", (event) => {
+      if (
+        event.relatedTarget instanceof Node &&
+        megaMenu.contains(event.relatedTarget)
+      ) {
+        return;
+      }
+      scheduleMegaMenuClose();
+    });
+
+    mobileMenu
+      ?.querySelector<HTMLElement>(":scope > summary")
+      ?.addEventListener("click", (event) => {
+        event.preventDefault();
+        if (
+          mobileMenu.open &&
+          mobileMenu.dataset.navigationState !== "closed"
+        ) {
+          closeMobileMenu();
+          return;
+        }
+        openMobileMenu();
+      });
 
     document.addEventListener("pointerdown", (event) => {
-      const openNavigation = [mobileMenu, ...dropdowns].find(
-        (item): item is HTMLDetailsElement => Boolean(item?.open),
-      );
+      const pointerTarget = event.target;
       if (
-        openNavigation &&
-        event.target instanceof Node &&
-        openNavigation.contains(event.target)
+        pointerTarget instanceof Node &&
+        (megaMenu?.contains(pointerTarget) ||
+          dropdownTriggers.some((trigger) => trigger.contains(pointerTarget)) ||
+          mobileMenu?.contains(pointerTarget))
       ) {
         return;
       }
@@ -210,13 +465,15 @@ if (isDiscovery) headerMode = "discovery";
 
     header.addEventListener("keydown", (event) => {
       if (event.key !== "Escape") return;
-      const openNavigation = [mobileMenu, ...dropdowns].find(
-        (item): item is HTMLDetailsElement => Boolean(item?.open),
-      );
-      if (!openNavigation) return;
+      if (
+        megaMenu?.dataset.navigationState !== "open" &&
+        !mobileMenu?.open
+      ) return;
       event.preventDefault();
-      openNavigation.open = false;
-      openNavigation.querySelector<HTMLElement>("summary")?.focus();
+      const triggerToFocus = activeDropdownTrigger;
+      closeNavigation();
+      if (triggerToFocus) triggerToFocus.focus();
+      else mobileMenu?.querySelector<HTMLElement>("summary")?.focus();
     });
 
     mobileNavigation.addEventListener("change", () => closeNavigation());
