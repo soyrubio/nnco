@@ -1,76 +1,35 @@
 ---
+import {
+  assertGlyphPattern,
+  buildGlyphPath,
+  hasGlyphSymmetry,
+} from "@/lib/glyph-generator";
 import type {
   ModularGlyphCell,
   ModularGlyphSymmetry,
 } from "@/lib/modular-glyph";
 
 interface Props {
+  gridSize: number;
   cells: readonly ModularGlyphCell[];
   symmetry: ModularGlyphSymmetry;
   label?: string;
   class?: string;
 }
 
-const { cells, symmetry, label, class: className } = Astro.props;
-const gridLimit = 3;
-const tileSize = 10;
-const tileStep = 15;
-const viewBoxSize = 64;
+const { gridSize, cells, symmetry, label, class: className } = Astro.props;
+const cellSize = 100;
+const viewBoxSize = gridSize * cellSize;
 
-if (cells.length < 5 || cells.length > 9) {
-  throw new Error("ModularGlyph requires between 5 and 9 cells.");
+assertGlyphPattern({ gridSize, cells });
+if (
+  symmetry !== "none" &&
+  !hasGlyphSymmetry({ gridSize, cells }, symmetry)
+) {
+  throw new Error(`ModularGlyph cells must follow ${symmetry} symmetry.`);
 }
 
-const cellKeys = new Set<string>();
-for (const [column, row] of cells) {
-  if (
-    !Number.isInteger(column) ||
-    !Number.isInteger(row) ||
-    column < 0 ||
-    column > gridLimit ||
-    row < 0 ||
-    row > gridLimit
-  ) {
-    throw new Error("ModularGlyph cells must use integer coordinates from 0 to 3.");
-  }
-
-  const key = `${column}:${row}`;
-  if (cellKeys.has(key)) {
-    throw new Error(`ModularGlyph contains the duplicate cell ${key}.`);
-  }
-  cellKeys.add(key);
-}
-
-const mirroredCell = ([column, row]: ModularGlyphCell): ModularGlyphCell => {
-  switch (symmetry) {
-    case "horizontal":
-      return [column, gridLimit - row];
-    case "vertical":
-      return [gridLimit - column, row];
-    case "rotational":
-      return [gridLimit - column, gridLimit - row];
-    case "diagonal":
-      return [row, column];
-  }
-};
-
-for (const cell of cells) {
-  const [mirrorColumn, mirrorRow] = mirroredCell(cell);
-  if (!cellKeys.has(`${mirrorColumn}:${mirrorRow}`)) {
-    throw new Error(`ModularGlyph cells must follow ${symmetry} symmetry.`);
-  }
-}
-
-const columns = cells.map(([column]) => column);
-const rows = cells.map(([, row]) => row);
-const minColumn = Math.min(...columns);
-const maxColumn = Math.max(...columns);
-const minRow = Math.min(...rows);
-const maxRow = Math.max(...rows);
-const glyphWidth = (maxColumn - minColumn) * tileStep + tileSize;
-const glyphHeight = (maxRow - minRow) * tileStep + tileSize;
-const offsetX = (viewBoxSize - glyphWidth) / 2 - minColumn * tileStep;
-const offsetY = (viewBoxSize - glyphHeight) / 2 - minRow * tileStep;
+const path = buildGlyphPath({ gridSize, cells }, cellSize, cellSize / 2);
 const isLabelled = Boolean(label);
 ---
 
@@ -81,21 +40,14 @@ const isLabelled = Boolean(label);
   aria-label={label}
   aria-hidden={isLabelled ? undefined : "true"}
   focusable="false"
-  shape-rendering="crispEdges"
+  shape-rendering="geometricPrecision"
 >
-  <g transform={`translate(${offsetX} ${offsetY})`}>
-    {
-      cells.map(([column, row]) => (
-        <rect
-          x={column * tileStep}
-          y={row * tileStep}
-          width={tileSize}
-          height={tileSize}
-          fill="currentColor"
-        />
-      ))
-    }
-  </g>
+  <path
+    d={path}
+    fill="currentColor"
+    fill-rule="evenodd"
+    clip-rule="evenodd"
+  />
 </svg>
 
 <style>

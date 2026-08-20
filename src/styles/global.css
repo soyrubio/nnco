@@ -1,27 +1,3 @@
-@font-face {
-  font-family: "Ronzino";
-  src: url("/fonts/ronzino/ronzino-regular.woff2") format("woff2");
-  font-style: normal;
-  font-weight: 400;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: "Ronzino";
-  src: url("/fonts/ronzino/ronzino-medium.woff2") format("woff2");
-  font-style: normal;
-  font-weight: 500;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: "Ronzino";
-  src: url("/fonts/ronzino/ronzino-bold.woff2") format("woff2");
-  font-style: normal;
-  font-weight: 700;
-  font-display: swap;
-}
-
 :root {
   --ink: #111111;
   --ink-soft: #2d2d2d;
@@ -34,7 +10,7 @@
   --rule-strong: rgba(17, 17, 17, 0.42);
   --dark-body: #b8b8b8;
   --danger: #9f2525;
-  --font-sans: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --font-sans: "Geist", sans-serif;
   --type-weight-regular: 400;
   --type-weight-medium: 500;
   --type-weight-bold: 700;
@@ -78,18 +54,6 @@
   --radius-structural: 0;
   --radius-button: 999px;
   color-scheme: light;
-}
-
-html[data-font="ronzino"] {
-  --font-sans: "Ronzino", "Helvetica Neue", Helvetica, Arial, sans-serif;
-}
-
-html[data-font="geist"] {
-  --font-sans: "Geist", "Helvetica Neue", Helvetica, Arial, sans-serif;
-}
-
-html[data-font="poppins"] {
-  --font-sans: "Poppins", "Helvetica Neue", Helvetica, Arial, sans-serif;
 }
 
 *,

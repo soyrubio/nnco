@@ -179,7 +179,23 @@ test("card glyph assignments are globally unique and bounded", () => {
 
   assert.equal(glyphs.length, 46);
   assert.equal(new Set(signatures).size, glyphs.length);
+  const usedLibraryIds = new Set(glyphs.map((glyph) => glyph.libraryId));
+  for (const id of [
+    "cross-bridge",
+    "aperture",
+    "stepped-change",
+    "constellation",
+    "rotational-exchange",
+    "chain-of-custody",
+  ]) {
+    assert.ok(usedLibraryIds.has(id));
+  }
   for (const glyph of glyphs) {
-    assert.ok(glyph.cells.length >= 5 && glyph.cells.length <= 9);
+    assert.equal(glyph.gridSize, 5);
+    assert.ok(glyph.cells.length >= 1 && glyph.cells.length <= 25);
+    for (const [column, row] of glyph.cells) {
+      assert.ok(column >= 0 && column < glyph.gridSize);
+      assert.ok(row >= 0 && row < glyph.gridSize);
+    }
   }
 });

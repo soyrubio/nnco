@@ -38,11 +38,10 @@ source to copy page by page.
 --radius-button: 999px;
 ```
 
-The default typeface is the established Helvetica Neue, Helvetica and Arial
-stack. The visible native selector may switch the shared type token to the
-locally hosted static Ronzino family or to Google Fonts' variable Geist or
-Poppins family. Do not introduce another interface face, a serif, monospace
-display face or ornamental font.
+Geist is the sole site typeface and owns the shared `--font-sans` token across
+marketing, Discovery and print. Only its regular, medium and bold weights are
+loaded. Do not introduce another interface face, a serif, monospace display
+face or ornamental font.
 
 ## Typography
 
@@ -64,10 +63,10 @@ existing type tokens before adding a local size:
 Only the available 400, 500 and 700 weights are valid. Regular is for reading,
 medium is for labels, controls and headings, and bold is reserved for genuine
 emphasis or hierarchy. Primary navigation is the deliberate regular-weight
-exception. Do not use fractional numeric weights because the local Ronzino
-family has only those three static faces. Specific editorial and hero components
-may keep their own responsive sizes, but they inherit the shared weight,
-tracking and leading roles.
+exception. Do not use fractional numeric weights outside the loaded 400, 500
+and 700 roles. Specific editorial and hero components may keep their own
+responsive sizes, but they inherit the shared weight, tracking and leading
+roles.
 
 Discovery owns a compact scoped scale: 14px medium for small interface text,
 16px regular for body text and 17px for emphasized body copy. Its on-screen
@@ -156,12 +155,10 @@ The structure is deliberately blocky:
 
 ## Components
 
-- `BaseLayout`: metadata, early allowlisted typeface preference bootstrap,
-  remote Geist loading, global tokens and the single site-wide font utility.
-  The default root has no font data attribute and renders Helvetica;
-  `html[data-font="ronzino"]`, `html[data-font="geist"]` and
-  `html[data-font="poppins"]` are the only alternate states. Internal page
-  navigation uses Astro's client router with an immediate, non-animated swap.
+- `BaseLayout`: metadata, remote Geist loading and global tokens. Geist is the
+  sole text typeface; there is no user preference state or typeface utility.
+  Internal page navigation uses Astro's client router with an immediate,
+  non-animated swap.
   The initial page cover does not replay between routes, and client-side
   behaviors reinitialize after each swap.
 - `Header`: large official NNCo. mark, single-line navigation and one CTA.
@@ -267,13 +264,6 @@ The structure is deliberately blocky:
   sections collapse naturally on mobile. There is no separate panel or
   decorative glyph.
 - `Footer`: shared rail and restrained identity/navigation groups.
-- `FontSwitcher`: one compact, fixed bottom-right utility rendered visibly by
-  `BaseLayout` on every route, including Discovery. Its `Typeface` label
-  controls a native selector. `Helvetica` is the default; `Ronzino`, `Geist`
-  and `Poppins` persist as optional allowlisted local preferences without
-  animation. It stays inside the page-loader inert boundary, below blocking
-  overlays and the navigation layer, uses responsive safe insets and does not
-  print.
 - `DiscoveryLauncher`: mounts the stateful release diagnostic. `DiscoveryRelease`
   owns website enrichment, five routed questions, the final contact gate, AI
   analysis and the two-page print artifact.
@@ -334,17 +324,30 @@ The structure is deliberately blocky:
   media is invented.
 - `ModularGlyph`: the static abstract-mark primitive used when an
   `EditorialCard` needs a small visual signature. Marks are authored
-  as integer cell coordinates on a 4×4 grid and rendered as optically centred
-  inline SVG, never as raster exports. A glyph uses 5 to 9 equal square cells,
-  one fill (`currentColor`), no stroke and no animation. Every mark declares
-  and satisfies one symmetry rule: horizontal, vertical, 180-degree rotational
-  or top-left to bottom-right diagonal. A related set keeps the same cell size
-  and gap, varying only the arrangement and symmetry rule. Patterns should
-  suggest topology, sequence, clustering or separation without becoming
-  literal interface icons, letters or alternate logos. Assigned card marks are
-  unique across the marketing catalogue and never cycle by array position.
+  as integer cell coordinates on a 5×5 grid and rendered as inline SVG, never
+  as raster exports. Touching cells merge into one silhouette with square outer
+  corners and the Group 97 half-cell radius on concave corners; separated cells
+  remain in the same even-odd path. A glyph uses one fill (`currentColor`), no
+  stroke and no animation. Library patterns may declare horizontal, vertical,
+  180-degree rotational or diagonal symmetry, or remain deliberately
+  asymmetric. Patterns should suggest topology, sequence, clustering or
+  separation without becoming literal interface icons, letters or alternate
+  logos. Assigned card marks use meaning-led library choices and transformed
+  variants, and remain unique across the marketing catalogue.
   Decorative marks stay hidden from assistive technology; only a mark that adds
   non-redundant meaning receives an accessible label.
+- `/glyphs`: the noindexed internal authoring utility for the next modular
+  glyph family. It supports square grids from 2×2 through 8×8 and exports both
+  cell data and a single SVG outline. The manual grid is unrestricted: cells
+  may touch, stand alone or separate after an edit. Touching cells merge into
+  one fill. Outer corners remain square while concave corners use the Group 97
+  half-cell radius. The default 5×5
+  workflow automatically places the supplied library patterns before a batch
+  of generated candidates. Generation may mix or explicitly enforce
+  horizontal, vertical, rotational or diagonal symmetry; balanced candidates
+  may use connected or deliberately separated modules. Candidates can be
+  selected in one shortlist, annotated individually and copied together as
+  structured pattern data with comments.
 - `PrivateAiBoundary`: the decorative isometric scene in the Home Private AI
   dark section. Three filled monochrome planes form a visible cube.
   The core cube has no outline. Three identically sized black planes enter one
@@ -465,9 +468,8 @@ The structure is deliberately blocky:
 - Browser print is the only PDF exporter. Print CSS produces exactly two A4
   pages and excludes intake, toolbar and contact controls. Displayed copy is
   bounded for A4 without changing the stored diagnostic.
-- Discovery and its print report consume the same `--font-sans` token as the
-  marketing site, including default Helvetica and persisted optional Ronzino,
-  Geist and Poppins selections.
+- Discovery and its print report consume the same Geist-backed `--font-sans`
+  token as the marketing site.
 - Structural panels stay square. Interactive action buttons are the only
   rounded controls.
 

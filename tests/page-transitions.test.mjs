@@ -9,7 +9,6 @@ const sources = Object.fromEntries(
   await Promise.all(
     Object.entries({
       layout: "../src/layouts/BaseLayout.astro",
-      fontSwitcher: "../src/components/FontSwitcher.astro",
       header: "../src/components/Header.astro",
       hero: "../src/components/Hero.astro",
       marketing: "../src/components/MarketingBehavior.astro",
@@ -36,7 +35,7 @@ test("BaseLayout enables instant Astro navigation without adding React", () => {
   );
 });
 
-test("client navigation preserves document preferences and skips the first-load cover", () => {
+test("client navigation skips the first-load cover", () => {
   assert.match(
     sources.layout,
     /document\.addEventListener\("astro:before-swap", \(event\) => \{[\s\S]*?event\.newDocument/,
@@ -46,7 +45,6 @@ test("client navigation preserves document preferences and skips the first-load 
     sources.layout,
     /nextRoot\.classList\.add\("has-js", "skip-page-loader", "is-page-swapping"\);/,
   );
-  assert.match(sources.layout, /isStoredFontPreference\(activeFont\)/);
   assert.match(
     sources.layout,
     /nextDocument\.querySelector\("\[data-page-loader\]"\)\?\.remove\(\);/,
@@ -67,7 +65,6 @@ test("client navigation preserves document preferences and skips the first-load 
 
 test("page-specific DOM behaviors reinitialize after every Astro swap", () => {
   for (const name of [
-    "fontSwitcher",
     "header",
     "hero",
     "marketing",
@@ -91,7 +88,7 @@ test("page-specific DOM behaviors reinitialize after every Astro swap", () => {
 test("the design contract documents the restrained navigation behavior", () => {
   assert.match(
     sources.design,
-    /Internal page\s+navigation uses Astro's client router with an immediate, non-animated swap\./,
+    /Internal page\s+navigation uses Astro's client router with an immediate,\s+non-animated swap\./,
   );
   assert.match(
     sources.design,

@@ -1,111 +1,142 @@
-import type {
-  ModularGlyphCell,
-  ModularGlyphDefinition,
-  ModularGlyphSymmetry,
-} from "@/lib/modular-glyph";
+import { glyphLibrary } from "./glyph-references.ts";
+import {
+  hasGlyphSymmetry,
+  sortGlyphCells,
+  type GlyphCell,
+  type GlyphSymmetry,
+} from "../lib/glyph-generator.ts";
+import type { ModularGlyphDefinition } from "../lib/modular-glyph.ts";
 
-const defineGlyph = (
-  symmetry: ModularGlyphSymmetry,
-  pattern: string,
+type GlyphTransform = (
+  cell: GlyphCell,
+  lastIndex: number,
+) => GlyphCell;
+
+const transforms: readonly GlyphTransform[] = [
+  ([column, row]) => [column, row],
+  ([column, row], lastIndex) => [lastIndex - row, column],
+  ([column, row], lastIndex) => [lastIndex - column, lastIndex - row],
+  ([column, row], lastIndex) => [row, lastIndex - column],
+  ([column, row], lastIndex) => [lastIndex - column, row],
+  ([column, row], lastIndex) => [column, lastIndex - row],
+  ([column, row]) => [row, column],
+  ([column, row], lastIndex) => [lastIndex - row, lastIndex - column],
+];
+
+const libraryById = new Map(glyphLibrary.map((glyph) => [glyph.id, glyph]));
+const allocatedSignatures = new Set<string>();
+const supportedSymmetries: readonly GlyphSymmetry[] = [
+  "horizontal",
+  "vertical",
+  "rotational",
+  "diagonal",
+];
+
+const glyphSignature = (gridSize: number, cells: readonly GlyphCell[]) =>
+  `${gridSize}:${cells.map(([column, row]) => `${column}:${row}`).join("|")}`;
+
+const allocateLibraryGlyph = (
+  ...preferredIds: readonly string[]
 ): ModularGlyphDefinition => {
-  const rows = pattern.split("/");
-  if (rows.length !== 4 || rows.some((row) => !/^[.#]{4}$/.test(row))) {
-    throw new Error("Card glyph patterns must define a 4x4 grid.");
-  }
+  const candidateIds = [
+    ...new Set([...preferredIds, ...glyphLibrary.map((glyph) => glyph.id)]),
+  ];
 
-  const cells: ModularGlyphCell[] = [];
-  rows.forEach((row, rowIndex) => {
-    [...row].forEach((cell, columnIndex) => {
-      if (cell === "#") cells.push([columnIndex, rowIndex]);
-    });
-  });
+  for (const id of candidateIds) {
+    const source = libraryById.get(id);
+    if (!source) throw new Error(`Unknown library glyph ${id}.`);
 
-  if (cells.length < 5 || cells.length > 9) {
-    throw new Error("Card glyphs must contain between 5 and 9 cells.");
-  }
+    for (const transform of transforms) {
+      const cells = sortGlyphCells(
+        source.cells.map((cell) => transform(cell, source.gridSize - 1)),
+      );
+      const signature = glyphSignature(source.gridSize, cells);
+      if (allocatedSignatures.has(signature)) continue;
 
-  const cellKeys = new Set(cells.map(([column, row]) => `${column}:${row}`));
-  const mirroredCell = ([column, row]: ModularGlyphCell): ModularGlyphCell => {
-    switch (symmetry) {
-      case "horizontal":
-        return [column, 3 - row];
-      case "vertical":
-        return [3 - column, row];
-      case "rotational":
-        return [3 - column, 3 - row];
-      case "diagonal":
-        return [row, column];
-    }
-  };
-
-  for (const cell of cells) {
-    const [mirrorColumn, mirrorRow] = mirroredCell(cell);
-    if (!cellKeys.has(`${mirrorColumn}:${mirrorRow}`)) {
-      throw new Error(`Card glyphs must follow ${symmetry} symmetry.`);
+      allocatedSignatures.add(signature);
+      const symmetry =
+        supportedSymmetries.find((candidate) =>
+          hasGlyphSymmetry(
+            { gridSize: source.gridSize, cells },
+            candidate,
+          ),
+        ) ?? "none";
+      return {
+        libraryId: source.id,
+        gridSize: source.gridSize,
+        cells,
+        symmetry,
+      };
     }
   }
 
-  return { symmetry, cells };
+  throw new Error("The glyph library does not contain enough unique variants.");
 };
+
+export const homeBuildGlyphs = [
+  allocateLibraryGlyph("cross-bridge", "relay"),
+  allocateLibraryGlyph("parallel-rails"),
+  allocateLibraryGlyph("dormant-data"),
+] as const;
 
 export const cardGlyphSets = {
   commonStartingPoints: [
-    defineGlyph("diagonal", ".##./##../#.../...."), // Inbound documents
-    defineGlyph("diagonal", "##../###./.#../...."), // Internal knowledge
-    defineGlyph("diagonal", "..#./.##./##../...."), // Reporting
-    defineGlyph("vertical", "####/.##./.##./...."), // Back-office processing
-    defineGlyph("vertical", "#..#/####/.##./...."), // Correspondence
+    allocateLibraryGlyph("chain-of-custody", "handoff"), // Inbound documents
+    allocateLibraryGlyph("constellation", "parallel-rails"), // Internal knowledge
+    allocateLibraryGlyph("convergence", "staged-route"), // Reporting
+    allocateLibraryGlyph("twin-pipeline", "cross-bridge"), // Back-office processing
+    allocateLibraryGlyph("rotational-exchange", "relay"), // Correspondence
   ],
   rankedBuildPlan: [
-    defineGlyph("diagonal", "###./#.#./###./...."), // Opportunity map
-    defineGlyph("diagonal", ".##./###./###./...."), // Ranking
-    defineGlyph("vertical", "#..#/####/#..#/...."), // Constraint register
-    defineGlyph("diagonal", "####/#.../#.../#..."), // Architecture direction
-    defineGlyph("diagonal", "####/#.#./##../#..."), // Pilot scope
+    allocateLibraryGlyph("aperture", "convergence"), // Opportunity map
+    allocateLibraryGlyph("convergence", "exchange"), // Ranking
+    allocateLibraryGlyph("guardrails", "open-boundary"), // Constraint register
+    allocateLibraryGlyph("cross-bridge", "parallel-rails"), // Architecture direction
+    allocateLibraryGlyph("stepped-change", "staged-route"), // Pilot scope
   ],
   ongoingOperation: [
-    defineGlyph("diagonal", ".###/###./##../#..."), // Quality and drift
-    defineGlyph("diagonal", "..##/.##./###./#..."), // Exceptions and failures
-    defineGlyph("diagonal", "..../.###/.#../.#.."), // Model replacement
-    defineGlyph("diagonal", "###./#.##/##../.#.."), // Evidence
-    defineGlyph("diagonal", ".##./####/##../.#.."), // Process and regulation changes
+    allocateLibraryGlyph("rotational-exchange", "exchange"), // Quality and drift
+    allocateLibraryGlyph("interlock", "distributed-frame"), // Exceptions and failures
+    allocateLibraryGlyph("staged-route", "stepped-change"), // Model replacement
+    allocateLibraryGlyph("chain-of-custody", "convergence"), // Evidence
+    allocateLibraryGlyph("guardrails", "paired-modules"), // Process and regulation changes
   ],
   bankingWorkloads: [
-    defineGlyph("diagonal", ".#../####/.##./.#.."), // Onboarding and KYC
-    defineGlyph("diagonal", "..#./..##/###./.#.."), // Periodic review
-    defineGlyph("rotational", "..#./###./.###/.#.."), // Transaction-monitoring triage
-    defineGlyph("diagonal", "####/#..#/#.../##.."), // Credit-file preparation
-    defineGlyph("diagonal", ".#.#/####/.#../##.."), // Regulatory-reporting checks
-    defineGlyph("rotational", "..##/.##./.##./##.."), // Policy and product knowledge
+    allocateLibraryGlyph("open-boundary", "protected-core"), // Onboarding and KYC
+    allocateLibraryGlyph("relay", "rotational-exchange"), // Periodic review
+    allocateLibraryGlyph("convergence", "exchange"), // Transaction-monitoring triage
+    allocateLibraryGlyph("chain-of-custody", "staged-route"), // Credit-file preparation
+    allocateLibraryGlyph("guardrails", "core-perimeter"), // Regulatory-reporting checks
+    allocateLibraryGlyph("parallel-rails", "constellation"), // Policy and product knowledge
   ],
   insuranceWorkloads: [
-    defineGlyph("diagonal", "..##/..##/###./##.."), // Claims intake and triage
-    defineGlyph("rotational", ".#../.###/###./..#."), // Claim-document review
-    defineGlyph("rotational", ".#../###./.###/..#."), // Underwriting support
-    defineGlyph("diagonal", "..#./..#./####/..#."), // Fraud-investigation support
-    defineGlyph("diagonal", "..#./.##./####/..#."), // Policy correspondence
-    defineGlyph("vertical", "..../####/.##./.##."), // Broker submissions
+    allocateLibraryGlyph("handoff", "relay"), // Claims intake and triage
+    allocateLibraryGlyph("chain-of-custody", "convergence"), // Claim-document review
+    allocateLibraryGlyph("aperture", "protected-core"), // Underwriting support
+    allocateLibraryGlyph("core-perimeter", "protected-core"), // Fraud-investigation support
+    allocateLibraryGlyph("relay", "rotational-exchange"), // Policy correspondence
+    allocateLibraryGlyph("distributed-frame", "paired-modules"), // Broker submissions
   ],
   healthcareWorkloads: [
-    defineGlyph("diagonal", "..#./.###/##.#/.##."), // Intake and referral administration
-    defineGlyph("diagonal", "..../..##/.###/.##."), // Documentation routing
-    defineGlyph("vertical", "..../.##./####/.##."), // Billing and coding
-    defineGlyph("horizontal", "###./#.../#.../###."), // Insurer correspondence
-    defineGlyph("diagonal", "...#/.###/.#.#/###."), // Capacity reporting
-    defineGlyph("diagonal", "...#/..##/.###/###."), // Procedure knowledge
+    allocateLibraryGlyph("handoff", "relay"), // Intake and referral administration
+    allocateLibraryGlyph("relay", "staged-route"), // Documentation routing
+    allocateLibraryGlyph("twin-pipeline", "parallel-rails"), // Billing and coding
+    allocateLibraryGlyph("rotational-exchange", "exchange"), // Insurer correspondence
+    allocateLibraryGlyph("parallel-rails", "distributed-frame"), // Capacity reporting
+    allocateLibraryGlyph("constellation", "distributed-frame"), // Procedure knowledge
   ],
   capitalMarketsWorkloads: [
-    defineGlyph("horizontal", "...#/.###/.###/...#"), // Fund and investor reporting
-    defineGlyph("vertical", "..../#..#/####/#..#"), // Due-diligence review
-    defineGlyph("diagonal", "..../..#./.###/..##"), // DDQ and RFP responses
-    defineGlyph("diagonal", "..#./..#./####/..##"), // Portfolio-company reporting
-    defineGlyph("horizontal", ".###/.#../.#../.###"), // Compliance monitoring
-    defineGlyph("horizontal", ".###/...#/...#/.###"), // Internal knowledge
+    allocateLibraryGlyph("staged-route", "parallel-rails"), // Fund and investor reporting
+    allocateLibraryGlyph("protected-core", "core-perimeter"), // Due-diligence review
+    allocateLibraryGlyph("distributed-frame", "relay"), // DDQ and RFP responses
+    allocateLibraryGlyph("parallel-rails", "twin-pipeline"), // Portfolio-company reporting
+    allocateLibraryGlyph("guardrails", "chain-of-custody"), // Compliance monitoring
+    allocateLibraryGlyph("constellation", "exchange"), // Internal knowledge
   ],
   companyWaysOfWorking: [
-    defineGlyph("diagonal", "..#./..##/##.#/.###"), // Audit before proposal
-    defineGlyph("diagonal", "..../.###/.###/.###"), // Constraints shape architecture
-    defineGlyph("diagonal", "...#/...#/...#/####"), // Stay after launch
-    defineGlyph("diagonal", "...#/..##/.#.#/####"), // Say when not to build
+    allocateLibraryGlyph("chain-of-custody", "convergence"), // Audit before proposal
+    allocateLibraryGlyph("guardrails", "open-boundary"), // Constraints shape architecture
+    allocateLibraryGlyph("cross-bridge", "stepped-change"), // Stay after launch
+    allocateLibraryGlyph("aperture", "protected-core"), // Say when not to build
   ],
 } as const satisfies Record<string, readonly ModularGlyphDefinition[]>;

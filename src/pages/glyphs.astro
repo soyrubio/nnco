@@ -1,0 +1,1129 @@
+---
+import Header from "@/components/Header.astro";
+import BaseLayout from "@/layouts/BaseLayout.astro";
+
+export const prerender = true;
+---
+
+<BaseLayout
+  title="Glyph generator | NNCo."
+  description="Internal NNCo. utility for drawing and exporting modular glyphs."
+  canonicalPath="/glyphs"
+  noindex
+>
+  <Header currentPath="/glyphs" />
+  <main class="glyph-page">
+    <section class="content-rail glyph-page__intro" aria-labelledby="glyph-page-title">
+      <h1 id="glyph-page-title">Glyph generator</h1>
+      <p>
+        Review an automatic batch, select the patterns that work and copy the
+        shortlist with your comments. The editor remains available for adjustments.
+      </p>
+    </section>
+
+    <section class="content-rail glyph-tool" data-glyph-generator>
+      <div class="glyph-tool__editor">
+        <div class="glyph-tool__controls">
+          <label class="glyph-control">
+            <span>Grid size</span>
+            <select data-grid-size>
+              <option value="2">2 × 2</option>
+              <option value="3">3 × 3</option>
+              <option value="4">4 × 4</option>
+              <option value="5" selected>5 × 5</option>
+              <option value="6">6 × 6</option>
+              <option value="7">7 × 7</option>
+              <option value="8">8 × 8</option>
+            </select>
+          </label>
+
+          <label class="glyph-control">
+            <span>Pattern style</span>
+            <select data-pattern-mode>
+              <option value="balanced" selected>Balanced mix</option>
+              <option value="vertical">Left/right mirror</option>
+              <option value="horizontal">Top/bottom mirror</option>
+              <option value="rotational">180° rotation</option>
+              <option value="diagonal">Diagonal mirror</option>
+              <option value="free">Free connected</option>
+            </select>
+          </label>
+
+          <label class="glyph-control glyph-control--range">
+            <span>Random cell count</span>
+            <span class="glyph-control__range-row">
+              <input type="range" min="1" max="25" value="11" data-cell-count />
+              <output data-cell-count-output>11</output>
+            </span>
+          </label>
+        </div>
+
+        <div class="glyph-tool__actions" aria-label="Pattern actions">
+          <button class="button" type="button" data-randomise>Random pattern</button>
+          <button class="button button--secondary" type="button" data-clear>Clear</button>
+        </div>
+
+        <div class="glyph-tool__draw-heading">
+          <h2>Draw pattern</h2>
+          <p id="glyph-grid-help">Click or drag. Cells may touch or stand alone.</p>
+        </div>
+        <div
+          class="glyph-grid"
+          role="grid"
+          aria-label="Glyph cell editor"
+          aria-describedby="glyph-grid-help"
+          data-glyph-grid
+        ></div>
+      </div>
+
+      <div class="glyph-tool__result">
+        <div class="glyph-tool__preview-heading">
+          <h2>SVG preview</h2>
+          <span data-pattern-style>Balanced pattern</span>
+        </div>
+        <div class="glyph-preview" data-glyph-preview>
+          <svg
+            class="glyph-preview__svg is-hidden"
+            viewBox="0 0 500 500"
+            role="img"
+            aria-labelledby="glyph-preview-title"
+            data-preview-svg
+          >
+            <title id="glyph-preview-title">Generated modular glyph</title>
+            <path
+              fill="currentColor"
+              fill-rule="evenodd"
+              clip-rule="evenodd"
+              data-preview-path></path>
+          </svg>
+          <p data-empty-preview>Select a cell to begin.</p>
+        </div>
+
+        <div class="glyph-tool__export-heading">
+          <h2>Pattern data</h2>
+          <p aria-live="polite" data-glyph-status></p>
+        </div>
+        <textarea
+          class="glyph-output"
+          rows="9"
+          readonly
+          aria-label="Generated glyph pattern data"
+          spellcheck="false"
+          data-glyph-output></textarea>
+        <div class="glyph-tool__export-actions">
+          <button class="button button--secondary" type="button" data-copy-data>
+            Copy data
+          </button>
+          <button class="button button--secondary" type="button" data-copy-svg>
+            Copy SVG
+          </button>
+          <button class="button button--secondary" type="button" data-download-svg>
+            Download SVG
+          </button>
+        </div>
+      </div>
+
+      <div class="glyph-batch" aria-labelledby="glyph-batch-title">
+        <div class="glyph-batch__header">
+          <div>
+            <h2 id="glyph-batch-title">Generated batch</h2>
+            <p>
+              The first batch appears automatically. Selection and comments stay
+              in place when you add more.
+            </p>
+          </div>
+          <div class="glyph-batch__actions">
+            <button class="button button--secondary" type="button" data-generate-batch>
+              Generate 12 more
+            </button>
+            <button class="button button--secondary" type="button" data-clear-shortlist>
+              Clear selection
+            </button>
+            <button class="button button--secondary" type="button" data-clear-batch>
+              Clear all
+            </button>
+            <button class="button" type="button" data-copy-shortlist>
+              Copy selected (0)
+            </button>
+          </div>
+        </div>
+        <p class="glyph-batch__status" aria-live="polite" data-batch-status></p>
+        <div class="glyph-batch__grid" role="list" data-pattern-batch></div>
+      </div>
+    </section>
+  </main>
+</BaseLayout>
+
+<script>
+  import { glyphLibrary } from "@/data/glyph-references";
+  import {
+    buildGlyphPath,
+    createGlyphSvg,
+    createRandomGlyphPattern,
+    sortGlyphCells,
+    type GlyphCell,
+    type GlyphGenerationMode,
+    type GlyphSymmetry,
+  } from "@/lib/glyph-generator";
+
+  const CELL_SIZE = 100;
+  const BATCH_SIZE = 12;
+
+  interface BatchPattern {
+    id: string;
+    name: string;
+    gridSize: number;
+    cells: GlyphCell[];
+    symmetry: GlyphSymmetry | "none";
+    source: "reference" | "generated";
+    selected: boolean;
+    comment: string;
+  }
+
+  const copyText = async (value: string) => {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(value);
+      return;
+    }
+
+    const fallback = document.createElement("textarea");
+    fallback.value = value;
+    fallback.setAttribute("readonly", "");
+    fallback.style.position = "fixed";
+    fallback.style.opacity = "0";
+    document.body.append(fallback);
+    fallback.select();
+    const legacyCopy = Reflect.get(document, "execCommand") as (
+      command: string,
+    ) => boolean;
+    legacyCopy.call(document, "copy");
+    fallback.remove();
+  };
+
+  document.querySelectorAll<HTMLElement>("[data-glyph-generator]").forEach((root) => {
+    if (root.dataset.initialised === "true") return;
+    root.dataset.initialised = "true";
+
+    const gridSizeControl = root.querySelector<HTMLSelectElement>("[data-grid-size]");
+    const patternModeControl = root.querySelector<HTMLSelectElement>(
+      "[data-pattern-mode]",
+    );
+    const cellCountControl = root.querySelector<HTMLInputElement>("[data-cell-count]");
+    const cellCountOutput = root.querySelector<HTMLOutputElement>(
+      "[data-cell-count-output]",
+    );
+    const grid = root.querySelector<HTMLElement>("[data-glyph-grid]");
+    const previewSvg = root.querySelector<SVGSVGElement>("[data-preview-svg]");
+    const previewPath = root.querySelector<SVGPathElement>("[data-preview-path]");
+    const emptyPreview = root.querySelector<HTMLElement>("[data-empty-preview]");
+    const dataOutput = root.querySelector<HTMLTextAreaElement>("[data-glyph-output]");
+    const status = root.querySelector<HTMLElement>("[data-glyph-status]");
+    const patternStyle = root.querySelector<HTMLElement>("[data-pattern-style]");
+    const randomiseButton = root.querySelector<HTMLButtonElement>("[data-randomise]");
+    const clearButton = root.querySelector<HTMLButtonElement>("[data-clear]");
+    const copyDataButton = root.querySelector<HTMLButtonElement>("[data-copy-data]");
+    const copySvgButton = root.querySelector<HTMLButtonElement>("[data-copy-svg]");
+    const downloadSvgButton = root.querySelector<HTMLButtonElement>(
+      "[data-download-svg]",
+    );
+    const batch = root.querySelector<HTMLElement>("[data-pattern-batch]");
+    const batchStatus = root.querySelector<HTMLElement>("[data-batch-status]");
+    const generateBatchButton = root.querySelector<HTMLButtonElement>(
+      "[data-generate-batch]",
+    );
+    const clearShortlistButton = root.querySelector<HTMLButtonElement>(
+      "[data-clear-shortlist]",
+    );
+    const clearBatchButton = root.querySelector<HTMLButtonElement>(
+      "[data-clear-batch]",
+    );
+    const copyShortlistButton = root.querySelector<HTMLButtonElement>(
+      "[data-copy-shortlist]",
+    );
+
+    if (
+      !gridSizeControl ||
+      !patternModeControl ||
+      !cellCountControl ||
+      !cellCountOutput ||
+      !grid ||
+      !previewSvg ||
+      !previewPath ||
+      !emptyPreview ||
+      !dataOutput ||
+      !status ||
+      !patternStyle ||
+      !randomiseButton ||
+      !clearButton ||
+      !copyDataButton ||
+      !copySvgButton ||
+      !downloadSvgButton ||
+      !batch ||
+      !batchStatus ||
+      !generateBatchButton ||
+      !clearShortlistButton ||
+      !clearBatchButton ||
+      !copyShortlistButton
+    ) {
+      return;
+    }
+
+    let gridSize = Number(gridSizeControl.value);
+    let selectedCells = new Set<string>();
+    let generatedSymmetry: GlyphSymmetry | "none" = "none";
+    let isPainting = false;
+    let paintValue = true;
+    const generatedPatterns: BatchPattern[] = [];
+    const generatedSignatures = new Set<string>();
+    const lifecycleController = new AbortController();
+
+    const keyFor = (column: number, row: number) => `${column}:${row}`;
+    const cellFromKey = (key: string): GlyphCell => {
+      const [column, row] = key.split(":").map(Number);
+      return [column, row];
+    };
+    const cellsFromSelection = (): GlyphCell[] =>
+      sortGlyphCells([...selectedCells].map(cellFromKey));
+
+    const symmetryLabel = (symmetry: GlyphSymmetry | "none") => {
+      switch (symmetry) {
+        case "horizontal":
+          return "Top/bottom symmetry";
+        case "vertical":
+          return "Left/right symmetry";
+        case "rotational":
+          return "180° rotational symmetry";
+        case "diagonal":
+          return "Diagonal symmetry";
+        case "none":
+          return "Custom pattern";
+      }
+    };
+
+    const setStatus = (message: string) => {
+      status.textContent = message;
+    };
+
+    const updateShortlistControls = () => {
+      const selectedCount = generatedPatterns.filter(
+        (pattern) => pattern.selected,
+      ).length;
+      copyShortlistButton.textContent = `Copy selected (${selectedCount})`;
+      copyShortlistButton.disabled = selectedCount === 0;
+      clearShortlistButton.disabled = selectedCount === 0;
+      clearBatchButton.disabled = generatedPatterns.length === 0;
+    };
+
+    const render = () => {
+      const cells = cellsFromSelection();
+      const pattern = { gridSize, cells };
+      const path = buildGlyphPath(pattern);
+      const viewBoxSize = gridSize * CELL_SIZE;
+
+      grid.querySelectorAll<HTMLButtonElement>("[data-cell]").forEach((cell) => {
+        const isSelected = selectedCells.has(cell.dataset.cell ?? "");
+        cell.classList.toggle("is-selected", isSelected);
+        cell.setAttribute("aria-pressed", String(isSelected));
+      });
+
+      previewSvg.setAttribute("viewBox", `0 0 ${viewBoxSize} ${viewBoxSize}`);
+      previewPath.setAttribute("d", path);
+      emptyPreview.hidden = cells.length > 0;
+      previewSvg.classList.toggle("is-hidden", cells.length === 0);
+      patternStyle.textContent = `${symmetryLabel(generatedSymmetry)}, 50% inward radius`;
+      dataOutput.value = JSON.stringify(
+        { ...pattern, symmetry: generatedSymmetry },
+        null,
+        2,
+      );
+      cellCountOutput.value = String(cells.length);
+      if (cells.length > 0) cellCountControl.value = String(cells.length);
+
+      const hasPattern = cells.length > 0;
+      copyDataButton.disabled = !hasPattern;
+      copySvgButton.disabled = !hasPattern;
+      downloadSvgButton.disabled = !hasPattern;
+      clearButton.disabled = !hasPattern;
+    };
+
+    const updateCell = (column: number, row: number, nextValue: boolean) => {
+      const key = keyFor(column, row);
+      if (selectedCells.has(key) === nextValue) return;
+
+      const nextCells = new Set(selectedCells);
+      if (nextValue) nextCells.add(key);
+      else nextCells.delete(key);
+
+      const nextPatternCells = sortGlyphCells([...nextCells].map(cellFromKey));
+
+      selectedCells = nextCells;
+      generatedSymmetry = "none";
+      setStatus(
+        nextPatternCells.length === 0
+          ? "Grid cleared."
+          : `${nextPatternCells.length} selected ${nextPatternCells.length === 1 ? "cell" : "cells"}.`,
+      );
+      render();
+    };
+
+    const buildGrid = () => {
+      grid.replaceChildren();
+      grid.style.setProperty("--glyph-grid-size", String(gridSize));
+      grid.setAttribute("aria-rowcount", String(gridSize));
+      grid.setAttribute("aria-colcount", String(gridSize));
+
+      for (let row = 0; row < gridSize; row += 1) {
+        for (let column = 0; column < gridSize; column += 1) {
+          const cell = document.createElement("button");
+          const key = keyFor(column, row);
+          cell.type = "button";
+          cell.dataset.cell = key;
+          cell.setAttribute("role", "gridcell");
+          cell.setAttribute("aria-rowindex", String(row + 1));
+          cell.setAttribute("aria-colindex", String(column + 1));
+          cell.setAttribute("aria-pressed", "false");
+          cell.setAttribute("aria-label", `Column ${column + 1}, row ${row + 1}`);
+
+          cell.addEventListener("pointerdown", (event) => {
+            event.preventDefault();
+            isPainting = true;
+            paintValue = !selectedCells.has(key);
+            updateCell(column, row, paintValue);
+          });
+          cell.addEventListener("pointerenter", (event) => {
+            if (!isPainting || (event.buttons === 0 && event.pointerType !== "touch")) {
+              return;
+            }
+            updateCell(column, row, paintValue);
+          });
+          cell.addEventListener("click", (event) => {
+            if (event.detail !== 0) return;
+            updateCell(column, row, !selectedCells.has(key));
+          });
+          grid.append(cell);
+        }
+      }
+    };
+
+    const randomise = () => {
+      const requestedCount = Number(cellCountControl.value);
+      const mode = patternModeControl.value as GlyphGenerationMode;
+      const generated = createRandomGlyphPattern(
+        gridSize,
+        requestedCount,
+        mode,
+      );
+      const cells = generated.cells;
+      selectedCells = new Set(cells.map(([column, row]) => keyFor(column, row)));
+      generatedSymmetry = generated.symmetry;
+      setStatus(
+        `${cells.length} cells generated. ${symmetryLabel(generatedSymmetry)}.`,
+      );
+      render();
+    };
+
+    const openPatternInEditor = (pattern: BatchPattern) => {
+      gridSize = pattern.gridSize;
+      gridSizeControl.value = String(pattern.gridSize);
+      cellCountControl.max = String(pattern.gridSize * pattern.gridSize);
+      cellCountControl.value = String(pattern.cells.length);
+      selectedCells = new Set(
+        pattern.cells.map(([column, row]) => keyFor(column, row)),
+      );
+      generatedSymmetry = pattern.symmetry;
+      buildGrid();
+      render();
+      setStatus(`Pattern ${pattern.id} opened in the editor.`);
+    };
+
+    const appendPatternCard = (pattern: BatchPattern) => {
+      const card = document.createElement("article");
+      card.className = "glyph-candidate";
+      card.dataset.patternId = pattern.id;
+      card.setAttribute("role", "listitem");
+
+      const selectLabel = document.createElement("label");
+      selectLabel.className = "glyph-candidate__select";
+      const checkbox = document.createElement("input");
+      checkbox.type = "checkbox";
+      checkbox.className = "glyph-candidate__checkbox";
+      checkbox.setAttribute("aria-label", `Select pattern ${pattern.id}`);
+
+      const preview = document.createElement("span");
+      preview.className = "glyph-candidate__preview";
+      const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+      svg.setAttribute(
+        "viewBox",
+        `0 0 ${pattern.gridSize * CELL_SIZE} ${pattern.gridSize * CELL_SIZE}`,
+      );
+      svg.setAttribute("aria-hidden", "true");
+      const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+      path.setAttribute(
+        "d",
+        buildGlyphPath({ gridSize: pattern.gridSize, cells: pattern.cells }),
+      );
+      path.setAttribute("fill", "currentColor");
+      path.setAttribute("fill-rule", "evenodd");
+      path.setAttribute("clip-rule", "evenodd");
+      svg.append(path);
+      preview.append(svg);
+
+      const meta = document.createElement("span");
+      meta.className = "glyph-candidate__meta";
+      const title = document.createElement("strong");
+      title.textContent = pattern.name;
+      const detail = document.createElement("span");
+      const sourceLabel = pattern.source === "reference" ? "Library" : "Generated";
+      detail.textContent = `${sourceLabel}, ${pattern.gridSize} × ${pattern.gridSize}, ${pattern.cells.length} cells, ${symmetryLabel(pattern.symmetry).toLowerCase()}`;
+      meta.append(title, detail);
+      selectLabel.append(checkbox, preview, meta);
+
+      const commentLabel = document.createElement("label");
+      commentLabel.className = "glyph-candidate__comment";
+      const commentTitle = document.createElement("span");
+      commentTitle.textContent = "Comment";
+      const comment = document.createElement("textarea");
+      comment.rows = 2;
+      comment.placeholder = "What works about this pattern?";
+      comment.setAttribute("aria-label", `Comment for pattern ${pattern.id}`);
+      comment.value = pattern.comment;
+      commentLabel.append(commentTitle, comment);
+
+      const openButton = document.createElement("button");
+      openButton.type = "button";
+      openButton.className = "button button--secondary button--small";
+      openButton.textContent = "Open in editor";
+
+      checkbox.addEventListener("change", () => {
+        pattern.selected = checkbox.checked;
+        card.classList.toggle("is-selected", pattern.selected);
+        updateShortlistControls();
+      });
+      comment.addEventListener("input", () => {
+        pattern.comment = comment.value;
+      });
+      openButton.addEventListener("click", () => openPatternInEditor(pattern));
+
+      card.append(selectLabel, commentLabel, openButton);
+      batch.append(card);
+    };
+
+    const generateBatch = (amount = BATCH_SIZE) => {
+      const mode = patternModeControl.value as GlyphGenerationMode;
+      const requestedCount = Number(cellCountControl.value);
+      let generatedAddedCount = 0;
+      let referenceAddedCount = 0;
+      let attempts = 0;
+
+      const addPattern = (
+        cells: readonly GlyphCell[],
+        symmetry: GlyphSymmetry | "none",
+        source: BatchPattern["source"],
+        name?: string,
+        comment = "",
+      ) => {
+        const sortedCells = sortGlyphCells(cells);
+        const signature = `${gridSize}:${sortedCells
+          .map(([column, row]) => `${column}:${row}`)
+          .join("|")}`;
+        if (generatedSignatures.has(signature)) return false;
+
+        generatedSignatures.add(signature);
+        const pattern: BatchPattern = {
+          id: String(generatedPatterns.length + 1).padStart(2, "0"),
+          name:
+            name ??
+            `Pattern ${String(generatedPatterns.length + 1).padStart(2, "0")}`,
+          gridSize,
+          cells: sortedCells,
+          symmetry,
+          source,
+          selected: false,
+          comment,
+        };
+        generatedPatterns.push(pattern);
+        appendPatternCard(pattern);
+        return true;
+      };
+
+      glyphLibrary
+        .filter((pattern) => pattern.gridSize === gridSize)
+        .forEach((pattern) => {
+          if (
+            addPattern(
+              pattern.cells,
+              pattern.symmetry,
+              "reference",
+              pattern.name,
+              pattern.comment,
+            )
+          ) {
+            referenceAddedCount += 1;
+          }
+        });
+
+      while (generatedAddedCount < amount && attempts < amount * 40) {
+        attempts += 1;
+        const generated = createRandomGlyphPattern(
+          gridSize,
+          requestedCount,
+          mode,
+        );
+        if (addPattern(generated.cells, generated.symmetry, "generated")) {
+          generatedAddedCount += 1;
+        }
+      }
+
+      batchStatus.textContent = `${referenceAddedCount} library patterns and ${generatedAddedCount} generated patterns added. ${generatedPatterns.length} available.`;
+      updateShortlistControls();
+    };
+
+    gridSizeControl.addEventListener("change", () => {
+      gridSize = Number(gridSizeControl.value);
+      const maximumCells = gridSize * gridSize;
+      const suggestedCells = Math.min(
+        maximumCells,
+        Math.max(3, Math.round(maximumCells * 0.44)),
+      );
+      cellCountControl.max = String(maximumCells);
+      cellCountControl.value = String(suggestedCells);
+      buildGrid();
+      randomise();
+    });
+
+    cellCountControl.addEventListener("input", () => {
+      cellCountOutput.value = cellCountControl.value;
+    });
+    cellCountControl.addEventListener("change", randomise);
+    patternModeControl.addEventListener("change", randomise);
+    randomiseButton.addEventListener("click", randomise);
+    clearButton.addEventListener("click", () => {
+      selectedCells.clear();
+      generatedSymmetry = "none";
+      setStatus("Grid cleared.");
+      render();
+    });
+    copyDataButton.addEventListener("click", async () => {
+      await copyText(dataOutput.value);
+      setStatus("Pattern data copied.");
+    });
+    copySvgButton.addEventListener("click", async () => {
+      await copyText(createGlyphSvg({ gridSize, cells: cellsFromSelection() }));
+      setStatus("SVG copied.");
+    });
+    downloadSvgButton.addEventListener("click", () => {
+      const cells = cellsFromSelection();
+      const blob = new Blob([createGlyphSvg({ gridSize, cells })], {
+        type: "image/svg+xml",
+      });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `nnco-glyph-${gridSize}x${gridSize}-${cells.length}.svg`;
+      link.click();
+      URL.revokeObjectURL(url);
+      setStatus("SVG downloaded.");
+    });
+    generateBatchButton.addEventListener("click", () => generateBatch());
+    clearShortlistButton.addEventListener("click", () => {
+      generatedPatterns.forEach((pattern) => {
+        pattern.selected = false;
+      });
+      batch
+        .querySelectorAll<HTMLInputElement>(".glyph-candidate__checkbox")
+        .forEach((checkbox) => {
+          checkbox.checked = false;
+          checkbox.closest(".glyph-candidate")?.classList.remove("is-selected");
+        });
+      batchStatus.textContent = "Selection cleared. Comments are unchanged.";
+      updateShortlistControls();
+    });
+    clearBatchButton.addEventListener("click", () => {
+      generatedPatterns.length = 0;
+      generatedSignatures.clear();
+      batch.replaceChildren();
+      batchStatus.textContent = "All generated patterns cleared.";
+      updateShortlistControls();
+    });
+    copyShortlistButton.addEventListener("click", async () => {
+      const shortlist = generatedPatterns
+        .filter((pattern) => pattern.selected)
+        .map(({ name, gridSize, cells, symmetry, comment }) => ({
+          name,
+          gridSize,
+          cells,
+          symmetry,
+          comment: comment.trim(),
+        }));
+      await copyText(JSON.stringify(shortlist, null, 2));
+      batchStatus.textContent = `${shortlist.length} selected ${shortlist.length === 1 ? "pattern" : "patterns"} copied with comments.`;
+    });
+    document.addEventListener(
+      "pointerup",
+      () => {
+        isPainting = false;
+      },
+      { signal: lifecycleController.signal },
+    );
+    document.addEventListener(
+      "pointercancel",
+      () => {
+        isPainting = false;
+      },
+      { signal: lifecycleController.signal },
+    );
+    document.addEventListener(
+      "astro:before-swap",
+      () => lifecycleController.abort(),
+      { once: true, signal: lifecycleController.signal },
+    );
+
+    buildGrid();
+    randomise();
+    generateBatch();
+  });
+</script>
+
+<style is:global>
+  .glyph-page {
+    min-height: calc(100dvh - var(--header-height));
+    padding-block: clamp(2.5rem, 5vw, 5rem);
+  }
+
+  .glyph-page__intro {
+    display: grid;
+    grid-template-columns: minmax(0, 2fr) minmax(0, 4fr);
+    column-gap: var(--section-grid-column-gap);
+    align-items: end;
+    margin-bottom: clamp(2rem, 4vw, 3.5rem);
+  }
+
+  .glyph-page__intro h1,
+  .glyph-page__intro p,
+  .glyph-tool h2,
+  .glyph-tool p {
+    margin: 0;
+  }
+
+  .glyph-page__intro h1 {
+    font-size: var(--type-size-section-title);
+    font-weight: var(--type-weight-medium);
+    letter-spacing: var(--type-tracking-heading);
+    line-height: var(--type-leading-heading);
+  }
+
+  .glyph-page__intro p {
+    max-width: 50ch;
+    color: var(--muted);
+  }
+
+  .glyph-tool {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    border-top: var(--structural-rule-thickness) solid var(--ink);
+  }
+
+  .glyph-tool__editor,
+  .glyph-tool__result {
+    min-width: 0;
+    padding-block: clamp(1.5rem, 3vw, 2.5rem);
+  }
+
+  .glyph-tool__editor {
+    padding-right: clamp(1.5rem, 4vw, 4rem);
+    border-right: var(--fine-rule-thickness) solid var(--rule);
+  }
+
+  .glyph-tool__result {
+    padding-left: clamp(1.5rem, 4vw, 4rem);
+  }
+
+  .glyph-tool__controls {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem;
+  }
+
+  .glyph-control {
+    display: grid;
+    gap: 0.55rem;
+    font-size: var(--type-size-small);
+    font-weight: var(--type-weight-medium);
+    line-height: var(--type-leading-small);
+  }
+
+  .glyph-control select {
+    width: 100%;
+    min-height: 44px;
+    padding: 0.6rem 0.75rem;
+    border: var(--fine-rule-thickness) solid var(--rule-strong);
+    border-radius: var(--radius-structural);
+    background: transparent;
+  }
+
+  .glyph-control__range-row {
+    display: grid;
+    min-height: 44px;
+    grid-template-columns: minmax(0, 1fr) 2rem;
+    gap: 0.75rem;
+    align-items: center;
+  }
+
+  .glyph-control input[type="range"] {
+    width: 100%;
+    accent-color: var(--ink);
+  }
+
+  .glyph-control output {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .glyph-tool__actions,
+  .glyph-tool__export-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+
+  .glyph-tool__actions {
+    margin-top: 1.25rem;
+  }
+
+  .glyph-tool__draw-heading,
+  .glyph-tool__preview-heading,
+  .glyph-tool__export-heading {
+    display: flex;
+    gap: 1rem;
+    align-items: baseline;
+    justify-content: space-between;
+  }
+
+  .glyph-tool__draw-heading {
+    margin-top: clamp(2rem, 4vw, 3.25rem);
+    margin-bottom: 1rem;
+  }
+
+  .glyph-tool__preview-heading {
+    margin-bottom: 1rem;
+  }
+
+  .glyph-tool__export-heading {
+    margin-top: clamp(2rem, 4vw, 3rem);
+    margin-bottom: 0.75rem;
+  }
+
+  .glyph-tool h2 {
+    font-size: var(--type-size-item-heading);
+    font-weight: var(--type-weight-medium);
+    letter-spacing: var(--type-tracking-heading);
+    line-height: var(--type-leading-item);
+  }
+
+  .glyph-tool__draw-heading p,
+  .glyph-tool__preview-heading span,
+  .glyph-tool__export-heading p {
+    color: var(--muted);
+    font-size: var(--type-size-small);
+    line-height: var(--type-leading-small);
+  }
+
+  .glyph-tool__export-heading p {
+    min-height: 1.4em;
+    text-align: right;
+  }
+
+  .glyph-grid {
+    --glyph-grid-size: 5;
+    position: relative;
+    display: grid;
+    width: min(100%, 32rem);
+    overflow: hidden;
+    aspect-ratio: 1;
+    grid-template-columns: repeat(var(--glyph-grid-size), minmax(0, 1fr));
+    border: var(--fine-rule-thickness) solid var(--ink);
+    background: var(--paper);
+    touch-action: none;
+    user-select: none;
+  }
+
+  .glyph-grid::after {
+    position: absolute;
+    z-index: 2;
+    inset: 0;
+    background-image:
+      linear-gradient(to right, transparent calc(100% - 1px), var(--rule) 0),
+      linear-gradient(to bottom, transparent calc(100% - 1px), var(--rule) 0);
+    background-size:
+      calc(100% / var(--glyph-grid-size)) 100%,
+      100% calc(100% / var(--glyph-grid-size));
+    content: "";
+    pointer-events: none;
+  }
+
+  .glyph-grid button {
+    position: relative;
+    z-index: 1;
+    min-width: 0;
+    padding: 0;
+    border-radius: 0;
+    background: transparent;
+    cursor: crosshair;
+  }
+
+  .glyph-grid button.is-selected {
+    background: var(--ink);
+  }
+
+  .glyph-grid button:focus-visible {
+    z-index: 3;
+    outline-offset: -4px;
+  }
+
+  .glyph-preview {
+    position: relative;
+    display: grid;
+    width: min(100%, 32rem);
+    aspect-ratio: 1;
+    place-items: center;
+    background: var(--surface);
+  }
+
+  .glyph-preview svg {
+    width: 100%;
+    height: 100%;
+    color: var(--ink);
+  }
+
+  .glyph-preview__svg.is-hidden {
+    display: none;
+  }
+
+  .glyph-preview p {
+    color: var(--muted);
+  }
+
+  .glyph-output {
+    display: block;
+    width: 100%;
+    resize: vertical;
+    padding: 1rem;
+    border: var(--fine-rule-thickness) solid var(--rule-strong);
+    border-radius: 0;
+    background: transparent;
+    color: var(--ink);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 0.8125rem;
+    line-height: 1.5;
+  }
+
+  .glyph-tool__export-actions {
+    margin-top: 1rem;
+  }
+
+  .glyph-batch {
+    grid-column: 1 / -1;
+    padding-top: clamp(2rem, 4vw, 3rem);
+    padding-bottom: clamp(1.5rem, 3vw, 2.5rem);
+    border-top: var(--structural-rule-thickness) solid var(--ink);
+  }
+
+  .glyph-batch__header {
+    display: grid;
+    grid-template-columns: minmax(0, 2fr) minmax(0, 4fr);
+    gap: var(--section-grid-column-gap);
+    align-items: end;
+  }
+
+  .glyph-batch__header > div:first-child {
+    display: grid;
+    gap: 0.6rem;
+  }
+
+  .glyph-batch__header p,
+  .glyph-batch__status {
+    color: var(--muted);
+    font-size: var(--type-size-small);
+    line-height: var(--type-leading-small);
+  }
+
+  .glyph-batch__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    justify-content: flex-end;
+  }
+
+  .glyph-batch__status {
+    min-height: 1.4em;
+    margin-top: 1rem !important;
+  }
+
+  .glyph-batch__grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 1rem;
+    margin-top: 1rem;
+  }
+
+  .glyph-candidate {
+    display: grid;
+    min-width: 0;
+    grid-template-rows: auto auto auto;
+    align-content: start;
+    padding: 0.75rem;
+    border: var(--fine-rule-thickness) solid var(--rule-strong);
+    background: var(--paper);
+  }
+
+  .glyph-candidate.is-selected {
+    outline: 3px solid var(--ink);
+    outline-offset: -3px;
+  }
+
+  .glyph-candidate__select {
+    position: relative;
+    display: grid;
+    cursor: pointer;
+  }
+
+  .glyph-candidate__checkbox {
+    position: absolute;
+    z-index: 2;
+    top: 0.75rem;
+    right: 0.75rem;
+    width: 1.25rem;
+    height: 1.25rem;
+    margin: 0;
+    accent-color: var(--ink);
+  }
+
+  .glyph-candidate__preview {
+    display: grid;
+    aspect-ratio: 1;
+    padding: clamp(1rem, 2vw, 1.75rem);
+    place-items: center;
+    background: var(--surface);
+    color: var(--ink);
+  }
+
+  .glyph-candidate__preview svg {
+    width: 100%;
+    height: 100%;
+  }
+
+  .glyph-candidate__meta {
+    display: grid;
+    gap: 0.2rem;
+    padding-block: 0.75rem;
+  }
+
+  .glyph-candidate__meta strong {
+    font-size: var(--type-size-control);
+    font-weight: var(--type-weight-medium);
+    line-height: var(--type-leading-item);
+  }
+
+  .glyph-candidate__meta span {
+    color: var(--muted);
+    font-size: 0.75rem;
+    line-height: 1.4;
+  }
+
+  .glyph-candidate__comment {
+    display: grid;
+    gap: 0.35rem;
+    margin-bottom: 0.75rem;
+    font-size: 0.75rem;
+    font-weight: var(--type-weight-medium);
+    line-height: 1.4;
+  }
+
+  .glyph-candidate__comment textarea {
+    display: block;
+    width: 100%;
+    min-height: 4.5rem;
+    resize: vertical;
+    padding: 0.6rem;
+    border: var(--fine-rule-thickness) solid var(--rule-strong);
+    border-radius: 0;
+    background: transparent;
+    font-size: var(--type-size-small);
+    font-weight: var(--type-weight-regular);
+    line-height: var(--type-leading-small);
+  }
+
+  .glyph-candidate > .button {
+    align-self: end;
+  }
+
+  .glyph-tool button:disabled {
+    cursor: not-allowed;
+    opacity: 0.42;
+  }
+
+  @media (max-width: 767px) {
+    .glyph-page {
+      padding-block: 2rem 3rem;
+    }
+
+    .glyph-page__intro,
+    .glyph-tool {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .glyph-page__intro {
+      gap: 1rem;
+    }
+
+    .glyph-tool__editor {
+      padding-right: 0;
+      border-right: 0;
+      border-bottom: var(--fine-rule-thickness) solid var(--rule);
+    }
+
+    .glyph-tool__result {
+      padding-left: 0;
+    }
+
+    .glyph-batch__header {
+      grid-template-columns: minmax(0, 1fr);
+      align-items: start;
+    }
+
+    .glyph-batch__actions {
+      justify-content: flex-start;
+    }
+
+    .glyph-batch__grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 480px) {
+    .glyph-tool__controls {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .glyph-tool__draw-heading,
+    .glyph-tool__preview-heading,
+    .glyph-tool__export-heading {
+      display: grid;
+      gap: 0.35rem;
+    }
+
+    .glyph-tool__export-heading p {
+      text-align: left;
+    }
+
+    .glyph-tool__actions .button,
+    .glyph-tool__export-actions .button,
+    .glyph-batch__actions .button {
+      width: 100%;
+    }
+
+    .glyph-batch__grid {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+</style>

@@ -4,9 +4,12 @@ export type ModularGlyphSymmetry =
   | "horizontal"
   | "vertical"
   | "rotational"
-  | "diagonal";
+  | "diagonal"
+  | "none";
 
 export interface ModularGlyphDefinition {
+  libraryId: string;
+  gridSize: number;
   cells: readonly ModularGlyphCell[];
   symmetry: ModularGlyphSymmetry;
 }

@@ -11,6 +11,7 @@ interface Props {
   text: string;
   href?: string;
   glyph?: {
+    gridSize: number;
     cells: readonly ModularGlyphCell[];
     symmetry: ModularGlyphSymmetry;
   };
@@ -36,7 +37,11 @@ const Element = href ? "a" : "article";
   {
     glyph && (
       <div class="editorial-card__glyph">
-        <ModularGlyph cells={glyph.cells} symmetry={glyph.symmetry} />
+        <ModularGlyph
+          gridSize={glyph.gridSize}
+          cells={glyph.cells}
+          symmetry={glyph.symmetry}
+        />
       </div>
     )
   }

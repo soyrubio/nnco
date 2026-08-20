@@ -1,7 +1,13 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
+import { homeBuildGlyphs } from "../src/data/glyphs.ts";
+import { glyphLibrary } from "../src/data/glyph-references.ts";
 import { homeBuildItems } from "../src/data/home.ts";
+import {
+  assertGlyphPattern,
+  hasGlyphSymmetry,
+} from "../src/lib/glyph-generator.ts";
 import { homePhases } from "../src/data/programme.ts";
 
 const sources = Object.fromEntries(
@@ -51,18 +57,20 @@ test("expanded detail media is optional and requires accessible image metadata",
 test("editorial cards compose the shared bounded SVG grammar", () => {
   assert.match(
     sources.card,
-    /glyph\?:\s*\{\s*cells:\s*readonly ModularGlyphCell\[\];\s*symmetry:\s*ModularGlyphSymmetry;\s*\};/s,
+    /glyph\?:\s*\{\s*gridSize:\s*number;\s*cells:\s*readonly ModularGlyphCell\[\];\s*symmetry:\s*ModularGlyphSymmetry;\s*\};/s,
   );
   assert.match(
     sources.card,
-    /\{\s*glyph && \([\s\S]*?<ModularGlyph cells=\{glyph\.cells\} symmetry=\{glyph\.symmetry\}/,
+    /\{\s*glyph && \([\s\S]*?<ModularGlyph[\s\S]*?gridSize=\{glyph\.gridSize\}[\s\S]*?cells=\{glyph\.cells\}[\s\S]*?symmetry=\{glyph\.symmetry\}/,
   );
-  assert.match(sources.glyph, /cells\.length < 5 \|\| cells\.length > 9/);
-  assert.match(sources.glyph, /integer coordinates from 0 to 3/);
+  assert.match(sources.glyph, /assertGlyphPattern\(\{ gridSize, cells \}\)/);
+  assert.match(sources.glyph, /buildGlyphPath\(\{ gridSize, cells \}, cellSize, cellSize \/ 2\)/);
   assert.match(sources.glyph, /fill="currentColor"/);
-  assert.match(sources.glyph, /shape-rendering="crispEdges"/);
+  assert.match(sources.glyph, /fill-rule="evenodd"/);
+  assert.match(sources.glyph, /shape-rendering="geometricPrecision"/);
   assert.match(sources.glyph, /aria-hidden=\{isLabelled \? undefined : "true"\}/);
   assert.match(sources.glyph, /cells must follow \$\{symmetry\} symmetry/);
+  assert.doesNotMatch(sources.glyph, /<rect/);
   assert.doesNotMatch(sources.glyph, /<script|animate|transition:/);
 });
 
@@ -176,7 +184,7 @@ test("section anatomy uses a two-to-four default and keeps explicit content widt
   );
   assert.match(
     sources.home,
-    /<SectionAnatomy title="What we build" titleId="build-title" contentWidth="75">/,
+    /<SectionAnatomy title="What we build" titleId="build-title">/,
   );
   assert.match(
     sources.marketing,
@@ -195,75 +203,48 @@ test("multi-column section headings stick within their row on desktop only", () 
 test("Home What we build renders the canonical data in original order", () => {
   assert.match(
     sources.home,
-    /import EditorialCard[\s\S]*?import EditorialCardLayer[\s\S]*?import \{ homeBuildItems \} from "@\/data\/home";[\s\S]*?<SectionAnatomy title="What we build" titleId="build-title" contentWidth="75">\s*<EditorialCardLayer colSize=\{1\}>[\s\S]*?homeBuildItems\.map\(\(item\) => \(\s*<EditorialCard[\s\S]*?title=\{item\.title\}[\s\S]*?text=\{item\.description\}[\s\S]*?glyph=\{item\.glyph\}/,
+    /import EditorialCard[\s\S]*?import EditorialCardLayer[\s\S]*?import \{ homeBuildItems \} from "@\/data\/home";[\s\S]*?<SectionAnatomy title="What we build" titleId="build-title">\s*<EditorialCardLayer colSize=\{1\}>[\s\S]*?homeBuildItems\.map\(\(item\) => \(\s*<EditorialCard[\s\S]*?title=\{item\.title\}[\s\S]*?text=\{item\.description\}[\s\S]*?glyph=\{item\.glyph\}/,
   );
 
-  assert.deepEqual(homeBuildItems, [
+  assert.deepEqual(
+    homeBuildItems.map(({ title, description }) => ({ title, description })),
+    [
     {
       title: "Agents that run whole workflows",
       description:
         "An agent takes a process end to end: onboarding checks, document review, preparing a case for a human decision. It works inside your systems, not next to them.",
-      glyph: {
-        symmetry: "diagonal",
-        cells: [
-          [0, 0],
-          [1, 0],
-          [0, 1],
-          [1, 1],
-          [2, 1],
-          [1, 2],
-          [2, 2],
-        ],
-      },
     },
     {
       title: "Documents and case files",
       description:
         "It reads contracts, statements and case files, pulls out the data and drafts the output. This is the work whole departments sit on today.",
-      glyph: {
-        symmetry: "vertical",
-        cells: [
-          [1, 0],
-          [2, 0],
-          [0, 1],
-          [1, 1],
-          [2, 1],
-          [3, 1],
-          [0, 2],
-          [3, 2],
-        ],
-      },
     },
     {
       title: "Data that sits unused",
       description:
         "Data your teams never had time to use becomes an answer in seconds, with a link back to the record it came from.",
-      glyph: {
-        symmetry: "rotational",
-        cells: [
-          [0, 0],
-          [1, 1],
-          [2, 1],
-          [1, 2],
-          [2, 2],
-          [3, 3],
-        ],
-      },
     },
-  ]);
-  for (const item of homeBuildItems) {
+    ],
+  );
+  assert.deepEqual(
+    homeBuildItems.map((item) => item.glyph),
+    homeBuildGlyphs,
+  );
+  assert.deepEqual(
+    homeBuildGlyphs.map(({ libraryId, cells }) => ({ libraryId, cells })),
+    ["cross-bridge", "parallel-rails", "dormant-data"].map((libraryId) => {
+      const source = glyphLibrary.find((glyph) => glyph.id === libraryId);
+      assert.ok(source);
+      return { libraryId, cells: source.cells };
+    }),
+  );
+  for (const { glyph, ...item } of homeBuildItems) {
     assert.equal("media" in item, false);
     assert.equal("href" in item, false);
-    assert.ok(item.glyph.cells.length >= 5 && item.glyph.cells.length <= 9);
-
-    const keys = new Set(item.glyph.cells.map(([column, row]) => `${column}:${row}`));
-    for (const [column, row] of item.glyph.cells) {
-      const mirrored = {
-        diagonal: [row, column],
-        vertical: [3 - column, row],
-        rotational: [3 - column, 3 - row],
-      }[item.glyph.symmetry];
-      assert.ok(keys.has(`${mirrored[0]}:${mirrored[1]}`));
+    assert.equal(glyph.gridSize, 5);
+    assert.doesNotThrow(() => assertGlyphPattern(glyph));
+    if (glyph.symmetry !== "none") {
+      assert.ok(hasGlyphSymmetry(glyph, glyph.symmetry));
     }
   }
 });
