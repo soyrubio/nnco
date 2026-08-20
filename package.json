@@ -10,8 +10,10 @@
   "scripts": {
     "dev": "astro dev",
     "build": "astro check && astro build",
+    "build:stage": "astro check && CLOUDFLARE_ENV=stage astro build",
     "check": "astro check",
     "deploy": "pnpm build && wrangler deploy",
+    "deploy:stage": "pnpm build:stage && wrangler deploy",
     "test": "node --experimental-strip-types --test tests/*.test.mjs",
     "preview": "astro preview"
   },

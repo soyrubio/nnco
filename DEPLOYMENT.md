@@ -64,6 +64,51 @@ and Cloudflare's local runtime; other dependency build scripts remain blocked.
 The Worker configuration sets `NODE_ENV=production`; secrets still belong in
 the Cloudflare dashboard and are not committed to the repository.
 
+### Authenticated stage deployment
+
+Stage uses the separate `nnco-stage` Wrangler environment and Worker. Build it
+with `CLOUDFLARE_ENV=stage` so Astro selects the stage entrypoint during its
+build phase:
+
+```text
+pnpm build:stage
+pnpm wrangler deploy
+```
+
+The equivalent one-shot command is `pnpm deploy:stage`. Production continues
+to use Astro's standard Cloudflare entrypoint and `pnpm deploy`; it does not
+contain the authentication gate.
+
+The stage entrypoint requires HTTP Basic Auth before delegating to Astro's
+Cloudflare handler. Its `assets.run_worker_first: true` setting sends every
+request through the gate before either a static asset or a server/API route can
+be served. Missing `BASIC_AUTH_USER` or `BASIC_AUTH_PASS` secrets fail closed
+with `503`; invalid or absent credentials receive the browser's `401` password
+challenge. Gate responses are non-cacheable and excluded from indexing. Use
+Basic Auth only through Cloudflare HTTPS.
+
+Configure these encrypted secrets on the `stage` Worker environment:
+
+```text
+pnpm wrangler secret put BASIC_AUTH_USER --env stage
+pnpm wrangler secret put BASIC_AUTH_PASS --env stage
+```
+
+The manual `Deploy stage` GitHub workflow builds with the stage environment and
+uploads both values from the GitHub `stage` environment before deployment. Add
+these GitHub environment secrets before its first run:
+
+```text
+CLOUDFLARE_API_TOKEN
+CLOUDFLARE_ACCOUNT_ID
+BASIC_AUTH_USER
+BASIC_AUTH_PASS
+```
+
+Stage needs its own copies of every other server secret used by the application
+(OpenAI, Supabase, signing and rate-limiting values). Wrangler environments do
+not inherit secrets from production.
+
 Recommended production values:
 
 ```dotenv
