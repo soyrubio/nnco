@@ -632,7 +632,7 @@ export function DiscoveryRelease() {
       >
         <form className={`discovery-question discovery-release-email discovery-step-motion is-${direction}`} onSubmit={submitDiagnostic}>
           <h1 ref={headingRef} tabIndex={-1}>Generate the two-page result.</h1>
-          <p>Enter a work email to unlock the report. NNCO may follow up once about this diagnostic.</p>
+          <p>Enter a work email to unlock the report. NNCo. may follow up once about this diagnostic.</p>
           <label className="discovery-release-field">
             <span>Work email</span>
             <input
@@ -646,7 +646,7 @@ export function DiscoveryRelease() {
             />
           </label>
           <p className="discovery-privacy">
-            By selecting Generate report, you ask NNCO to use your email and diagnostic to prepare this result and contact you once about it. The submitted record is normally deleted after 90 days. Answers are processed by OpenAI. Do not include personal, patient, customer or confidential case data. <a href="/privacy" target="_blank" rel="noreferrer">Privacy details</a>
+            By selecting Generate report, you ask NNCo. to use your email and diagnostic to prepare this result and contact you once about it. The submitted record is normally deleted after 90 days. Answers are processed by OpenAI. Do not include personal, patient, customer or confidential case data. <a href="/privacy" target="_blank" rel="noreferrer">Privacy details</a>
           </p>
           {analysisError ? <p className="discovery-notice" role="alert">{analysisError}</p> : null}
           <div className="discovery-actions">
@@ -754,13 +754,13 @@ function DiscoveryReleaseReportView({
           <button type="button" onClick={() => window.print()}>
             Download PDF <BlockArrow direction="down" />
           </button>
-          <a className="discovery-release-review-link" href="/contact">Review with NNCO</a>
+          <a className="discovery-release-review-link" href="/contact">Review with NNCo.</a>
           {mode === "rules" ? <span className="discovery-release-local-note">Local rules preview</span> : null}
         </div>
       </header>
       <div className="discovery-report-pages">
         <article className="discovery-report-page" aria-label="Report page 1">
-          <header><span>NNCO</span><span>Workflow diagnostic</span></header>
+          <header><span>NNCo.</span><span>Workflow diagnostic</span></header>
           <div className="discovery-report-title">
             <span>What we understood</span>
             <h1 ref={reportHeadingRef} tabIndex={-1}>{report.title}</h1>
@@ -793,11 +793,11 @@ function DiscoveryReleaseReportView({
               </li>
             ))}
           </ol>
-          <footer><span>Prepared by NNCO. Not a formal assessment.</span><span>1 / 2</span></footer>
+          <footer><span>Prepared by NNCo. Not a formal assessment.</span><span>1 / 2</span></footer>
         </article>
 
         <article className="discovery-report-page discovery-report-page--final" aria-label="Report page 2">
-          <header><span>NNCO</span><span>Where to act</span></header>
+          <header><span>NNCo.</span><span>Where to act</span></header>
           <div className="discovery-report-title discovery-report-title--compact">
             <span>Where to act</span>
             <h2>Start with one bounded intervention.</h2>
@@ -844,7 +844,7 @@ function DiscoveryReleaseReportView({
               <p>No defensible public comparison was found in the available sources.</p>
             </section>
           ) : null}
-          <footer><span>Review this diagnostic with NNCO at nnco.ai/contact</span><span>2 / 2</span></footer>
+          <footer><span>Review this diagnostic with NNCo. at nnco.ai/contact</span><span>2 / 2</span></footer>
         </article>
       </div>
     </main>

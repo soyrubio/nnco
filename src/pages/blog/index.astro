@@ -15,7 +15,7 @@ const posts = (await getBlogEntries()).map(toBlogPostListItem);
 ---
 
 <BaseLayout
-  title="Blog: putting AI into production | NNCO"
+  title="Blog: putting AI into production | NNCo."
   description="How AI systems actually reach production inside large institutions. Field notes, system explanations and working principles from the people building them."
   canonicalPath="/blog"
 >
@@ -27,8 +27,13 @@ const posts = (await getBlogEntries()).map(toBlogPostListItem);
     />
 
     <SectionFrame labelledBy="featured-blog-title" class="news-feed">
-      <SectionAnatomy title="Latest from NNCO" titleId="featured-blog-title">
-        <BlogPostList posts={posts} />
+      <SectionAnatomy title="Latest from NNCo." titleId="featured-blog-title">
+        <BlogPostList
+          posts={posts}
+          variant="load-more"
+          initialCount={10}
+          batchSize={10}
+        />
       </SectionAnatomy>
     </SectionFrame>
 

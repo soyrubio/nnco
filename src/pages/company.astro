@@ -12,7 +12,7 @@ import PageHero from "@/components/PageHero.astro";
 import SectionAnatomy from "@/components/SectionAnatomy.astro";
 import SectionFrame from "@/components/SectionFrame.astro";
 import { faqByPage } from "@/data/faq";
-import { homeBuildItems } from "@/data/home";
+import { cardGlyphSets } from "@/data/glyphs";
 import { team, waysOfWorking } from "@/data/site";
 import { buildFaqSchema } from "@/lib/schema";
 
@@ -23,8 +23,8 @@ const faqSchema = buildFaqSchema(faq, "/company");
 ---
 
 <BaseLayout
-  title="Company: who we are and how we work | NNCO"
-  description="NNCO is an AI consulting and development company. The people behind it have built, sold and operated software and regulated fintech businesses before starting it."
+  title="Company: who we are and how we work | NNCo."
+  description="NNCo. is an AI consulting and development company. The people behind it have built, sold and operated software and regulated fintech businesses before starting it."
   canonicalPath="/company"
   schemas={[faqSchema]}
 >
@@ -32,23 +32,29 @@ const faqSchema = buildFaqSchema(faq, "/company");
   <main class="editorial-page">
     <PageHero title="Company" />
 
+    <SectionFrame>
+      <div class="company-about__lead-section">
+        <span class="section-anatomy__rule" aria-hidden="true"></span>
+        <p class="company-about__lead">
+          Large institutions have no shortage of AI pilots. The challenge is
+          getting them <span class="company-about__highlight" style="--highlight-index: 0"><span>into production</span></span>.
+          A workshop identifies a use case, and an agency proves that it can
+          work. Then the difficult part begins. Production requires integration
+          with <span class="company-about__highlight" style="--highlight-index: 1"><span>existing systems</span></span>,
+          controls that keep <span class="company-about__highlight" style="--highlight-index: 2"><span>restricted
+            data</span></span> where it belongs, <span
+            class="company-about__highlight" style="--highlight-index: 3"><span>evidence</span></span> the organisation can
+          rely on and <span class="company-about__highlight" style="--highlight-index: 4"><span>clear ownership</span></span>
+          after launch. A working model is not enough. It also has to work inside
+          the institution.
+        </p>
+      </div>
+    </SectionFrame>
+
     <SectionFrame labelledBy="why-title">
       <SectionAnatomy title="Implementation gap" titleId="why-title">
-        <p class="company-about__lead">
-          Large institutions have been running AI pilots for two years. Very
-          few of them run anything in production. The pattern is consistent
-          enough to be boring: a workshop picks a use case, an agency builds
-          a convincing demonstration, and then the project meets the systems
-          it would have to integrate with, the data it is not allowed to
-          move, the evidence somebody has to be able to produce afterwards,
-          and the question of who owns it once the agency leaves. The
-          demonstration was never wrong. It was just the easy tenth of the
-          work.
-        </p>
-      </SectionAnatomy>
-      <div class="company-about__panel">
-        <div class="company-about__panel-copy">
-          <p>
+        <div class="company-about__supporting">
+          <p class="editorial-section__body">
             That gap is an implementation problem, and it looks exactly like
             the problems we spent the last decade solving: integrating with
             systems nobody wants to touch, shipping into an environment with
@@ -58,25 +64,42 @@ const faqSchema = buildFaqSchema(faq, "/company");
             in security audits where being approximately right is the same as
             being wrong.
           </p>
-          <p>
-            So NNCO does the whole arc. We find where AI is worth building, we
+          <p class="editorial-section__body">
+            So NNCo. does the whole arc. We find where AI is worth building, we
             build it, we deploy it inside your constraints, and we run it after
             launch. Strategy without deployment is a document. Deployment
             without an understanding of the rules is a pilot that gets stopped.
           </p>
         </div>
-        <div class="company-about__panel-glyph" aria-hidden="true">
-          <img
-            class="company-implementation-glyph"
-            src="/assets/company-implementation-glyph.svg"
-            alt=""
-            width="1100"
-            height="1100"
-            loading="lazy"
-            decoding="async"
-          />
+      </SectionAnatomy>
+    </SectionFrame>
+
+    <SectionFrame id="team" labelledBy="team-title" class="team-section">
+      <SectionAnatomy title="Meet the team" titleId="team-title">
+        <div class="team-grid team-grid--detailed">
+          {
+            team.map((person) => (
+              <article class="team-card">
+                <div class="team-card__portrait">
+                  <img
+                    src={person.image}
+                    alt={`Portrait of ${person.name}`}
+                    width="1254"
+                    height="1254"
+                    loading="lazy"
+                    decoding="async"
+                  />
+                </div>
+                <div class="team-card__content">
+                  <h3>{person.name}</h3>
+                  <p class="team-grid__role">{person.role}</p>
+                  <p>{person.bio}</p>
+                </div>
+              </article>
+            ))
+          }
         </div>
-      </div>
+      </SectionAnatomy>
     </SectionFrame>
 
     <SectionFrame labelledBy="position-title" class="editorial-section">
@@ -99,32 +122,11 @@ const faqSchema = buildFaqSchema(faq, "/company");
               <EditorialCard
                 title={item.title}
                 text={item.description}
-                glyph={homeBuildItems[index % homeBuildItems.length].glyph}
+                glyph={cardGlyphSets.companyWaysOfWorking[index]}
               />
             ))
           }
         </EditorialCardLayer>
-      </SectionAnatomy>
-    </SectionFrame>
-
-    <SectionFrame id="team" labelledBy="team-title" class="team-section">
-      <SectionAnatomy title="Team" titleId="team-title">
-        <p class="editorial-section__body">
-          We have built products together before, which is the difference
-          between a team and a group of contractors. Everyone listed here works
-          on client engagements.
-        </p>
-        <div class="team-grid team-grid--detailed">
-          {
-            team.map((person) => (
-              <article>
-                <h3>{person.name}</h3>
-                <p class="team-grid__role">{person.role}</p>
-                <p>{person.bio}</p>
-              </article>
-            ))
-          }
-        </div>
       </SectionAnatomy>
     </SectionFrame>
 
@@ -167,4 +169,44 @@ const faqSchema = buildFaqSchema(faq, "/company");
     />
   </main>
   <Footer />
+  <script>
+    const companyThesis = document.querySelector<HTMLElement>(
+      ".company-about__lead",
+    );
+
+    if (companyThesis) {
+      const reducedMotion = window.matchMedia(
+        "(prefers-reduced-motion: reduce)",
+      );
+
+      if (!reducedMotion.matches) {
+        const highlightObserver = new IntersectionObserver(
+          ([entry]) => {
+            if (!entry.isIntersecting) return;
+            companyThesis.classList.add("is-highlight-visible");
+            highlightObserver.disconnect();
+          },
+          { threshold: 0.3 },
+        );
+
+        const observeHighlights = () => {
+          highlightObserver.observe(companyThesis);
+        };
+
+        if (document.querySelector("[data-page-loader]")) {
+          window.addEventListener("nnco:page-ready", observeHighlights, {
+            once: true,
+          });
+        } else {
+          observeHighlights();
+        }
+
+        document.addEventListener(
+          "astro:before-swap",
+          () => highlightObserver.disconnect(),
+          { once: true },
+        );
+      }
+    }
+  </script>
 </BaseLayout>

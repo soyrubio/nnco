@@ -25,4 +25,14 @@ export default defineConfig({
     }),
   ],
   output: "server",
+  vite: {
+    // Pre-bundle late Astro and renderer imports before workerd starts.
+    // Remove once the fix for withastro/astro#17456 reaches the pinned release.
+    optimizeDeps: {
+      // @astrojs/react only contributes its SSR dependency list when this is
+      // explicit, preventing mid-request discovery of the JSX runtimes.
+      noDiscovery: false,
+      include: ["astro/assets/services/noop", "astro/logger/json"],
+    },
+  },
 });

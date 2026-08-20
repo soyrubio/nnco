@@ -33,7 +33,7 @@ test("contact fields compose reusable labelled Astro controls", () => {
   assert.doesNotMatch(sources.checkbox, /<label[^>]*>[\s\S]*?<slot \/>[\s\S]*?<\/label>/);
   assert.match(
     sources.contact,
-    /<FormCheckbox\s+id="contact-consent"[\s\S]*?<Fragment slot="label">I agree that NNCO may use these details to respond to my enquiry\.<\/Fragment>\s*<a href="\/privacy">Privacy<\/a>/,
+    /<FormCheckbox\s+id="contact-consent"[\s\S]*?<Fragment slot="label">I agree that NNCo\. may use these details to respond to my enquiry\.<\/Fragment>\s*<a href="\/privacy">Privacy<\/a>/,
   );
 
   for (const name of ["name", "email", "institution", "sector", "area", "message"]) {
@@ -43,6 +43,18 @@ test("contact fields compose reusable labelled Astro controls", () => {
   assert.match(sources.contact, /type="email"[\s\S]*?autocomplete="email"[\s\S]*?inputmode="email"/);
   assert.match(sources.contact, /autocomplete="organization"/);
   assert.match(sources.contact, /<textarea[\s\S]*?rows="6"[\s\S]*?required/);
+  assert.match(
+    sources.contact,
+    /<Button type="submit">\s*<span data-submit-label>Send<\/span> <BlockArrow \/>\s*<\/Button>/,
+  );
+  assert.match(
+    sources.contact,
+    /const submitLabel = submit\?\.querySelector<HTMLElement>\("\[data-submit-label\]"\);[\s\S]*?submitLabel\.textContent = "Send";[\s\S]*?submitLabel\.textContent = "Sending\.";/,
+  );
+  assert.doesNotMatch(
+    sources.contact,
+    /submit\.textContent = "(?:Send|Sending\.)"/,
+  );
 });
 
 test("terminal contact form has no outer box and native controls use one bottom rule", () => {

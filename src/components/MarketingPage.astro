@@ -9,7 +9,6 @@ import FaqSection from "./FaqSection.astro";
 import Footer from "./Footer.astro";
 import Header from "./Header.astro";
 import PageHero from "./PageHero.astro";
-import PrivateAiBoundary from "./PrivateAiBoundary.astro";
 import SectionAnatomy from "./SectionAnatomy.astro";
 import SectionFrame from "./SectionFrame.astro";
 import type { LinkAction } from "./types";
@@ -26,9 +25,7 @@ interface Props {
 
 const { page, industry = false } = Astro.props;
 const faq = faqByPage[page.faqKey];
-const usesPrivateAiPlate = page.path === "/ai-first-enterprise/private-ai";
-const visibleSections = usesPrivateAiPlate ? page.sections.slice(1) : page.sections;
-const sectionOffset = usesPrivateAiPlate ? 1 : 0;
+const isDarkPage = page.tone === "dark";
 const heroActions: LinkAction[] = [];
 if (page.primaryAction) {
   heroActions.push({ ...page.primaryAction, variant: "primary" });
@@ -82,44 +79,57 @@ const schemas = [serviceSchema, faqSchema, breadcrumbSchema].filter(
   description={page.metaDescription}
   canonicalPath={page.path}
   schemas={schemas}
+  tone={page.tone}
 >
-  <Header />
-  <main class="editorial-page">
+  <Header overHero={isDarkPage} />
+  <main
+    class:list={["editorial-page", isDarkPage && "editorial-page--dark"]}
+    data-header-tone={isDarkPage ? "dark" : undefined}
+  >
     <PageHero
       title={page.title}
       introduction={page.introduction}
       actions={heroActions}
+      class={isDarkPage ? "editorial-hero--dark" : undefined}
     />
 
     {
-      usesPrivateAiPlate && (
-        <SectionFrame tone="dark" labelledBy="private-ai-overview" class="private-ai-section">
-          <SectionAnatomy title={page.sections[0].title} titleId="private-ai-overview">
-            <div class="infrastructure-plate">
-              <div class="infrastructure-plate__content">
-                <div class="infrastructure-plate__copy">
-                  {page.sections[0].paragraphs?.map((paragraph) => <p>{paragraph}</p>)}
-                </div>
-              </div>
-              <PrivateAiBoundary />
-            </div>
-          </SectionAnatomy>
-        </SectionFrame>
-      )
-    }
+      page.sections.map((section, index) => {
+        const titleId = `section-${index + 1}`;
+        const contentWidth = section.contentWidth
+          ?? (section.render === "ways-of-working" ? "50" : undefined);
 
-    {
-      visibleSections.map((section, index) => {
-        const titleId = `section-${index + 1 + sectionOffset}`;
+        if (section.render === "highlighted-lead") {
+          return (
+            <SectionFrame
+              tone={page.tone}
+              ariaLabel={section.title}
+              class="private-ai-lead-section"
+            >
+              <div class="private-ai-lead">
+                <span class="section-anatomy__rule" aria-hidden="true"></span>
+                <p class="private-ai-lead__copy">
+                  {section.lead?.map((segment) => (
+                    segment.highlight
+                      ? <span class="private-ai-lead__highlight">{segment.text}</span>
+                      : segment.text
+                  ))}
+                </p>
+              </div>
+            </SectionFrame>
+          );
+        }
+
         return (
           <SectionFrame
+            tone={page.tone}
             labelledBy={titleId}
             class="editorial-section"
           >
             <SectionAnatomy
               title={section.title}
               titleId={titleId}
-              contentWidth={section.render === "ways-of-working" ? "50" : undefined}
+              contentWidth={contentWidth}
             >
               {section.paragraphs?.map((paragraph) => (
                 <p class="editorial-section__body">{paragraph}</p>
@@ -128,7 +138,13 @@ const schemas = [serviceSchema, faqSchema, breadcrumbSchema].filter(
                 <ExpandedDetailList items={waysOfWorking} />
               )}
               {section.groups && (
-                <div class="editorial-group-grid">
+                <div
+                  class:list={[
+                    "editorial-group-grid",
+                    section.groupLayout === "stacked-numbered"
+                      && "editorial-group-grid--stacked-numbered",
+                  ]}
+                >
                   {section.groups.map((group) => (
                     <div class="editorial-group">
                       <h3>{group.title}</h3>
@@ -141,13 +157,17 @@ const schemas = [serviceSchema, faqSchema, breadcrumbSchema].filter(
               )}
               {section.items && (
                 <EditorialCardLayer
-                  colSize={section.items.length === 2 || section.items.length === 4 ? 2 : 3}
+                  colSize={section.cards?.columns
+                    ?? (section.items.length === 2 || section.items.length === 4 ? 2 : 3)}
+                  surface={section.cards?.surface}
+                  class={section.cards?.className}
                 >
-                  {section.items.map((item) => (
+                  {section.items.map((item, itemIndex) => (
                     <EditorialCard
                       title={item.title}
                       text={item.text}
                       href={item.href}
+                      glyph={section.cards?.glyphs?.[itemIndex]}
                     />
                   ))}
                 </EditorialCardLayer>
@@ -174,5 +194,5 @@ const schemas = [serviceSchema, faqSchema, breadcrumbSchema].filter(
       actions={[{ href: "/contact", label: "Book a 30-minute call" }]}
     />
   </main>
-  <Footer />
+  <Footer tone={page.tone} />
 </BaseLayout>

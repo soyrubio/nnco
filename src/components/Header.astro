@@ -222,10 +222,87 @@ if (isDiscovery) headerMode = "discovery";
     mobileNavigation.addEventListener("change", () => closeNavigation());
   };
 
+  const initialiseHeaderTone = (header: HTMLElement) => {
+    if (
+      header.dataset.headerToneReady === "true" ||
+      header.dataset.siteHeader === "discovery"
+    ) {
+      return;
+    }
+
+    header.dataset.headerToneReady = "true";
+    const darkSections = Array.from(
+      document.querySelectorAll<HTMLElement>('[data-header-tone="dark"]'),
+    );
+    let darkSectionObserver: IntersectionObserver | undefined;
+
+    const observeDarkSections = () => {
+      darkSectionObserver?.disconnect();
+
+      if (darkSections.length === 0) {
+        header.classList.remove("is-over-dark");
+        return;
+      }
+
+      const activeDarkSections = new Set<Element>();
+      const headerHeight = Math.max(
+        1,
+        Math.min(header.offsetHeight, window.innerHeight),
+      );
+      const bottomInset = Math.max(0, window.innerHeight - headerHeight);
+
+      darkSections.forEach((section) => {
+        const bounds = section.getBoundingClientRect();
+        if (bounds.top < headerHeight && bounds.bottom > 0) {
+          activeDarkSections.add(section);
+        }
+      });
+      header.classList.toggle("is-over-dark", activeDarkSections.size > 0);
+
+      const observer = new IntersectionObserver(
+        (entries) => {
+          if (observer !== darkSectionObserver) return;
+
+          entries.forEach((entry) => {
+            if (entry.isIntersecting) {
+              activeDarkSections.add(entry.target);
+            } else {
+              activeDarkSections.delete(entry.target);
+            }
+          });
+          header.classList.toggle("is-over-dark", activeDarkSections.size > 0);
+        },
+        {
+          rootMargin: `0px 0px -${bottomInset}px 0px`,
+          threshold: 0,
+        },
+      );
+
+      darkSectionObserver = observer;
+      darkSections.forEach((section) => observer.observe(section));
+    };
+
+    observeDarkSections();
+    const headerResizeObserver = new ResizeObserver(observeDarkSections);
+    headerResizeObserver.observe(header);
+
+    document.addEventListener(
+      "astro:before-swap",
+      () => {
+        darkSectionObserver?.disconnect();
+        headerResizeObserver.disconnect();
+      },
+      { once: true },
+    );
+  };
+
   const initialiseHeaders = () => {
     document
       .querySelectorAll<HTMLElement>("[data-site-header]")
-      .forEach(initialiseHeaderNavigation);
+      .forEach((header) => {
+        initialiseHeaderNavigation(header);
+        initialiseHeaderTone(header);
+      });
   };
 
   initialiseHeaders();

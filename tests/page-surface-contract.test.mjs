@@ -88,7 +88,7 @@ test("Company confidentiality composes the standard full-width dark section", ()
   assert.doesNotMatch(sources.company, /DarkNarrativePanel|dark-narrative-panel/);
   assert.match(
     sources.styles,
-    /\.section-frame--dark \.editorial-section__body\s*\{\s*color:\s*inherit;/s,
+    /\.section-frame--dark \.editorial-section__body\s*\{\s*color:\s*var\(--dark-body\);/s,
   );
 });
 
@@ -115,7 +115,7 @@ test("shared marketing pages end with FAQ then terminal ClosingSection", () => {
   assert.doesNotMatch(sources.marketing, /index\s*%\s*3|tone="surface"/);
   assert.match(
     sources.marketing,
-    /<FaqSection items=\{faq\} \/>\s*<ClosingSection[\s\S]*?<\/main>\s*<Footer \/>/,
+    /<FaqSection items=\{faq\} \/>\s*<ClosingSection[\s\S]*?<\/main>\s*<Footer tone=\{page\.tone\} \/>/,
   );
 });
 

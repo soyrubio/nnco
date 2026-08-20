@@ -20,7 +20,7 @@ test("contact hero omits the removed introduction only", () => {
 test("direct contacts keep their copy in one ordered right-column stack", () => {
   assert.match(
     contactSource,
-    /<SectionAnatomy title="Direct"[^>]*>[\s\S]*?<div class="alternate-contact-grid__row">\s*<h3>General<\/h3>\s*<div class="alternate-contact-grid__details">\s*<a class="alternate-contact-grid__email" href="mailto:general@nnco\.ai">general@nnco\.ai<\/a>[\s\S]*?<hr class="alternate-contact-grid__separator" \/>[\s\S]*?<div class="alternate-contact-grid__row">\s*<h3>Security<\/h3>\s*<div class="alternate-contact-grid__details">\s*<a class="alternate-contact-grid__email" href="mailto:security@nnco\.ai">security@nnco\.ai<\/a>\s*<p>\s*Vulnerability reports and security questions\. See our[\s\S]*?href="\/security">disclosure policy<\/a>\.[\s\S]*?<hr class="alternate-contact-grid__separator" \/>\s*<div class="alternate-contact-grid__row">\s*<h3>Mutual NDA<\/h3>[\s\S]*?We can sign a mutual NDA before the first call\.[\s\S]*?<Button href="mailto:general@nnco\.ai\?subject=NDA" variant="secondary">Request an NDA<\/Button>/,
+    /<SectionAnatomy title="Direct"[^>]*>[\s\S]*?<div class="alternate-contact-grid__row">\s*<h3>General<\/h3>\s*<div class="alternate-contact-grid__details">\s*<a class="alternate-contact-grid__email" href="mailto:general@nnco\.ai">general@nnco\.ai<\/a>[\s\S]*?<hr class="alternate-contact-grid__separator" \/>[\s\S]*?<div class="alternate-contact-grid__row">\s*<h3>Security<\/h3>\s*<div class="alternate-contact-grid__details">\s*<a class="alternate-contact-grid__email" href="mailto:security@nnco\.ai">security@nnco\.ai<\/a>\s*<p>\s*Vulnerability reports and security questions\. See our[\s\S]*?href="\/security">disclosure policy<\/a>\.[\s\S]*?<hr class="alternate-contact-grid__separator" \/>\s*<div class="alternate-contact-grid__row">\s*<h3>Mutual NDA<\/h3>[\s\S]*?We can sign a mutual NDA before the first call\.[\s\S]*?<Button href="mailto:general@nnco\.ai\?subject=NDA" variant="secondary">[\s\S]*?Request an NDA <BlockArrow \/>[\s\S]*?<\/Button>/,
   );
   assert.equal(contactSource.match(/<div class="alternate-contact-grid__row">/g)?.length, 3);
   assert.doesNotMatch(
@@ -29,7 +29,11 @@ test("direct contacts keep their copy in one ordered right-column stack", () => 
   );
   assert.match(
     stylesSource,
-    /--content-rule-thickness:\s*2\.5px;/,
+    /--fine-rule-thickness:\s*1px;/,
+  );
+  assert.match(
+    stylesSource,
+    /--content-rule-thickness:\s*var\(--fine-rule-thickness\);/,
   );
   assert.match(
     stylesSource,
@@ -46,6 +50,10 @@ test("direct contacts keep their copy in one ordered right-column stack", () => 
   assert.match(
     stylesSource,
     /\.alternate-contact-grid a\.alternate-contact-grid__email,\s*\.alternate-contact-grid\s+a\.alternate-contact-grid__email:is\(:hover, :focus-visible\)\s*\{[^}]*color:\s*var\(--ink-soft\);[^}]*font-size:\s*1\.25rem;[^}]*text-decoration:\s*none;/s,
+  );
+  assert.match(
+    stylesSource,
+    /\.contact-form__consent a,\s*\.alternate-contact-grid a:not\(\.button\)\s*\{[^}]*text-decoration:\s*underline;/s,
   );
   assert.match(
     stylesSource,

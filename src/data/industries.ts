@@ -1,9 +1,10 @@
 import type { MarketingPageData } from "./programme";
+import { cardGlyphSets } from "./glyphs.ts";
 
 export const industries = {
   banking: {
     path: "/banking",
-    metaTitle: "AI for banks: KYC, monitoring, reporting | NNCO",
+    metaTitle: "AI for banks: KYC, monitoring, reporting | NNCo.",
     metaDescription:
       "AI systems for onboarding and KYC, periodic review, transaction monitoring triage, credit files and regulatory reporting. Built to run inside supervisory constraints and to be evidenced.",
     title: "Banking",
@@ -50,6 +51,10 @@ export const industries = {
             text: "Staff ask a question in the way they would ask a colleague and get an answer from your current policy, with the clause and version attached. This removes the most common source of inconsistent answers to customers.",
           },
         ],
+        cards: {
+          columns: 1,
+          glyphs: cardGlyphSets.bankingWorkloads,
+        },
       },
       {
         title: "Design constraints",
@@ -75,6 +80,10 @@ export const industries = {
             text: "Systems are built so that a supervisor's question about a specific case can be answered with the record, not with a description of the process.",
           },
         ],
+        cards: {
+          columns: 2,
+          surface: "bordered",
+        },
       },
       {
         title: "Decision authority",
@@ -117,7 +126,7 @@ export const industries = {
   },
   insurance: {
     path: "/insurance",
-    metaTitle: "AI for insurers: claims and underwriting | NNCO",
+    metaTitle: "AI for insurers: claims and underwriting | NNCo.",
     metaDescription:
       "AI systems for claims intake and review, underwriting support, fraud investigation and policy correspondence. The file arrives prepared; the decision stays with your people.",
     title: "Insurance",
@@ -164,6 +173,10 @@ export const industries = {
             text: "Submissions arriving in a hundred different formats are normalised into one structure, with the gaps identified before they reach a queue.",
           },
         ],
+        cards: {
+          columns: 2,
+          glyphs: cardGlyphSets.insuranceWorkloads,
+        },
       },
       {
         title: "Design constraints",
@@ -185,6 +198,10 @@ export const industries = {
             text: "Customer-facing outputs stay within approved wording and remain attributable to a person.",
           },
         ],
+        cards: {
+          columns: 2,
+          surface: "bordered",
+        },
       },
       {
         title: "Coverage and pricing authority",
@@ -227,7 +244,7 @@ export const industries = {
   },
   healthcare: {
     path: "/healthcare",
-    metaTitle: "AI for healthcare operations and admin | NNCO",
+    metaTitle: "AI for healthcare operations and admin | NNCo.",
     metaDescription:
       "AI for administrative and operational healthcare workflows: intake and scheduling admin, documentation routing, billing preparation, capacity reporting and internal knowledge. Clinical decisions stay with clinicians.",
     title: "Healthcare",
@@ -280,6 +297,10 @@ export const industries = {
             text: "Staff ask a question in plain language and get an answer from your current internal procedures, with the document and version attached. This replaces the search that ends in asking a colleague.",
           },
         ],
+        cards: {
+          columns: 1,
+          glyphs: cardGlyphSets.healthcareWorkloads,
+        },
       },
       {
         title: "Design constraints",
@@ -301,6 +322,10 @@ export const industries = {
             text: "Access follows the same rules as the underlying record system. A user sees in the AI exactly what they may see in the source system.",
           },
         ],
+        cards: {
+          columns: 2,
+          surface: "bordered",
+        },
       },
       {
         title: "Clinical boundary",
@@ -343,7 +368,7 @@ export const industries = {
   },
   capitalMarkets: {
     path: "/capital-markets",
-    metaTitle: "AI for asset managers and funds | NNCO",
+    metaTitle: "AI for asset managers and funds | NNCo.",
     metaDescription:
       "AI for fund and investor reporting, due diligence document review, DDQ and RFP responses, compliance monitoring and portfolio data extraction. Every figure traceable to its source.",
     title: "Capital markets and asset management",
@@ -390,6 +415,10 @@ export const industries = {
             text: "Fund terms, side letters, policies and prior correspondence become searchable in the way people actually ask, with the clause and version attached.",
           },
         ],
+        cards: {
+          columns: 1,
+          glyphs: cardGlyphSets.capitalMarketsWorkloads,
+        },
       },
       {
         title: "Design constraints",
@@ -411,6 +440,10 @@ export const industries = {
             text: "Access follows your existing information barriers. Deal and portfolio data is segregated at the retrieval layer, not just at the interface.",
           },
         ],
+        cards: {
+          columns: 2,
+          surface: "bordered",
+        },
       },
       {
         title: "Investment authority",

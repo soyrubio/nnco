@@ -47,11 +47,15 @@ test("disclosure chevrons hard-switch glyphs through native open state", () => {
   );
 });
 
-test("FAQ and Contact separators share one opaque black thickness contract", () => {
-  assert.match(sources.styles, /--content-rule-thickness:\s*2\.5px;/);
+test("FAQ and Contact separators share one opaque thickness contract", () => {
+  assert.match(sources.styles, /--fine-rule-thickness:\s*1px;/);
+  assert.match(
+    sources.styles,
+    /--content-rule-thickness:\s*var\(--fine-rule-thickness\);/,
+  );
   assert.match(
     sources.faq,
-    /\.faq-list details \+ details\s*\{\s*border-top:\s*var\(--content-rule-thickness\) solid var\(--ink\);/s,
+    /\.faq-list details \+ details\s*\{\s*border-top:\s*var\(--content-rule-thickness\) solid currentColor;/s,
   );
   assert.doesNotMatch(sources.faq, /border-color:\s*rgba/);
   assert.match(

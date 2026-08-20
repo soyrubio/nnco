@@ -34,6 +34,17 @@ OPENAI_API_BASE_URL=https://api.openai.com
 Local mode stores idempotent lead requests in process memory. It requires no
 secret and is disabled when `NODE_ENV=production`.
 
+Local development uses the Cloudflare adapter's `workerd` runtime so server
+routes behave like their deployed Worker equivalents. The Vite configuration
+explicitly enables dependency discovery so renderer integrations contribute
+their complete server dependency lists, and pre-bundles the remaining late
+Astro imports `astro/assets/services/noop` and `astro/logger/json` before
+workerd starts. This is the scoped workaround for the upstream Astro SSR
+dependency optimizer race tracked in `withastro/astro#17456`; do not replace it
+with broad Astro exclusions or a separate Node-only development adapter. After
+the upstream fix reaches the pinned Astro release, remove the workaround and
+its focused regression test together.
+
 Contact enquiries and submitted diagnostics use the same repository and the
 same `lead_requests` table. Contact records are distinguished by the
 `contact-enquiry` snapshot kind.

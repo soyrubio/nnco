@@ -94,7 +94,7 @@ test("desktop dropdown palette follows the header tone", () => {
   assert.match(stylesSource, /--nav-dropdown-surface:\s*var\(--paper\);/);
   assert.match(
     stylesSource,
-    /\.site-header--over-hero:not\(\.is-scrolled\),\s*\.site-header--over-hero\.is-over-dark\s*\{[^}]*--nav-dropdown-surface:\s*var\(--ink\);/s,
+    /\.site-header--over-hero:not\(\.is-scrolled\),\s*\.site-header\.is-over-dark\s*\{[^}]*--nav-dropdown-surface:\s*var\(--ink\);/s,
   );
   assert.match(
     stylesSource,

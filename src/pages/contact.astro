@@ -1,5 +1,6 @@
 ---
 import BaseLayout from "@/layouts/BaseLayout.astro";
+import BlockArrow from "@/components/BlockArrow.astro";
 import Button from "@/components/Button.astro";
 import ContactForm from "@/components/ContactForm.astro";
 import FaqSection from "@/components/FaqSection.astro";
@@ -19,7 +20,7 @@ const faqSchema = buildFaqSchema(faq, "/contact");
 ---
 
 <BaseLayout
-  title="Book a 30-minute call | NNCO"
+  title="Book a 30-minute call | NNCo."
   description="Tell us which workflow, data boundary or regulatory constraint you are working through. Thirty minutes, no slides, NDA ready before the call if you want one."
   canonicalPath="/contact"
   schemas={[faqSchema]}
@@ -58,7 +59,9 @@ const faqSchema = buildFaqSchema(faq, "/contact");
                 from the start.
               </p>
               <div class="editorial-links">
-                <Button href="mailto:general@nnco.ai?subject=NDA" variant="secondary">Request an NDA</Button>
+                <Button href="mailto:general@nnco.ai?subject=NDA" variant="secondary">
+                  Request an NDA <BlockArrow />
+                </Button>
               </div>
             </div>
           </div>

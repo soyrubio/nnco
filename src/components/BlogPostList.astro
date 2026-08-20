@@ -5,26 +5,113 @@ import type { BlogPostListItem } from "@/lib/blog";
 interface Props {
   posts: readonly BlogPostListItem[];
   ariaLabel?: string;
+  variant?: "latest" | "load-more";
+  initialCount?: number;
+  batchSize?: number;
 }
 
-const { posts, ariaLabel = "NNCO blog posts" } = Astro.props;
+const {
+  posts,
+  ariaLabel = "NNCo. blog posts",
+  variant = "latest",
+  initialCount = posts.length,
+  batchSize = initialCount,
+} = Astro.props;
+const visiblePostCount = Math.max(1, Math.floor(initialCount));
+const revealBatchSize = Math.max(1, Math.floor(batchSize));
+const hasMorePosts = variant === "load-more" && posts.length > visiblePostCount;
 ---
 
-<ul class="news-list" aria-label={ariaLabel}>
+<ul
+  class:list={["news-list", `news-list--${variant}`]}
+  aria-label={ariaLabel}
+  data-blog-list={variant}
+  data-blog-batch-size={revealBatchSize}
+>
   {
-    posts.map((post) => (
-      <li>
+    posts.map((post, index) => (
+      <li
+        data-blog-post
+        data-blog-post-visible={
+          variant !== "load-more" || index < visiblePostCount ? "true" : "false"
+        }
+      >
         <a class="news-row" href={`/blog/${post.slug}`}>
           <div class="news-row__content">
             <h3>{post.title}</h3>
             <p>{post.summary}</p>
+            <time class="news-row__date" datetime={post.publishedAt}>
+              {post.publishedLabel}
+            </time>
           </div>
-          <time class="news-row__date" datetime={post.publishedAt}>
-            {post.publishedLabel}
-          </time>
           <CardAffordance />
         </a>
       </li>
     ))
   }
+  {
+    hasMorePosts && (
+      <li
+        class="news-list__action news-list__action--load-more"
+        data-blog-load-more-item
+      >
+        <button class="news-row news-row--action" type="button" data-blog-load-more>
+          <span>See more posts</span>
+        </button>
+      </li>
+    )
+  }
+  {
+    variant === "latest" && (
+      <li class="news-list__action">
+        <a class="news-row news-row--action" href="/blog">
+          <span>See the blog</span>
+        </a>
+      </li>
+    )
+  }
 </ul>
+
+<script>
+  const initialiseBlogLists = () => {
+    document
+      .querySelectorAll<HTMLElement>('[data-blog-list="load-more"]')
+      .forEach((list) => {
+        if (list.dataset.blogListReady === "true") return;
+        list.dataset.blogListReady = "true";
+
+        const posts = Array.from(
+          list.querySelectorAll<HTMLElement>("[data-blog-post]"),
+        );
+        const loadMore = list.querySelector<HTMLButtonElement>(
+          "[data-blog-load-more]",
+        );
+        const loadMoreItem = list.querySelector<HTMLElement>(
+          "[data-blog-load-more-item]",
+        );
+        const batchSize = Math.max(1, Number(list.dataset.blogBatchSize) || 1);
+        let visibleCount = posts.filter(
+          (post) => post.dataset.blogPostVisible === "true",
+        ).length;
+
+        loadMore?.addEventListener("click", () => {
+          const firstRevealedPost = posts[visibleCount];
+          visibleCount = Math.min(posts.length, visibleCount + batchSize);
+
+          posts.forEach((post, index) => {
+            post.dataset.blogPostVisible = index < visibleCount ? "true" : "false";
+          });
+
+          if (visibleCount >= posts.length) {
+            firstRevealedPost
+              ?.querySelector<HTMLElement>("a")
+              ?.focus({ preventScroll: true });
+            loadMoreItem?.remove();
+          }
+        });
+      });
+  };
+
+  initialiseBlogLists();
+  document.addEventListener("astro:page-load", initialiseBlogLists);
+</script>

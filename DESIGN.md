@@ -1,12 +1,12 @@
-# NNCO Astro design system
+# NNCo. Astro design system
 
-This is the canonical visual and interaction system for the NNCO Astro site.
+This is the canonical visual and interaction system for the NNCo. Astro site.
 It governs the marketing pages, editorial Blog surface, discovery canvas, and
 print report.
 
 ## Design read
 
-NNCO is an AI implementation company for regulated institutions in Czech and
+NNCo. is an AI implementation company for regulated institutions in Czech and
 Slovak markets. The visual language is restrained, editorial and institutional.
 BrainCo is a category reference for proportion, typography and calm, not a
 source to copy page by page.
@@ -27,6 +27,8 @@ source to copy page by page.
 --muted: #4d4d4d;
 --faint: #606060;
 --rule: rgba(17, 17, 17, 0.18);
+--dark-body: #b8b8b8;
+--fine-rule-thickness: 1px;
 --content-max: 1440px;
 --structural-rule-thickness: 5px;
 --page-hero-height: clamp(40rem, 80dvh, 56rem);
@@ -53,7 +55,8 @@ existing type tokens before adding a local size:
 - body: 17px, regular, 1.55 line-height;
 - large body: 17–19px, regular, 1.55–1.65 line-height;
 - item headings: 18–24px, medium, 1.25 line-height;
-- section headings: 22–28px, medium, 1.1 line-height;
+- section titles: 28-40px, medium, 1.1 line-height;
+- nested detail headings: 22-28px, medium, 1.1 line-height;
 - card headings: 24–36px, medium, 1.1 line-height;
 - displays: responsive and component-specific, medium, tightly tracked with a
   0.98 line-height.
@@ -85,7 +88,9 @@ inherits the shared `--font-sans` token.
 - While the shared header overlays the homepage hero, its surface is transparent
   with a strong 24px backdrop blur; the hero's existing top gradient keeps
   the white identity and navigation legible. After the hero, it returns to the
-  paper surface. Other header states retain their assigned surfaces.
+  paper surface. On every marketing route, the shared header observes dark
+  `SectionFrame` regions and switches to its ink surface with paper identity,
+  navigation, rule and controls precisely while it overlaps them.
 - Desktop navigation begins immediately after the logo rather than floating in
   the centre. Links form a loose, unnumbered text run and remain vertically
   centred with the Start diagnosis action in the unchanged 80px header. Primary
@@ -110,10 +115,17 @@ inherits the shared `--font-sans` token.
   hero height with a restrained responsive inset.
 - Every `SectionAnatomy` begins with the shared strong 5px rule. The rule is
   structural and cannot be disabled by individual pages.
+- By default, desktop `SectionAnatomy` uses a six-part row: two parts for its
+  title and four parts for its content, expressed as a 2:4 grid after the
+  shared inter-column gutter.
+- Multi-column `SectionAnatomy` content begins with a shared 0.75rem top inset.
+  Lists and forms reset their own first-item top padding so this single inset
+  aligns Blog, FAQ, Direct and form content consistently. Full-width stacked
+  sections are exempt because their row gap already supplies the separation.
 - `SectionAnatomy` may explicitly allocate 50%, 75% or 100% of its desktop row
   to content. The 50% option creates equal columns, 75% creates a 1:3 title to
-  content split, and 100% places the title above full-width content. All three
-  collapse to the canonical single-column mobile flow.
+  content split, and 100% places the title above full-width content. The default
+  and all three options collapse to the canonical single-column mobile flow.
 - From 768px upward, the complete heading wrapper in every multi-column
   `SectionRow` is sticky below the 80px header at
   `calc(var(--header-height) + 1.5rem)`. Its own grid row bounds the sticky
@@ -149,7 +161,7 @@ The structure is deliberately blocky:
   The default root has no font data attribute and renders Helvetica;
   `html[data-font="ronzino"]`, `html[data-font="geist"]` and
   `html[data-font="poppins"]` are the only alternate states.
-- `Header`: large official NNCO mark, single-line navigation and one CTA.
+- `Header`: large official NNCo. mark, single-line navigation and one CTA.
   Primary navigation labels use the 16px control size at regular weight; the
   active tab remains regular because its inverted surface supplies emphasis.
   Dropdown controls hard-switch between the outlined Google Material Symbols
@@ -179,33 +191,47 @@ The structure is deliberately blocky:
   Its opening cloud field is an eleven-state responsive frame sequence: 128×72
   desktop and 48×85 mobile WebP mosaics scale with nearest-neighbour rendering.
   Only frame one is preloaded; the remaining ten load behind the page cover,
-  then hard-cut according to the hero's scroll progress. Never ship the source
+  then hard-cut once after the page becomes ready. Frame holds lengthen from
+  140ms to 300ms so the sequence settles progressively toward its final state.
+  The sequence is independent of scroll and never loops. Never ship the source
   MP4 or encode image bytes in JavaScript.
 - `SectionFrame`: full-width paper or dark background plus the shared content
   rail. A dark frame remains full-bleed horizontally, adds the shared paper
   margin above and below, and uses the larger dark-section content padding.
+  Body paragraphs and list copy on every ink surface use `--dark-body`; titles,
+  controls, rules and inverted highlight text retain the brighter paper colour.
+  The Private AI route is the deliberate exception: its entire page surface is
+  dark, so its adjacent dark frames have no paper margins and use the standard
+  section rhythm.
 - `TerminalSection`: the reusable pre-footer section. Its grey background spans
   the viewport while its shared section anatomy stays on the rule-aligned
   content rail.
-- Company Client confidentiality uses the same full-width dark `SectionFrame`
-  and ruled `SectionAnatomy` composition as Private AI. It preserves the shared
-  content rail and standard one-column mobile collapse.
-- Company Implementation gap remains one standard ruled section. Its enlarged
-  opening paragraph uses a loose 1.2 line-height and -0.035em
-  tracking. A generous responsive 3.5rem to 6rem gap separates it from the two
-  supporting paragraphs below. The title and opening paragraph retain the
-  standard left/right section split, while the supporting copy sits in a sharp
-  black panel spanning the complete content rail after a pronounced top gap.
-  The panel uses a generous horizontal inset, a tighter vertical inset and a
-  wide gap between the two columns. Inside that panel,
-  subtly enlarged, vertically centered copy takes 60% and the taller white
-  implementation glyph takes 40%; both
-  collapse to one column below 768px. The glyph's secondary solid cells use
-  white at 20% opacity. The supplied implementation glyph builds a 3x3 field
-  from the Group 97 cell geometry: its top-left 2x2 cells are solid white and
-  the five cells completing the right and bottom edges are solid white at 20%
-  opacity. Its desktop container retains a taller
-  responsive minimum height.
+- Company Client confidentiality uses the standard full-width dark
+  `SectionFrame` and ruled `SectionAnatomy` composition. The homepage Private AI
+  section instead uses its titleless ruled 4/6 copy and 2/6 animation
+  composition. Both preserve the shared content rail and standard one-column
+  mobile collapse.
+- Company opens with an unlabelled ruled thesis section whose enlarged copy
+  occupies five-sixths of the desktop content rail and aligns to its right
+  edge, leaving one-sixth empty on the left. It uses a 1.3 line-height,
+  -0.035em tracking and inter-word
+  justification. Five compact phrases use restrained inline inversion:
+  discrete ink boxes with paper text, compact internal leading and enough
+  vertical margin that adjacent boxes never touch. Neutral span wrappers avoid
+  the browser's default yellow `mark` paint before styles load. The JavaScript
+  animation-ready state is established in the document head before content can
+  paint. As the thesis first enters
+  view, fully opaque paper text starts completely below each paint-clipped ink
+  box, then rises into place after a 240ms pause, over 680ms and staggered by
+  160ms. Reduced-motion
+  users see the final static
+  state. A separate standard
+  Implementation gap section follows with the shared spacing and 5px rule. Its
+  sticky title sits on the left and aligns with the supporting paragraphs on the
+  right. The supporting copy uses the same shared large-body settings as
+  standard editorial section copy and fills the available column width. Both
+  sections collapse naturally on mobile. There is no separate panel or
+  decorative glyph.
 - `Footer`: shared rail and restrained identity/navigation groups.
 - `FontSwitcher`: one compact, fixed bottom-right utility rendered visibly by
   `BaseLayout` on every route, including Discovery. Its `Typeface` label
@@ -222,34 +248,51 @@ The structure is deliberately blocky:
   title, introduction and optional actions. Its content is bottom-aligned.
 - `EditorialCard`: shared text card for standard content and large industry
   panels. All cards use generous responsive internal padding. Titles and
-  descriptions align to the top. An optional modular glyph sits above the copy.
+  descriptions align to the top. An optional modular glyph sits above the copy
+  with the same generous responsive gap in every card context.
   An optional `href` changes the semantic root from `article` to `a` and pins
   the outlined Material Symbols `arrow_forward` affordance to the bottom without
-  shifting the copy. Every linked card uses this same current-colour arrow.
+  shifting the copy. Linked cards reserve a generous gap below their description
+  while the fixed-size arrow remains inside the card's bottom padding. Every
+  linked card uses this same current-colour arrow.
   Hover and keyboard focus invert the complete card surface, including its
-  copy, arrow and any modular glyph.
+  copy, arrow and any modular glyph. Homepage cards in From audit to operation
+  use a larger title-to-description gap, and linked cards reserve a generous
+  minimum gap between the description and arrow.
 - `EditorialCardLayer`: the only layout wrapper for editorial cards.
   Its `surface` property selects either grey `solid` cards with a real gap or a
   transparent `bordered` grid with connected single-width rules and no gap.
   The `colSize` prop accepts one, two or three desktop columns, reduces a
   three-column layer to two columns at tablet width and collapses every layer
   to one column below 768px. Company’s How we work section uses the same
-  one-column solid grey treatment as the homepage card sequences and reuses the
-  homepage What we build glyphs in source order. Because Company has four cards
-  and Home has three glyphs, the fourth card repeats the first glyph.
+  one-column solid grey treatment as the homepage card sequences. Every glyph
+  card receives a deliberately assigned, non-repeating mark whose topology
+  reflects its subject: flow, boundary, sequence, clustering or separation.
+  Shared marketing-page data may select these existing column, surface, glyph
+  and content-width options per section; it does not introduce page-local card
+  variants. Programme and audit sequences use the homepage's numbered,
+  one-column 50% composition. Parallel capability or constraint inventories use
+  two-column bordered layers. Operational and starting-point inventories use
+  one-column glyph cards. Industry pages follow the same rule: their
+  AI-supported workload is a one-column glyph sequence, except Insurance's
+  AI-supported claims inventory, which uses two columns. Design constraints use
+  a two-column bordered layer.
+- Home's From pilot to production section is a text-only standard section. It
+  carries no illustrative media.
 - `FaqList`: the shared native question-and-answer disclosure list.
   `FaqSection` wraps it in the standard section composition. Questions remain
   unnumbered, only one answer opens at a time, and the same keyboard and focus
   behaviour applies on every page. Item
-  separators use the shared opaque 2.5px black content rule also used in
-  Contact's Direct section. The first summary alone omits top padding; later
+  separators use the shared opaque 1px current-colour fine rule, black on paper
+  and paper on the dark Private AI route.
+  The first summary alone omits top padding; later
   rows keep their normal separator spacing without a fixed minimum height.
   Opening an answer adds only the answer's intentional gap.
 - `ExpandedDetailList`: the reusable always-visible title-and-body stack used by
   programme templates. Items
-  use the shared opaque 2.5px black separator. Their semantic `h3` titles reuse
-  the parent section `h2` size token with the slightly softer ink colour,
-  without changing unrelated headings. Its parent uses
+  use the shared opaque 1px black fine separator. Their semantic `h3` titles
+  retain the smaller section-heading token with the slightly softer ink colour,
+  without inheriting the larger left-hand section-title size. Its parent uses
   `SectionAnatomy contentWidth="50"` to divide title and content into equal
   desktop columns while retaining the shared one-column collapse at 767px.
   Optional image or icon media renders above its
@@ -264,11 +307,12 @@ The structure is deliberately blocky:
   or top-left to bottom-right diagonal. A related set keeps the same cell size
   and gap, varying only the arrangement and symmetry rule. Patterns should
   suggest topology, sequence, clustering or separation without becoming
-  literal interface icons, letters or alternate logos. Decorative marks stay
-  hidden from assistive technology; only a mark that adds non-redundant meaning
-  receives an accessible label.
-- `PrivateAiBoundary`: the decorative isometric scene shared by the Home and
-  Private AI dark sections. Three filled monochrome planes form a visible cube.
+  literal interface icons, letters or alternate logos. Assigned card marks are
+  unique across the marketing catalogue and never cycle by array position.
+  Decorative marks stay hidden from assistive technology; only a mark that adds
+  non-redundant meaning receives an accessible label.
+- `PrivateAiBoundary`: the decorative isometric scene in the Home Private AI
+  dark section. Three filled monochrome planes form a visible cube.
   The core cube has no outline. Three identically sized black planes enter one
   by one along equal radial axes and replace it. Each wrapping plane's outline
   begins at the exact monochrome value of its matching core face, then
@@ -276,15 +320,26 @@ The structure is deliberately blocky:
   resolve into one clean wireframe at rest.
   Each final cube edge is rendered once and uses rounded joins only to prevent
   raster artefacts at acute and three-way intersections. The scene is hidden
-  from assistive technology. Its shared dark-section composition gives copy 60%
-  and the glyph 40% of the available inner row before collapsing to one column
-  on mobile.
+  from assistive technology. Its homepage composition omits a visible title and
+  divides the complete inner row into 4/6 copy and 2/6 animation before
+  collapsing to one column on mobile, with copy first.
+- The Private AI route is dark from hero through footer. Its first ruled scope
+  section has no visible title or decorative object; justified enlarged copy
+  occupies the right-hand five-sixths and uses static paper-on-ink highlights
+  limited to two or three words each. The hero's introduction sits close to the
+  first structural rule. Deployment criteria follows with two numbered
+  one-column groups separated by another rule; their criteria are clean ruled
+  rows without browser-default bullets. Inside the boundary is a two-column
+  bordered card layer. The shared one-column collapse still applies below
+  768px.
 - `ContactForm`: local validation and a same-origin handoff into the shared lead repository.
   Contact composes Mutual NDA inside the Direct section after both email rows,
   keeps FAQ in the shared standalone section, and uses this form as its sole
   terminal grey section. Its repeated labels and error slots use reusable Astro
   form-control components; native controls remain transparent with one bottom
-  rule and explicit focus, invalid, disabled and autofill states.
+  rule and explicit focus, invalid, disabled and autofill states. Both Send and
+  Request an NDA use the shared right-arrow treatment; changing the Send state
+  updates only its label and preserves the arrow.
 - `Blog`: an editorial feature and ruled reading queue backed by the typed
   `blog` content collection. Each post is a Markdown file loaded through
   Astro's glob loader. The filename defines the slug, while required `title`
@@ -292,19 +347,45 @@ The structure is deliberately blocky:
   schema. Required `summary` frontmatter is repeated as the
   opening Markdown paragraph. The Markdown body contains no `h1` and continues
   with normal `h2`/`h3` hierarchy and links. `ArticleProse` scopes Markdown
-  element typography. Queue
+  element typography. Article paragraphs, lists and quotes use the shared
+  large-body scale for sustained reading, while the opening statement retains
+  its larger lead treatment. Queue
   rows stay flush to the content rail with no movement, transition or surface
-  change on hover. Keyboard focus uses the shared visible outline without
-  changing the row surface. Their dates are a deliberate metadata exception:
-  12px, sentence case, and formatted as a long English date such as
-  `6 August 2026`. Each article places its title alone in the shared PageHero.
+  change on hover. The first row relies on the shared content inset and the
+  final row uses only a small 0.75rem bottom inset, echoing the compact FAQ list
+  edges. Each post keeps its card-heading
+  title and standard-body summary together on the left, followed by a small
+  outlined date capsule whose 1px border uses the same softer rule colour as a
+  secondary button;
+  only the shared arrow remains on the right, aligned to the row's bottom.
+  Keyboard focus uses the shared
+  visible outline without changing the row surface. Dates use sentence case
+  and the long English format `6 August 2026`. The `/blog` list progressively
+  reveals posts in batches of ten after an initial ten through a final
+  right-aligned `See more posts` large-body regular text control without an
+  arrow. The homepage
+  renders its three latest posts without pagination and ends with the same row
+  treatment linking to `/blog` as `See the blog`. Each article places its title
+  alone in the shared PageHero.
   The ruled content rail below uses two desktop columns: publication date,
   author and an All posts button with a backward arrow on the left, and only
   Markdown on the right. At 767px and below metadata moves above the full-width
   body. The shared Start here terminal section and footer follow the article.
-- `Team`: sparse text-only editorial profiles in the shared ruled grid. The
-  desktop grid uses three columns and collapses to one at 767px; profiles have
-  no portrait swap or interactive card inversion.
+- `Meet the team`: one vertical stack of wide editorial profile cards. Each desktop card
+  divides evenly into a square monochrome portrait on the left and the name,
+  role and biography on the right. The card stack occupies the full available
+  content column. The complete name, role and biography group aligns to the
+  top of each card. Portraits use a compact inset from the top
+  and both sides while their lower edge remains flush. Transparent portraits
+  and copy share one continuous `surface` background without a dividing rule.
+  Cards return to full width and
+  collapse to one column at 767px, with the portrait above the copy. They have
+  no hover swap or interactive inversion. The section appears immediately after
+  Company’s Implementation gap. Names use the shared card-heading typography,
+  biographies use the standard body treatment, and roles use a
+  quiet outlined metadata capsule built from the small type token, button radius
+  and the same fine, softer border as a secondary button. The role capsule has
+  no hover or interactive state.
 
 ## Discovery and report
 
@@ -344,7 +425,7 @@ The structure is deliberately blocky:
   follow-up, 90-day retention and the role of OpenAI before submission.
 - Analysis is a full black transition with the hard-cut block loader and the
   approved activity statement. Do not use simulated timers or invented stages.
-- The result is exactly two useful pages: what NNCO understood and where to act.
+- The result is exactly two useful pages: what NNCo. understood and where to act.
   Report claims distinguish reported answers, public facts and inference.
   Competitor notes appear only when requested and include direct public sources.
 - Browser print is the only PDF exporter. Print CSS produces exactly two A4
@@ -360,7 +441,7 @@ The structure is deliberately blocky:
 
 - Motion exists only for interaction feedback and state transitions.
 - Fades and crossfades are not used except for the shared navigation header's
-  560ms background-colour transition and the Private AI scene's boundary
+  560ms background-colour transition and the homepage Private AI scene's boundary
   handoff. Its grey-to-white boundary is the only scroll-linked colour
   interpolation; every other surface change remains instant.
 - Discovery questions use a keyed 300ms horizontal entry only: forward
@@ -377,12 +458,12 @@ The structure is deliberately blocky:
 - The page loader remains an independent hard-cut sequence at 240ms per frame.
   It appears only once per browser session, with a 650ms minimum cover and an
   immediate overlay exit.
-- The hero frame sequence is scrubbed through Motion's framework-independent
-  DOM `scroll()` API. Frame one stays static at the page top; the eleven hard
-  states advance evenly as the hero moves from `start start` to `end start`, and
-  reverse when the user scrolls upward. The sequence never autoplays, loops,
-  crossfades, pans or scales. Reduced-motion users remain on frame one.
-- The Private AI boundary scene is scrubbed directly by scroll position through
+- The hero frame sequence plays once after its active responsive frames have
+  loaded and the page cover has exited. Its eleven hard states slow toward the
+  end through progressively longer 140ms to 300ms frame holds, without
+  crossfading, panning or scaling. Scrolling has no effect on the sequence and
+  it never loops. Reduced-motion users remain on frame one.
+- The homepage Private AI boundary scene is scrubbed directly by scroll position through
   Motion's framework-independent DOM `scroll()` API. From the visual reaching
   40% entry to 90% entry, the black boundary planes enter from the top,
   lower-right and lower-left across successive overlapping progress ranges.

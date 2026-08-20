@@ -75,13 +75,10 @@ const mobileFrames = Array.from(
 </section>
 
 <script>
-  import { scroll } from "motion";
-
-  const hero = document.querySelector<HTMLElement>("[data-marketing-hero]");
   const sequenceRoot =
     document.querySelector<HTMLElement>("[data-hero-sequence]");
 
-  if (hero && sequenceRoot && sequenceRoot.dataset.sequenceReady !== "true") {
+  if (sequenceRoot && sequenceRoot.dataset.sequenceReady !== "true") {
     sequenceRoot.dataset.sequenceReady = "true";
 
     const image = sequenceRoot.querySelector<HTMLImageElement>(
@@ -102,8 +99,17 @@ const mobileFrames = Array.from(
     );
     const loadedSequences = new Set<string>();
     const loadingSequences = new Map<string, Promise<boolean>>();
-    let stopScroll: (() => void) | undefined;
+    const frameDurationsMs = [140, 145, 150, 160, 175, 190, 210, 235, 265, 300];
+    const frameTransitionTimesMs = frameDurationsMs.map((_, index) =>
+      frameDurationsMs
+        .slice(0, index + 1)
+        .reduce((total, duration) => total + duration, 0),
+    );
+    let animationFrameId = 0;
+    let animationStartedAt: number | undefined;
     let desiredFrame = 0;
+    let hasPlayed = false;
+    let pageReady = !document.querySelector("[data-page-loader]");
 
     const getActiveSequence = () =>
       mobileViewport.matches ? mobileFrames : desktopFrames;
@@ -153,48 +159,78 @@ const mobileFrames = Array.from(
       if (frames.length !== 11 || !(await preloadSequence(frames))) return;
       if (getActiveSequence()[0] !== frames[0]) return;
       applyFrame(desiredFrame);
+      playSequence();
     };
 
-    const syncFrameToScroll = (progress: number) => {
+    const playSequence = () => {
+      if (reducedMotion.matches || !pageReady || hasPlayed) return;
       const frames = getActiveSequence();
-      desiredFrame = Math.round(progress * (frames.length - 1));
-      if (loadedSequences.has(frames[0])) applyFrame(desiredFrame);
-    };
+      if (frames.length !== 11 || !loadedSequences.has(frames[0])) return;
 
-    const startScrollSequence = () => {
-      stopScroll?.();
-      stopScroll = scroll(syncFrameToScroll, {
-        target: hero,
-        offset: ["start start", "end start"],
-      });
+      hasPlayed = true;
+      desiredFrame = 0;
+      animationStartedAt = undefined;
+      applyFrame(0);
+
+      const advanceFrame = (timestamp: number) => {
+        animationStartedAt ??= timestamp;
+        const elapsedMs = timestamp - animationStartedAt;
+        desiredFrame = 0;
+        while (
+          desiredFrame < frameTransitionTimesMs.length
+          && elapsedMs >= frameTransitionTimesMs[desiredFrame]
+        ) {
+          desiredFrame += 1;
+        }
+        applyFrame(desiredFrame);
+
+        if (desiredFrame < frames.length - 1) {
+          animationFrameId = window.requestAnimationFrame(advanceFrame);
+        } else {
+          animationFrameId = 0;
+        }
+      };
+
+      animationFrameId = window.requestAnimationFrame(advanceFrame);
     };
 
     const handleMotionPreference = () => {
       if (reducedMotion.matches) {
-        stopScroll?.();
-        stopScroll = undefined;
+        window.cancelAnimationFrame(animationFrameId);
+        animationFrameId = 0;
+        animationStartedAt = undefined;
+        hasPlayed = false;
         desiredFrame = 0;
         applyFrame(0);
         return;
       }
 
+      hasPlayed = false;
       void prepareActiveSequence();
-      startScrollSequence();
     };
 
     const handleViewportChange = () => {
       void prepareActiveSequence();
     };
 
+    const handlePageReady = () => {
+      pageReady = true;
+      playSequence();
+    };
+
+    if (!pageReady) {
+      window.addEventListener("nnco:page-ready", handlePageReady, { once: true });
+    }
+
     if (!reducedMotion.matches) {
       void prepareActiveSequence();
-      startScrollSequence();
     }
 
     document.addEventListener(
       "astro:before-swap",
       () => {
-        stopScroll?.();
+        window.cancelAnimationFrame(animationFrameId);
+        window.removeEventListener("nnco:page-ready", handlePageReady);
         reducedMotion.removeEventListener("change", handleMotionPreference);
         mobileViewport.removeEventListener("change", handleViewportChange);
       },

@@ -10,10 +10,6 @@ const styles = await readFile(
   new URL("../src/styles/global.css", import.meta.url),
   "utf8",
 );
-const implementationGlyphAsset = await readFile(
-  new URL("../public/assets/company-implementation-glyph.svg", import.meta.url),
-  "utf8",
-);
 
 test("Company confidentiality uses the standard full-width dark section", () => {
   assert.match(
@@ -24,11 +20,21 @@ test("Company confidentiality uses the standard full-width dark section", () => 
   assert.equal(company.match(/<ClosingSection\b/g)?.length, 1);
   assert.match(
     styles,
-    /\.section-frame--dark \.editorial-section__body\s*\{\s*color:\s*inherit;/s,
+    /\.section-frame--dark \.editorial-section__body\s*\{\s*color:\s*var\(--dark-body\);/s,
   );
 });
 
-test("Company Implementation gap keeps its copy in a nested 60/40 grey panel", () => {
+test("Company separates its highlighted thesis from the standard Implementation gap", () => {
+  assert.match(
+    company,
+    /<SectionFrame>\s*<div class="company-about__lead-section">[\s\S]*?<p class="company-about__lead">[\s\S]*?<\/div>\s*<\/SectionFrame>\s*<SectionFrame labelledBy="why-title">/,
+  );
+  assert.equal(company.match(/class="company-about__highlight"/g)?.length, 5);
+  assert.doesNotMatch(company, /<mark\b/);
+  for (let index = 0; index < 5; index += 1) {
+    assert.match(company, new RegExp(`--highlight-index: ${index}`));
+  }
+
   const section = company.match(
     /<SectionAnatomy title="Implementation gap" titleId="why-title">([\s\S]*?)<\/SectionAnatomy>/,
   )?.[1];
@@ -37,69 +43,61 @@ test("Company Implementation gap keeps its copy in a nested 60/40 grey panel", (
     ...section.matchAll(/<p(?:\s+[^>]*)?>([\s\S]*?)<\/p>/g),
   ].map((match) => match[1].replace(/\s+/g, " ").trim());
   assert.deepEqual(paragraphs, [
-    "Large institutions have been running AI pilots for two years. Very few of them run anything in production. The pattern is consistent enough to be boring: a workshop picks a use case, an agency builds a convincing demonstration, and then the project meets the systems it would have to integrate with, the data it is not allowed to move, the evidence somebody has to be able to produce afterwards, and the question of who owns it once the agency leaves. The demonstration was never wrong. It was just the easy tenth of the work.",
     "That gap is an implementation problem, and it looks exactly like the problems we spent the last decade solving: integrating with systems nobody wants to touch, shipping into an environment with real users and real consequences, and staying responsible for it afterwards. We had done that inside a licensed lending platform, inside a software company delivering for banks and insurers, and in security audits where being approximately right is the same as being wrong.",
-    "So NNCO does the whole arc. We find where AI is worth building, we build it, we deploy it inside your constraints, and we run it after launch. Strategy without deployment is a document. Deployment without an understanding of the rules is a pilot that gets stopped.",
+    "So NNCo. does the whole arc. We find where AI is worth building, we build it, we deploy it inside your constraints, and we run it after launch. Strategy without deployment is a document. Deployment without an understanding of the rules is a pilot that gets stopped.",
   ]);
-  assert.match(section, /class="company-about__lead"/);
-  assert.match(section, /class="company-about__panel"/);
-  assert.match(section, /class="company-about__panel-copy"/);
-  assert.match(section, /class="company-about__panel-glyph" aria-hidden="true"/);
-  assert.match(section, /class="company-implementation-glyph"/);
-  assert.match(section, /src="\/assets\/company-implementation-glyph\.svg"/);
-  assert.match(section, /width="1100"/);
-  assert.match(section, /height="1100"/);
-  assert.doesNotMatch(company, /PRIMARY_LOGO/);
-  assert.doesNotMatch(company, /nnco-operational-field\.png/);
-  assert.doesNotMatch(company, /company-about__layout/);
-  assert.doesNotMatch(styles, /\.company-about__layout/);
-  const copyRules = [...styles.matchAll(/\.company-about__copy[^,{]*\{([^}]*)\}/g)];
-  assert.ok(copyRules.length > 0);
-  for (const rule of copyRules) {
-    assert.doesNotMatch(rule[1], /max-width/);
-  }
+  assert.match(section, /class="company-about__supporting"/);
+  assert.equal(section.match(/class="editorial-section__body"/g)?.length, 2);
+  assert.doesNotMatch(company, /company-about__panel|company-implementation-glyph/);
   assert.match(
     styles,
-    /\.company-about__copy\s*\{[^}]*gap:\s*clamp\(3\.5rem, 6vw, 6rem\);/s,
+    /\.company-about__lead-section\s*\{[^}]*grid-template-columns:\s*minmax\(0, 1fr\) minmax\(0, 5fr\);/s,
   );
   assert.match(
     styles,
-    /\.company-about__panel\s*\{[^}]*grid-template-columns:\s*minmax\(0, 3fr\) minmax\(0, 2fr\);[^}]*background:\s*var\(--surface\);[^}]*color:\s*var\(--ink\);/s,
+    /\.company-about__lead\s*\{[^}]*letter-spacing:\s*-0\.035em;[^}]*line-height:\s*1\.3;[^}]*text-align:\s*justify;/s,
   );
   assert.match(
     styles,
-    /\.company-about__panel-copy p\s*\{[^}]*color:\s*var\(--ink-soft\);/s,
+    /\.has-js \.company-about__lead \.company-about__highlight > span\s*\{\s*transform:\s*translateY\(120%\);/s,
   );
   assert.match(
     styles,
-    /\.company-about__lead\s*\{[^}]*letter-spacing:\s*-0\.035em;[^}]*line-height:\s*1\.2;/s,
+    /@keyframes company-highlight-enter\s*\{\s*from\s*\{\s*transform:\s*translateY\(120%\);[\s\S]*?to\s*\{\s*transform:\s*translateY\(0\);/s,
   );
   assert.match(
-    styles,
-    /\.company-about__panel-glyph\s*\{[^}]*position:\s*relative;[^}]*min-height:\s*0;[^}]*align-self:\s*stretch;/s,
-  );
-  assert.match(
-    styles,
-    /\.company-implementation-glyph\s*\{[^}]*position:\s*absolute;[^}]*inset:\s*0;[^}]*width:\s*100%;[^}]*height:\s*100%;/s,
+    company,
+    /IntersectionObserver[\s\S]*?nnco:page-ready[\s\S]*?astro:before-swap/,
   );
 });
 
-test("Company implementation glyph repeats the logo across a 3x3 field", () => {
-  assert.match(implementationGlyphAsset, /viewBox="0 0 1100 1100"/);
-  assert.equal(
-    implementationGlyphAsset.match(/fill="black"/g)?.length,
-    4,
+test("Company Meet the team follows Implementation gap with wide portrait cards", () => {
+  assert.match(
+    company,
+    /<SectionAnatomy title="Implementation gap"[\s\S]*?<\/SectionFrame>\s*<SectionFrame id="team" labelledBy="team-title" class="team-section">/,
   );
-  assert.equal(
-    implementationGlyphAsset.match(/stroke="#2d2d2d"/g)?.length,
-    5,
+  assert.equal(company.match(/<article class="team-card">/g)?.length, 1);
+  assert.match(company, /team\.map\(\(person\) =>/);
+  assert.match(company, /src=\{person\.image\}/);
+  assert.match(company, /alt=\{`Portrait of \$\{person\.name\}`\}/);
+  assert.match(
+    styles,
+    /\.team-grid\s*\{[^}]*grid-template-columns:\s*minmax\(0, 1fr\);[^}]*width:\s*100%;/s,
   );
-  assert.equal(
-    implementationGlyphAsset.match(/stroke-width="4"/g)?.length,
-    5,
+  assert.match(
+    styles,
+    /\.team-card\s*\{[^}]*grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\);[^}]*background:\s*var\(--surface\);/s,
   );
-  const glyphRule = styles.match(/\.company-implementation-glyph\s*\{([^}]*)\}/);
-  assert.ok(glyphRule);
-  assert.match(glyphRule[1], /object-fit:\s*contain;/);
-  assert.doesNotMatch(glyphRule[1], /filter:/);
+  assert.match(
+    styles,
+    /\.team-card__portrait\s*\{[^}]*padding:\s*clamp\(0\.75rem, 1\.25vw, 1\.25rem\) clamp\(0\.75rem, 1\.25vw, 1\.25rem\) 0;/s,
+  );
+  assert.match(
+    styles,
+    /\.team-card__content\s*\{[^}]*justify-content:\s*flex-start;/s,
+  );
+  assert.match(
+    styles,
+    /\.team-grid h3\s*\{[^}]*font-size:\s*var\(--type-size-card-heading\);/s,
+  );
 });

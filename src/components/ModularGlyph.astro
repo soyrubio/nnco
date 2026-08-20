@@ -1,10 +1,8 @@
 ---
-export type ModularGlyphCell = readonly [column: number, row: number];
-export type ModularGlyphSymmetry =
-  | "horizontal"
-  | "vertical"
-  | "rotational"
-  | "diagonal";
+import type {
+  ModularGlyphCell,
+  ModularGlyphSymmetry,
+} from "@/lib/modular-glyph";
 
 interface Props {
   cells: readonly ModularGlyphCell[];

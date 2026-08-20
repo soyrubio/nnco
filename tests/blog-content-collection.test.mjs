@@ -253,6 +253,10 @@ test("article routes render frontmatter titles in the hero and Markdown on the r
     sourceEntries.prose,
     /\.article-prose :global\(blockquote\)\s*\{[^}]*padding-left:\s*1\.25rem;[^}]*border-left:\s*2px solid var\(--rule\);/s,
   );
+  assert.match(
+    sourceEntries.prose,
+    /\.article-prose :global\(p\),\s*\.article-prose :global\(li\)\s*\{[^}]*font-size:\s*var\(--type-size-body-large\);/s,
+  );
   assert.doesNotMatch(sourceEntries.route, /Related perspective|Read next|news-article__related|post\.data\.related/);
   assert.match(
     sourceEntries.route,
@@ -276,6 +280,23 @@ test("home and blog indexes share sorted collection summaries", () => {
     /const posts = \(await getBlogEntries\(\)\)\.map\(toBlogPostListItem\);/,
   );
   assert.match(sourceEntries.list, /import type \{ BlogPostListItem \} from "@\/lib\/blog";/);
+  assert.match(sourceEntries.home, /variant="latest"/);
+  assert.match(
+    sourceEntries.index,
+    /variant="load-more"\s*initialCount=\{10\}\s*batchSize=\{10\}/,
+  );
+  assert.match(sourceEntries.list, /<span>See more posts<\/span>/);
+  assert.match(sourceEntries.list, /<span>See the blog<\/span>/);
+  assert.doesNotMatch(
+    sourceEntries.list,
+    /<span>See (?:more posts|the blog)<\/span>\s*<CardAffordance \/>/,
+  );
+  assert.match(
+    sourceEntries.styles,
+    /\.news-row--action\s*\{[^}]*display:\s*flex;[^}]*width:\s*fit-content;[^}]*margin-left:\s*auto;/s,
+  );
+  assert.match(sourceEntries.list, /data-blog-post-visible=/);
+  assert.match(sourceEntries.list, /visibleCount = Math\.min\(posts\.length, visibleCount \+ batchSize\)/);
 });
 
 test("blog display dates are derived centrally in UTC en-GB", () => {
@@ -285,7 +306,9 @@ test("blog display dates are derived centrally in UTC en-GB", () => {
 });
 
 test("blog list rows remain static on hover", () => {
-  const rowRule = sourceEntries.styles.match(/\.news-row\s*\{(?<body>[\s\S]*?)\n\}/)?.groups?.body;
+  const rowRule = sourceEntries.styles.match(
+    /(?:^|\n)\.news-row\s*\{(?<body>[\s\S]*?)\n\}/,
+  )?.groups?.body;
   const dateRule = sourceEntries.styles.match(
     /\.news-row__date\s*\{(?<body>[\s\S]*?)\n\}/,
   )?.groups?.body;
@@ -295,9 +318,28 @@ test("blog list rows remain static on hover", () => {
   assert.doesNotMatch(rowRule, /transition:|background:/);
 
   assert.ok(dateRule, "The blog list date rule must remain present");
-  assert.match(dateRule, /font-size:\s*0\.75rem;/);
+  assert.match(dateRule, /border:\s*var\(--fine-rule-thickness\) solid var\(--rule-strong\);/);
+  assert.match(dateRule, /border-radius:\s*var\(--radius-button\);/);
+  assert.match(dateRule, /font-size:\s*var\(--type-size-small\);/);
   assert.match(dateRule, /letter-spacing:\s*var\(--type-tracking-normal\);/);
   assert.doesNotMatch(dateRule, /text-transform:\s*uppercase;/);
+
+  assert.match(
+    sourceEntries.styles,
+    /\.section-anatomy__content\s*\{[^}]*padding-top:\s*0\.75rem;/s,
+  );
+  assert.match(
+    sourceEntries.styles,
+    /\.news-list > li:first-child \.news-row\s*\{\s*padding-top:\s*0;/s,
+  );
+  assert.match(
+    sourceEntries.styles,
+    /\.news-list > li:last-child \.news-row\s*\{\s*padding-bottom:\s*0\.75rem;/s,
+  );
+  assert.match(
+    sourceEntries.styles,
+    /\.news-row > \.card-affordance\s*\{[^}]*align-self:\s*end;[^}]*justify-self:\s*end;/s,
+  );
 
   assert.doesNotMatch(
     sourceEntries.styles,

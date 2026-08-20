@@ -3,8 +3,6 @@
     '[data-site-header="hero"]',
   );
   const hero = document.querySelector<HTMLElement>("[data-marketing-hero]");
-  const darkSection =
-    document.querySelector<HTMLElement>(".private-ai-section");
 
   if (header && hero) {
     const headerObserver = new IntersectionObserver(
@@ -21,24 +19,5 @@
     );
 
     headerObserver.observe(hero);
-
-    if (darkSection) {
-      const topStripHeight = Math.max(
-        1,
-        Math.min(header.offsetHeight, window.innerHeight),
-      );
-      const bottomInset = Math.max(0, window.innerHeight - topStripHeight);
-      const darkSectionObserver = new IntersectionObserver(
-        ([entry]) => {
-          header.classList.toggle("is-over-dark", entry.isIntersecting);
-        },
-        {
-          rootMargin: `0px 0px -${bottomInset}px 0px`,
-          threshold: 0,
-        },
-      );
-
-      darkSectionObserver.observe(darkSection);
-    }
   }
 </script>

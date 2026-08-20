@@ -3,6 +3,7 @@ interface Props {
   id?: string;
   tone?: "paper" | "dark";
   labelledBy?: string;
+  ariaLabel?: string;
   class?: string;
 }
 
@@ -10,18 +11,21 @@ const {
   id,
   tone = "paper",
   labelledBy,
+  ariaLabel,
   class: className,
 } = Astro.props;
 ---
 
 <section
   id={id}
+  data-header-tone={tone === "dark" ? "dark" : undefined}
   class:list={[
     "section-frame",
     `section-frame--${tone}`,
     className,
   ]}
   aria-labelledby={labelledBy}
+  aria-label={labelledBy ? undefined : ariaLabel}
 >
   <div class="content-rail section-frame__inner">
     <slot />

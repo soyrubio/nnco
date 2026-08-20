@@ -1,4 +1,5 @@
 ---
+import BlockArrow from "./BlockArrow.astro";
 import Button from "./Button.astro";
 import FormCheckbox from "./form/FormCheckbox.astro";
 import FormControl from "./form/FormControl.astro";
@@ -91,14 +92,16 @@ import {
         required
         class="contact-form__consent"
       >
-        <Fragment slot="label">I agree that NNCO may use these details to respond to my enquiry.</Fragment>
+        <Fragment slot="label">I agree that NNCo. may use these details to respond to my enquiry.</Fragment>
         <a href="/privacy">Privacy</a>
       </FormCheckbox>
     </div>
 
     <div class="contact-form__footer">
       <div class="contact-form__submit">
-        <Button type="submit">Send</Button>
+        <Button type="submit">
+          <span data-submit-label>Send</span> <BlockArrow />
+        </Button>
         <p>We reply within one business day.</p>
       </div>
       <p data-form-status role="status" aria-live="polite"></p>
@@ -135,9 +138,10 @@ import {
       const form = this.querySelector<HTMLFormElement>("[data-contact-form]");
       const status = this.querySelector<HTMLElement>("[data-form-status]");
       const submit = form?.querySelector<HTMLButtonElement>('button[type="submit"]');
+      const submitLabel = submit?.querySelector<HTMLElement>("[data-submit-label]");
       const consentVersion = this.dataset.consentVersion;
 
-      if (!form || !status || !submit || !consentVersion) return;
+      if (!form || !status || !submit || !submitLabel || !consentVersion) return;
 
       let responseEpoch = 0;
       let isSubmitting = false;
@@ -145,7 +149,7 @@ import {
       const resetSubmissionUi = () => {
         isSubmitting = false;
         submit.disabled = false;
-        submit.textContent = "Send";
+        submitLabel.textContent = "Send";
         if (status.classList.contains("is-loading")) {
           status.className = "";
           status.textContent = "";
@@ -317,7 +321,7 @@ import {
             responseEpoch === submissionEpoch;
 
           submit.disabled = true;
-          submit.textContent = "Sending.";
+          submitLabel.textContent = "Sending.";
           status.className = "is-loading";
           status.textContent = "Sending.";
 

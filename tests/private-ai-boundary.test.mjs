@@ -5,19 +5,19 @@ import test from "node:test";
 const read = (relativePath) =>
   readFile(new URL(relativePath, import.meta.url), "utf8");
 
-test("private AI sections share the view-triggered boundary scene", async () => {
-  const [component, home, marketingPage, design, styles] = await Promise.all([
+test("the homepage keeps the view-triggered private AI boundary scene", async () => {
+  const [component, home, marketingPage, design] = await Promise.all([
     read("../src/components/PrivateAiBoundary.astro"),
     read("../src/pages/index.astro"),
     read("../src/components/MarketingPage.astro"),
     read("../DESIGN.md"),
-    read("../src/styles/global.css"),
   ]);
 
   assert.match(home, /import PrivateAiBoundary/);
   assert.match(home, /<PrivateAiBoundary\s*\/>/);
-  assert.match(marketingPage, /import PrivateAiBoundary/);
-  assert.match(marketingPage, /<PrivateAiBoundary\s*\/>/);
+  assert.doesNotMatch(home, /<SectionAnatomy title="Private AI"/);
+  assert.doesNotMatch(marketingPage, /PrivateAiBoundary/);
+  assert.match(marketingPage, /class="private-ai-lead__copy"/);
   assert.doesNotMatch(home, /nnco-private-ai-pixelated\.png/);
   assert.doesNotMatch(marketingPage, /nnco-private-ai-pixelated\.png/);
 
@@ -59,8 +59,4 @@ test("private AI sections share the view-triggered boundary scene", async () => 
   assert.doesNotMatch(component, /requestAnimationFrame/);
   assert.match(component, /@media \(prefers-reduced-motion: reduce\)/);
   assert.match(design, /`PrivateAiBoundary`/);
-  assert.match(
-    styles,
-    /\.infrastructure-plate\s*\{[^}]*grid-template-columns:\s*minmax\(0, 3fr\) minmax\(0, 2fr\)/s,
-  );
 });

@@ -29,7 +29,7 @@ const websiteSchema = {
   "@type": "WebSite",
   "@id": "https://nnco.ai/#website",
   url: "https://nnco.ai",
-  name: "NNCO",
+  name: "NNCo.",
   publisher: { "@id": "https://nnco.ai/#organization" },
   inLanguage: "en",
 };
@@ -37,8 +37,8 @@ const faqSchema = buildFaqSchema(faq, "/");
 ---
 
 <BaseLayout
-  title="AI consulting and development for large institutions | NNCO"
-  description="NNCO designs, integrates and operates AI systems for banks, insurers and healthcare providers. We start with an AI audit and take the first use case into production."
+  title="AI consulting and development for large institutions | NNCo."
+  description="NNCo. designs, integrates and operates AI systems for banks, insurers and healthcare providers. We start with an AI audit and take the first use case into production."
   canonicalPath="/"
   schemas={[websiteSchema, faqSchema]}
   preloadImages={[
@@ -102,25 +102,24 @@ const faqSchema = buildFaqSchema(faq, "/");
       </SectionAnatomy>
     </SectionFrame>
 
-    <SectionFrame tone="dark" labelledBy="private-ai-title" class="private-ai-section">
-      <SectionAnatomy title="Private AI" titleId="private-ai-title">
-        <div class="infrastructure-plate">
-          <div class="infrastructure-plate__content">
-            <div class="infrastructure-plate__copy">
-              <p>
-                Models, retrieval, access control and monitoring run inside the
-                environment you govern. On-premise when data residency or
-                regulation requires it. When it is not required, we do not
-                deploy it.
-              </p>
-              <Button href="/ai-first-enterprise/private-ai" variant="secondary">
-                Private AI <BlockArrow />
-              </Button>
-            </div>
+    <SectionFrame tone="dark" ariaLabel="Private AI" class="private-ai-section">
+      <span class="section-anatomy__rule" aria-hidden="true"></span>
+      <div class="infrastructure-plate">
+        <div class="infrastructure-plate__content">
+          <div class="infrastructure-plate__copy">
+            <p>
+              Models, retrieval, access control and monitoring run inside the
+              environment you govern. On-premise when data residency or
+              regulation requires it. When it is not required, we do not
+              deploy it.
+            </p>
+            <Button href="/ai-first-enterprise/private-ai" variant="secondary">
+              Private AI <BlockArrow />
+            </Button>
           </div>
-          <PrivateAiBoundary />
         </div>
-      </SectionAnatomy>
+        <PrivateAiBoundary />
+      </div>
     </SectionFrame>
 
     <SectionFrame id="industries" labelledBy="industries-title" class="home-sectors">
@@ -141,25 +140,16 @@ const faqSchema = buildFaqSchema(faq, "/");
 
     <SectionFrame labelledBy="production-title" class="approach-section">
       <SectionAnatomy title="From pilot to production" titleId="production-title">
-        <div class="approach-layout">
-          <div>
-            <p class="editorial-section__body">
-              We build the part that gets it past the pilot: integration into
-              the systems people already use, evidence behind every step, and a
-              named owner after launch. Where data has to stay inside, it stays
-              inside.
-            </p>
-            <Button href="/ai-first-enterprise" variant="secondary">
-              How we work <BlockArrow />
-            </Button>
-          </div>
-          <img
-            src="/assets/nnco-approach-frosted-figure-pixelated.png"
-            alt=""
-            width="1536"
-            height="1024"
-            loading="lazy"
-          />
+        <div>
+          <p class="editorial-section__body">
+            We build the part that gets it past the pilot: integration into
+            the systems people already use, evidence behind every step, and a
+            named owner after launch. Where data has to stay inside, it stays
+            inside.
+          </p>
+          <Button href="/ai-first-enterprise" variant="secondary">
+            How we work <BlockArrow />
+          </Button>
         </div>
       </SectionAnatomy>
     </SectionFrame>
@@ -174,7 +164,10 @@ const faqSchema = buildFaqSchema(faq, "/");
       </SectionAnatomy>
     </SectionFrame>
 
-    <SectionFrame labelledBy="sequence-title" class="editorial-section">
+    <SectionFrame
+      labelledBy="sequence-title"
+      class="editorial-section home-operation-sequence"
+    >
       <SectionAnatomy
         title="From audit to operation"
         titleId="sequence-title"
@@ -196,10 +189,11 @@ const faqSchema = buildFaqSchema(faq, "/");
 
     <SectionFrame labelledBy="blog-title" class="home-latest-news">
       <SectionAnatomy title="In practice" titleId="blog-title">
-        <BlogPostList posts={latestPosts} ariaLabel="Latest NNCO blog posts" />
-        <div class="editorial-links">
-          <Button href="/blog" variant="secondary">All posts <BlockArrow /></Button>
-        </div>
+        <BlogPostList
+          posts={latestPosts}
+          ariaLabel="Latest NNCo. blog posts"
+          variant="latest"
+        />
       </SectionAnatomy>
     </SectionFrame>
 

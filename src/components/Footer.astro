@@ -1,9 +1,18 @@
 ---
 import BrandLogo from "./BrandLogo.astro";
 import { footerGroups } from "@/data/site";
+
+interface Props {
+  tone?: "paper" | "dark";
+}
+
+const { tone = "paper" } = Astro.props;
 ---
 
-<footer class="site-footer">
+<footer
+  class:list={["site-footer", tone === "dark" && "site-footer--dark"]}
+  data-header-tone={tone === "dark" ? "dark" : undefined}
+>
   <div class="content-rail site-footer__inner">
     <div class="site-footer__identity">
       <BrandLogo />
@@ -24,7 +33,7 @@ import { footerGroups } from "@/data/site";
     </nav>
 
     <p class="site-footer__copyright">
-      © {new Date().getFullYear()} NNCO
+      © {new Date().getFullYear()} NNCo.
     </p>
   </div>
 </footer>

@@ -139,25 +139,30 @@ export const team = [
     name: "Marek Kříž",
     role: "Co-Founder & CEO",
     bio: "Founder, CEO or CGO at Investown and Zaloto, and at the software house Devx. Most of that decade was spent inside licensed financial businesses, which is where the questions a supervisor actually asks stop being theoretical.",
+    image: "/assets/team/marek-kriz-reframed.png",
   },
   {
     name: "Dominik Veselý",
     role: "Co-Founder & COO",
     bio: "COO at the software house Ackee, which was sold to Expandia. Ran delivery for a company whose clients were banks, insurers and public institutions, where the deployment is the product.",
+    image: "/assets/team/dominik-vesely-reframed.png",
   },
   {
     name: "Josef Gattermayer",
     role: "Co-Founder, AI & R&D",
     bio: "CTO at Ackee, then founder of Ackee Blockchain, a security audit firm. Audit work is the discipline of proving that a system does what it claims, which is the same discipline an AI system needs before a regulator looks at it.",
+    image: "/assets/team/josef-gattermayer-reframed.png",
   },
   {
     name: "Josef Bazal",
     role: "Founding Product Manager",
     bio: "Product Manager at Ackee Blockchain. Turns an operational problem into a specification that survives contact with the people who have to use it.",
+    image: "/assets/team/josef-bazal-reframed.png",
   },
   {
     name: "Lukáš Rajnoha",
     role: "Founding Engineer",
     bio: "Engineer at Ackee Blockchain. Builds the systems and the infrastructure they run on.",
+    image: "/assets/team/lukas-rajnoha-reframed.png",
   },
 ] as const;

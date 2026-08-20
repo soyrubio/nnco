@@ -85,11 +85,11 @@ test("editorial card layers own columns, surfaces and responsive collapse", () =
   );
   assert.match(
     sources.styles,
-    /\.editorial-card-layer--bordered\s*\{[^}]*border-top:\s*1px solid var\(--ink\);[^}]*border-left:\s*1px solid var\(--ink\);/s,
+    /\.editorial-card-layer--bordered\s*\{[^}]*border-top:\s*var\(--fine-rule-thickness\) solid currentColor;[^}]*border-left:\s*var\(--fine-rule-thickness\) solid currentColor;/s,
   );
   assert.match(
     sources.styles,
-    /\.editorial-card-layer--bordered > \.editorial-card\s*\{[^}]*border-right:\s*1px solid var\(--ink\);[^}]*border-bottom:\s*1px solid var\(--ink\);/s,
+    /\.editorial-card-layer--bordered > \.editorial-card\s*\{[^}]*border-right:\s*var\(--fine-rule-thickness\) solid currentColor;[^}]*border-bottom:\s*var\(--fine-rule-thickness\) solid currentColor;/s,
   );
   assert.match(
     sources.cardLayer,
@@ -99,6 +99,11 @@ test("editorial card layers own columns, surfaces and responsive collapse", () =
     sources.styles,
     /\.editorial-card\s*\{[^}]*padding:\s*clamp\(2rem, 3vw, 3rem\);[^}]*border:\s*0;[^}]*background:\s*var\(--editorial-card-surface, transparent\);/s,
   );
+  assert.match(
+    sources.styles,
+    /\.editorial-card__glyph\s*\{[^}]*margin-bottom:\s*auto;[^}]*padding-bottom:\s*clamp\(3rem, 5vw, 5rem\);/s,
+  );
+  assert.doesNotMatch(sources.styles, /\.company-work \.editorial-card__glyph/);
   assert.doesNotMatch(
     sources.cardLayer,
     /:global\(\.editorial-card\)\s*\{[^}]*background:/s,
@@ -119,14 +124,18 @@ test("expanded detail items use the shared medium separator and responsive stack
   assert.doesNotMatch(sources.component, /background:\s*var\(--ink\)/);
 });
 
-test("detail h3 reuses only the section h2 size token with softer ink", () => {
+test("detail h3 stays smaller than the left-hand section title", () => {
   assert.match(
     sources.styles,
     /\.section-row\s*\{[^}]*--section-heading-size:\s*var\(--type-size-section-heading\);/s,
   );
   assert.match(
     sources.styles,
-    /\.section-anatomy__title\s*\{[^}]*color:\s*currentColor;[^}]*font-size:\s*var\(--section-heading-size\);/s,
+    /--type-size-section-heading:\s*clamp\(1\.375rem, 1\.85vw, 1\.75rem\);[\s\S]*?--type-size-section-title:\s*clamp\(1\.75rem, 2\.5vw, 2\.5rem\);/s,
+  );
+  assert.match(
+    sources.styles,
+    /\.section-anatomy__title\s*\{[^}]*color:\s*currentColor;[^}]*font-size:\s*var\(--type-size-section-title\);/s,
   );
   assert.match(
     sources.component,
@@ -135,11 +144,15 @@ test("detail h3 reuses only the section h2 size token with softer ink", () => {
   assert.doesNotMatch(sources.styles, /(?:^|\n)h3\s*\{[^}]*--section-heading-size/s);
 });
 
-test("section anatomy supports explicit desktop content widths", () => {
+test("section anatomy uses a two-to-four default and keeps explicit content widths", () => {
   assert.doesNotMatch(sources.anatomy, /layout\?:/);
   assert.match(
     sources.anatomy,
     /contentWidth\?:\s*"50" \| "75" \| "100";/,
+  );
+  assert.match(
+    sources.styles,
+    /--section-grid-columns:\s*minmax\(0, 2fr\) minmax\(0, 4fr\);/,
   );
   assert.match(
     sources.styles,
@@ -167,7 +180,7 @@ test("section anatomy supports explicit desktop content widths", () => {
   );
   assert.match(
     sources.marketing,
-    /contentWidth=\{section\.render === "ways-of-working" \? "50" : undefined\}/,
+    /const contentWidth = section\.contentWidth\s*\?\? \(section\.render === "ways-of-working" \? "50" : undefined\);[\s\S]*?contentWidth=\{contentWidth\}/,
   );
 });
 
@@ -266,6 +279,17 @@ test("Home audit-to-operation sequence uses the 50% single-column layout", () =>
   );
 });
 
+test("Home pilot-to-production section is text only", () => {
+  assert.match(
+    sources.home,
+    /<SectionAnatomy title="From pilot to production" titleId="production-title">[\s\S]*?We build the part that gets it past the pilot:[\s\S]*?<\/SectionAnatomy>/,
+  );
+  assert.doesNotMatch(
+    sources.home,
+    /nnco-approach-frosted-figure-pixelated\.png|class="approach-layout"/,
+  );
+});
+
 test("linked cards share the outlined arrow and complete inversion state", () => {
   assert.match(
     sources.home,
@@ -292,6 +316,10 @@ test("linked cards share the outlined arrow and complete inversion state", () =>
     sources.styles,
     /a\.editorial-card:hover,\s*a\.editorial-card:focus-visible\s*\{\s*background:\s*var\(--ink\);\s*color:\s*var\(--paper\);/s,
   );
+  assert.match(
+    sources.styles,
+    /a\.editorial-card p\s*\{[^}]*margin-bottom:\s*auto;[^}]*padding-bottom:\s*clamp\(2rem, 4vw, 3rem\);/s,
+  );
   assert.doesNotMatch(sources.styles, /\.card-affordance\s*\{[^}]*filter:/s);
   assert.doesNotMatch(sources.home, /sector-panel-grid|variant="sector"/);
   assert.doesNotMatch(sources.styles, /\.sector-panel/);
@@ -300,7 +328,7 @@ test("linked cards share the outlined arrow and complete inversion state", () =>
 test("Company How we work renders canonical data as homepage-style grey cards", () => {
   assert.match(
     sources.company,
-    /import EditorialCard[\s\S]*?import EditorialCardLayer[\s\S]*?import \{ homeBuildItems \} from "@\/data\/home";[\s\S]*?import \{ team, waysOfWorking \}[\s\S]*?<SectionAnatomy title="How we work" titleId="work-title" contentWidth="50">\s*<EditorialCardLayer colSize=\{1\}>[\s\S]*?waysOfWorking\.map\(\(item, index\) => \([\s\S]*?<EditorialCard[\s\S]*?title=\{item\.title\}[\s\S]*?text=\{item\.description\}[\s\S]*?glyph=\{homeBuildItems\[index % homeBuildItems\.length\]\.glyph\}[\s\S]*?<\/EditorialCardLayer>/,
+    /import EditorialCard[\s\S]*?import EditorialCardLayer[\s\S]*?import \{ cardGlyphSets \} from "@\/data\/glyphs";[\s\S]*?import \{ team, waysOfWorking \}[\s\S]*?<SectionAnatomy title="How we work" titleId="work-title" contentWidth="50">\s*<EditorialCardLayer colSize=\{1\}>[\s\S]*?waysOfWorking\.map\(\(item, index\) => \([\s\S]*?<EditorialCard[\s\S]*?title=\{item\.title\}[\s\S]*?text=\{item\.description\}[\s\S]*?glyph=\{cardGlyphSets\.companyWaysOfWorking\[index\]\}[\s\S]*?<\/EditorialCardLayer>/,
   );
   assert.doesNotMatch(sources.company, /ExpandedDetailList/);
   assert.doesNotMatch(sources.company, /CompanyAccordion/);

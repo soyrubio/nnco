@@ -34,6 +34,7 @@ test("marketing typography exposes one semantic scale", () => {
     "--type-size-body-large: clamp(1.0625rem, 1.25vw, 1.2rem);",
     "--type-size-item-heading: clamp(1.15rem, 1.7vw, 1.5rem);",
     "--type-size-section-heading: clamp(1.375rem, 1.85vw, 1.75rem);",
+    "--type-size-section-title: clamp(1.75rem, 2.5vw, 2.5rem);",
     "--type-size-card-heading: clamp(1.5rem, 2.2vw, 2.25rem);",
     "--type-weight-regular: 400;",
     "--type-weight-medium: 500;",

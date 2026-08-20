@@ -1,4 +1,6 @@
 import type { FaqPageKey } from "./faq";
+import { cardGlyphSets } from "./glyphs.ts";
+import type { ModularGlyphDefinition } from "@/lib/modular-glyph";
 
 export interface ContentItem {
   title: string;
@@ -16,13 +18,29 @@ export interface ContentGroup {
   items: readonly string[];
 }
 
+export interface HighlightedLeadSegment {
+  text: string;
+  highlight?: boolean;
+}
+
+export interface CardPresentation {
+  columns?: 1 | 2 | 3;
+  surface?: "solid" | "bordered";
+  glyphs?: readonly ModularGlyphDefinition[];
+  className?: string;
+}
+
 export interface ContentSection {
   title: string;
   paragraphs?: readonly string[];
   items?: readonly ContentItem[];
   links?: readonly ContentLink[];
   groups?: readonly ContentGroup[];
-  render?: "ways-of-working";
+  lead?: readonly HighlightedLeadSegment[];
+  contentWidth?: "50" | "75" | "100";
+  cards?: CardPresentation;
+  groupLayout?: "stacked-numbered";
+  render?: "ways-of-working" | "highlighted-lead";
 }
 
 export interface MarketingPageData {
@@ -33,6 +51,7 @@ export interface MarketingPageData {
   introduction: string;
   primaryAction?: ContentLink;
   secondaryAction?: ContentLink;
+  tone?: "paper" | "dark";
   sections: readonly ContentSection[];
   closing: string;
   faqKey: FaqPageKey;
@@ -66,20 +85,20 @@ export const homePhases = [
 
 export const programmePhases = [
   {
-    title: "Audit",
+    title: "1/ AI Audit",
     text: "We go through your operations and return a ranked map: which workflows AI can take over, what each one is worth, and where your data and your regulator allow it. Two to four weeks.",
     href: "/ai-first-enterprise/ai-audit",
   },
   {
-    title: "First use case in production",
+    title: "2/ First use case in production",
     text: "One workflow, taken all the way. Real data, real users, inside your systems, with evidence behind every step. This is where an organisation finds out what deploying AI actually costs it.",
   },
   {
-    title: "Scale",
+    title: "3/ Scale",
     text: "Further use cases across the operation, reusing the infrastructure and the controls the first one proved. This is the phase where the cost per use case drops.",
   },
   {
-    title: "Operation",
+    title: "4/ Operation",
     text: "Monitoring, quality checks, model replacement and changes when the process or the regulation changes.",
     href: "/ai-first-enterprise/operation",
   },
@@ -87,7 +106,7 @@ export const programmePhases = [
 
 export const programmePage: MarketingPageData = {
   path: "/ai-first-enterprise",
-  metaTitle: "AI-First Enterprise: the programme | NNCO",
+  metaTitle: "AI-First Enterprise: the programme | NNCo.",
   metaDescription:
     "The cross-industry programme that takes a large organisation from an AI audit to systems running in production: what gets built, in what order, on what infrastructure, and who runs it after launch.",
   title: "AI-First Enterprise",
@@ -114,12 +133,14 @@ export const programmePage: MarketingPageData = {
     {
       title: "Four phases",
       items: programmePhases,
+      contentWidth: "50",
+      cards: {
+        columns: 1,
+        className: "home-operation-sequence",
+      },
     },
     {
       title: "Core AI capabilities",
-      paragraphs: [
-        "Every use case is one of these, or a combination. If a request does not map onto them, we say so before it becomes a project.",
-      ],
       items: [
         {
           title: "Agents that run whole workflows",
@@ -134,6 +155,10 @@ export const programmePage: MarketingPageData = {
           text: "Policies, procedures, historical cases, product terms and contracts become searchable in the way people actually ask. Every answer links back to the source document and version.",
         },
       ],
+      cards: {
+        columns: 2,
+        surface: "bordered",
+      },
     },
     {
       title: "Common starting points",
@@ -159,6 +184,10 @@ export const programmePage: MarketingPageData = {
           text: "Responses drafted from the case record and your approved wording. A person reviews and sends.",
         },
       ],
+      cards: {
+        columns: 1,
+        glyphs: cardGlyphSets.commonStartingPoints,
+      },
     },
     {
       title: "Decision boundaries",
@@ -203,7 +232,7 @@ export const programmePage: MarketingPageData = {
 export const programmeSubpages = {
   "ai-audit": {
     path: "/ai-first-enterprise/ai-audit",
-    metaTitle: "AI audit for large institutions | NNCO",
+    metaTitle: "AI audit for large institutions | NNCo.",
     metaDescription:
       "An AI audit maps where AI is worth building in your operation, in what order, and where your data and your regulator allow it. Two to four weeks, ending in a pilot.",
     title: "AI audit",
@@ -244,12 +273,13 @@ export const programmeSubpages = {
             text: "Which decisions must stay with a person, who would operate the system, and who would be accountable for it. Use cases with no named owner do not make the plan.",
           },
         ],
+        cards: {
+          columns: 2,
+          surface: "bordered",
+        },
       },
       {
         title: "Ranked build plan",
-        paragraphs: [
-          "The audit ends in a document and a working session where we argue the ranking with your team.",
-        ],
         items: [
           {
             title: "Opportunity map",
@@ -272,6 +302,11 @@ export const programmeSubpages = {
             text: "One use case defined tightly enough to start: boundary, data, users, success criteria, and what stays with a person.",
           },
         ],
+        contentWidth: "50",
+        cards: {
+          columns: 1,
+          glyphs: cardGlyphSets.rankedBuildPlan,
+        },
       },
       {
         title: "Audit process",
@@ -280,30 +315,35 @@ export const programmeSubpages = {
         ],
         items: [
           {
-            title: "NDA and access",
+            title: "1/ NDA and access",
             text: "Signed before you describe anything internal. We agree who we talk to and what we can see.",
           },
           {
-            title: "Interviews and observation",
+            title: "2/ Interviews and observation",
             text: "Sessions with the people who do the work and the people accountable for it. Operations, risk, IT, and the business owner.",
           },
           {
-            title: "Systems and data review",
+            title: "3/ Systems and data review",
             text: "What exists, what it holds, what it can expose, and in what condition.",
           },
           {
-            title: "Ranking and constraints",
+            title: "4/ Ranking and constraints",
             text: "Candidates scored against value, effort, risk and what the rules allow.",
           },
           {
-            title: "Working session",
+            title: "5/ Working session",
             text: "We present the map and argue it with your team. The sequence usually changes in this room.",
           },
           {
-            title: "Pilot scope",
+            title: "6/ Pilot scope",
             text: "The first use case is scoped and starts.",
           },
         ],
+        contentWidth: "50",
+        cards: {
+          columns: 1,
+          className: "home-operation-sequence",
+        },
       },
       {
         title: "Four essential roles",
@@ -338,17 +378,33 @@ export const programmeSubpages = {
   },
   "private-ai": {
     path: "/ai-first-enterprise/private-ai",
-    metaTitle: "On-premise and private AI deployment | NNCO",
+    metaTitle: "On-premise and private AI deployment | NNCo.",
     metaDescription:
       "Models, retrieval, access control and monitoring deployed inside the boundary you govern. On-premise or in your own tenancy, so sensitive data never leaves your network.",
     title: "Private AI",
     introduction:
       "Models, retrieval, access control, logging and monitoring deployed in an environment you govern. Sensitive data does not leave your network, and there is no call to an external service in the path of a decision.",
+    tone: "dark",
     sections: [
       {
         title: "Private AI scope",
-        paragraphs: [
-          "Private AI deployment means running the model, the retrieval layer and the surrounding controls inside infrastructure the organisation governs, whether that is its own data centre or a dedicated cloud tenancy. The data used for inference, the prompts and the logs stay inside that boundary and are subject to the organisation's own access and retention rules.",
+        render: "highlighted-lead",
+        lead: [
+          { text: "Private AI deployment means running " },
+          { text: "the model", highlight: true },
+          { text: ", " },
+          { text: "retrieval layer", highlight: true },
+          { text: " and " },
+          { text: "surrounding controls", highlight: true },
+          { text: " inside " },
+          { text: "governed infrastructure", highlight: true },
+          {
+            text: ", whether that is the organisation's own data centre or a dedicated cloud tenancy. The data used for inference, prompts and logs ",
+          },
+          { text: "stay inside", highlight: true },
+          { text: " that boundary, under its " },
+          { text: "access and retention", highlight: true },
+          { text: " rules." },
         ],
       },
       {
@@ -358,7 +414,7 @@ export const programmeSubpages = {
         ],
         groups: [
           {
-            title: "Reasons that justify it",
+            title: "1/ Reasons that justify it",
             items: [
               "Data that cannot leave the jurisdiction or the network under law, policy or client contract.",
               "Data classified in a way that rules out third-party processing.",
@@ -367,13 +423,14 @@ export const programmeSubpages = {
             ],
           },
           {
-            title: "Reasons that do not",
+            title: "2/ Reasons that do not",
             items: [
               "A general preference for owning things.",
               "An assumption that private infrastructure is automatically more secure. It is more controlled, which is only an advantage if someone operates it.",
             ],
           },
         ],
+        groupLayout: "stacked-numbered",
       },
       {
         title: "Inside the boundary",
@@ -399,6 +456,10 @@ export const programmeSubpages = {
             text: "Quality, drift, failure and cost, with alerting into the tooling your operations team already uses.",
           },
         ],
+        cards: {
+          columns: 2,
+          surface: "bordered",
+        },
       },
       {
         title: "Operational ownership",
@@ -432,7 +493,7 @@ export const programmeSubpages = {
   },
   operation: {
     path: "/ai-first-enterprise/operation",
-    metaTitle: "Running AI systems after launch | NNCO",
+    metaTitle: "Running AI systems after launch | NNCo.",
     metaDescription:
       "What happens to an AI system after it goes live: monitoring, quality checks, model replacement and changes when the process or the regulation changes.",
     title: "AI operations",
@@ -475,6 +536,11 @@ export const programmeSubpages = {
             text: "When your process changes or the rules do, the system and its documentation change with them.",
           },
         ],
+        contentWidth: "50",
+        cards: {
+          columns: 1,
+          glyphs: cardGlyphSets.ongoingOperation,
+        },
       },
       {
         title: "Internal ownership",
