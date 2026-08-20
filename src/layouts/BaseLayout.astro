@@ -2,7 +2,7 @@
 import FontSwitcher from "@/components/FontSwitcher.astro";
 import PageLoader from "@/components/PageLoader.astro";
 import Schema from "@/components/Schema.astro";
-import { FAVICON_ASSET, PRIMARY_LOGO } from "@/lib/brand-assets";
+import { FAVICON_ASSETS, PRIMARY_LOGO } from "@/lib/brand-assets";
 import {
   FONT_PREFERENCE_STORAGE_KEY,
   storedFontPreferenceValues,
@@ -124,7 +124,34 @@ const loaderTone =
     <meta name="twitter:title" content={title} />
     <meta name="twitter:description" content={description} />
     <meta name="twitter:image" content={imageUrl} />
-    <link rel="icon" type="image/svg+xml" href={FAVICON_ASSET} />
+    <link
+      rel="icon"
+      href={FAVICON_ASSETS.ico}
+      sizes="16x16 32x32 48x48"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      href={FAVICON_ASSETS.png32}
+      sizes="32x32"
+    />
+    <link
+      rel="icon"
+      type="image/svg+xml"
+      href={FAVICON_ASSETS.svg}
+      sizes="any"
+    />
+    <link
+      rel="apple-touch-icon"
+      href={FAVICON_ASSETS.appleTouch}
+      sizes="180x180"
+    />
+    <link
+      rel="mask-icon"
+      href={FAVICON_ASSETS.safariMask}
+      color="#111111"
+    />
+    <link rel="manifest" href={FAVICON_ASSETS.manifest} />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link

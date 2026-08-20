@@ -214,8 +214,11 @@ The structure is deliberately blocky:
   mobile header and 48px in the footer. The discovery report toolbar keeps its
   existing fixed box. Dark placements invert the same black source mark.
 - Header, footer, discovery and Organization metadata use that one versioned
-  primary asset. The favicon uses the same geometry as a white mark on a black
-  tile. Alternate legacy marks remain separate and are not primary fallbacks.
+  primary asset. Favicons keep the same geometry as a paper mark on an ink
+  tile, with a small safe area so the mark remains legible at tab size and
+  survives platform masks. SVG is the primary browser asset, backed by a
+  multi-size ICO, 32px PNG, 180px Apple touch icon and manifest icons.
+  Alternate legacy marks remain separate and are not primary fallbacks.
 - `BlockArrow`: official arrow asset used as a current-color CSS mask.
 - `Button`: primary, secondary and quiet variants. Always full-pill.
 - `Hero`: full-bleed visual with copy constrained to the common rail.
