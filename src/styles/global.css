@@ -150,6 +150,15 @@ img {
   color: var(--paper);
 }
 
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none !important;
+}
+
+.is-page-swapping .site-header {
+  transition: none !important;
+}
+
 :focus-visible {
   outline: 2px solid var(--ink);
   outline-offset: 4px;
@@ -1715,7 +1724,7 @@ legend {
 }
 
 .news-row > .card-affordance {
-  align-self: end;
+  align-self: start;
   justify-self: end;
 }
 
@@ -1950,7 +1959,7 @@ html:not(.has-js) .site-menu[open] > .site-menu__panel > .site-menu__surface {
 }
 
 .site-nav-mega .card-affordance {
-  align-self: center;
+  align-self: start;
   justify-self: end;
 }
 

@@ -8,6 +8,7 @@ import {
   storedFontPreferenceValues,
 } from "@/lib/font-preference";
 import "@/styles/global.css";
+import { ClientRouter } from "astro:transitions";
 
 interface PreloadImage {
   href: string;
@@ -97,6 +98,7 @@ const loaderTone =
         }
       } catch {}
     </script>
+    <ClientRouter fallback="swap" />
     <meta name="generator" content={Astro.generator} />
     <meta name="description" content={description} />
     <meta name="theme-color" content={themeColor} />
@@ -161,6 +163,35 @@ const loaderTone =
         }
       </style>
     </noscript>
+    <script>
+      import { isStoredFontPreference } from "@/lib/font-preference";
+
+      document.addEventListener("astro:before-swap", (event) => {
+        event.viewTransition?.skipTransition();
+
+        const nextDocument = event.newDocument;
+        const nextRoot = nextDocument.documentElement;
+        const activeFont = document.documentElement.dataset.font;
+
+        nextRoot.classList.add("has-js", "skip-page-loader", "is-page-swapping");
+        if (isStoredFontPreference(activeFont)) {
+          nextRoot.dataset.font = activeFont;
+        } else {
+          nextRoot.removeAttribute("data-font");
+        }
+
+        nextDocument.querySelector("[data-page-loader]")?.remove();
+        nextDocument
+          .querySelector("[data-page-content]")
+          ?.removeAttribute("inert");
+      });
+
+      document.addEventListener("astro:page-load", () => {
+        requestAnimationFrame(() => {
+          document.documentElement.classList.remove("is-page-swapping");
+        });
+      });
+    </script>
   </head>
   <body class:list={[tone === "dark" && "page-tone-dark"]}>
     <PageLoader tone={loaderTone} />

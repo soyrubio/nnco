@@ -75,169 +75,176 @@ const mobileFrames = Array.from(
 </section>
 
 <script>
-  const sequenceRoot =
-    document.querySelector<HTMLElement>("[data-hero-sequence]");
+  const initialiseHeroSequences = () => {
+    document
+      .querySelectorAll<HTMLElement>("[data-hero-sequence]")
+      .forEach((sequenceRoot) => {
+        if (sequenceRoot.dataset.sequenceReady === "true") return;
+        sequenceRoot.dataset.sequenceReady = "true";
 
-  if (sequenceRoot && sequenceRoot.dataset.sequenceReady !== "true") {
-    sequenceRoot.dataset.sequenceReady = "true";
+        const image = sequenceRoot.querySelector<HTMLImageElement>(
+          "[data-hero-sequence-image]",
+        );
+        const mobileSource = sequenceRoot.querySelector<HTMLSourceElement>(
+          "[data-hero-sequence-mobile]",
+        );
+        const desktopFrames = (sequenceRoot.dataset.desktopFrames ?? "")
+          .split(" ")
+          .filter(Boolean);
+        const mobileFrames = (sequenceRoot.dataset.mobileFrames ?? "")
+          .split(" ")
+          .filter(Boolean);
+        const mobileViewport = window.matchMedia("(max-width: 767px)");
+        const reducedMotion = window.matchMedia(
+          "(prefers-reduced-motion: reduce)",
+        );
+        const loadedSequences = new Set<string>();
+        const loadingSequences = new Map<string, Promise<boolean>>();
+        const frameDurationsMs = [140, 145, 150, 160, 175, 190, 210, 235, 265, 300];
+        const frameTransitionTimesMs = frameDurationsMs.map((_, index) =>
+          frameDurationsMs
+            .slice(0, index + 1)
+            .reduce((total, duration) => total + duration, 0),
+        );
+        let animationFrameId = 0;
+        let animationStartedAt: number | undefined;
+        let desiredFrame = 0;
+        let hasPlayed = false;
+        let pageReady = !document.querySelector("[data-page-loader]");
 
-    const image = sequenceRoot.querySelector<HTMLImageElement>(
-      "[data-hero-sequence-image]",
-    );
-    const mobileSource = sequenceRoot.querySelector<HTMLSourceElement>(
-      "[data-hero-sequence-mobile]",
-    );
-    const desktopFrames = (sequenceRoot.dataset.desktopFrames ?? "")
-      .split(" ")
-      .filter(Boolean);
-    const mobileFrames = (sequenceRoot.dataset.mobileFrames ?? "")
-      .split(" ")
-      .filter(Boolean);
-    const mobileViewport = window.matchMedia("(max-width: 767px)");
-    const reducedMotion = window.matchMedia(
-      "(prefers-reduced-motion: reduce)",
-    );
-    const loadedSequences = new Set<string>();
-    const loadingSequences = new Map<string, Promise<boolean>>();
-    const frameDurationsMs = [140, 145, 150, 160, 175, 190, 210, 235, 265, 300];
-    const frameTransitionTimesMs = frameDurationsMs.map((_, index) =>
-      frameDurationsMs
-        .slice(0, index + 1)
-        .reduce((total, duration) => total + duration, 0),
-    );
-    let animationFrameId = 0;
-    let animationStartedAt: number | undefined;
-    let desiredFrame = 0;
-    let hasPlayed = false;
-    let pageReady = !document.querySelector("[data-page-loader]");
+        const getActiveSequence = () =>
+          mobileViewport.matches ? mobileFrames : desktopFrames;
 
-    const getActiveSequence = () =>
-      mobileViewport.matches ? mobileFrames : desktopFrames;
+        const preloadSequence = async (frames: string[]) => {
+          const key = frames[0];
+          if (!key || loadedSequences.has(key)) return true;
+          const loading = loadingSequences.get(key);
+          if (loading) return loading;
 
-    const preloadSequence = async (frames: string[]) => {
-      const key = frames[0];
-      if (!key || loadedSequences.has(key)) return true;
-      const loading = loadingSequences.get(key);
-      if (loading) return loading;
+          const promise = Promise.all(
+            frames.slice(1).map(
+              (src) =>
+                new Promise<boolean>((resolve) => {
+                  const preload = new Image();
+                  preload.onload = () => resolve(true);
+                  preload.onerror = () => resolve(false);
+                  preload.src = src;
+                }),
+            ),
+          ).then((results) => {
+            const didLoad = results.every(Boolean);
+            if (didLoad) loadedSequences.add(key);
+            loadingSequences.delete(key);
+            return didLoad;
+          });
 
-      const promise = Promise.all(
-        frames.slice(1).map(
-          (src) =>
-            new Promise<boolean>((resolve) => {
-              const preload = new Image();
-              preload.onload = () => resolve(true);
-              preload.onerror = () => resolve(false);
-              preload.src = src;
-            }),
-        ),
-      ).then((results) => {
-        const didLoad = results.every(Boolean);
-        if (didLoad) loadedSequences.add(key);
-        loadingSequences.delete(key);
-        return didLoad;
-      });
+          loadingSequences.set(key, promise);
+          return promise;
+        };
 
-      loadingSequences.set(key, promise);
-      return promise;
-    };
+        const applyFrame = (index: number) => {
+          if (!image || !mobileSource) return;
+          const frames = getActiveSequence();
+          const src = frames[index];
+          if (!src) return;
 
-    const applyFrame = (index: number) => {
-      if (!image || !mobileSource) return;
-      const frames = getActiveSequence();
-      const src = frames[index];
-      if (!src) return;
+          if (mobileViewport.matches) {
+            mobileSource.srcset = src;
+          } else {
+            image.src = src;
+          }
+        };
 
-      if (mobileViewport.matches) {
-        mobileSource.srcset = src;
-      } else {
-        image.src = src;
-      }
-    };
+        const prepareActiveSequence = async () => {
+          const frames = getActiveSequence();
+          if (frames.length !== 11 || !(await preloadSequence(frames))) return;
+          if (getActiveSequence()[0] !== frames[0]) return;
+          applyFrame(desiredFrame);
+          playSequence();
+        };
 
-    const prepareActiveSequence = async () => {
-      const frames = getActiveSequence();
-      if (frames.length !== 11 || !(await preloadSequence(frames))) return;
-      if (getActiveSequence()[0] !== frames[0]) return;
-      applyFrame(desiredFrame);
-      playSequence();
-    };
+        const playSequence = () => {
+          if (reducedMotion.matches || !pageReady || hasPlayed) return;
+          const frames = getActiveSequence();
+          if (frames.length !== 11 || !loadedSequences.has(frames[0])) return;
 
-    const playSequence = () => {
-      if (reducedMotion.matches || !pageReady || hasPlayed) return;
-      const frames = getActiveSequence();
-      if (frames.length !== 11 || !loadedSequences.has(frames[0])) return;
+          hasPlayed = true;
+          desiredFrame = 0;
+          animationStartedAt = undefined;
+          applyFrame(0);
 
-      hasPlayed = true;
-      desiredFrame = 0;
-      animationStartedAt = undefined;
-      applyFrame(0);
+          const advanceFrame = (timestamp: number) => {
+            animationStartedAt ??= timestamp;
+            const elapsedMs = timestamp - animationStartedAt;
+            desiredFrame = 0;
+            while (
+              desiredFrame < frameTransitionTimesMs.length &&
+              elapsedMs >= frameTransitionTimesMs[desiredFrame]
+            ) {
+              desiredFrame += 1;
+            }
+            applyFrame(desiredFrame);
 
-      const advanceFrame = (timestamp: number) => {
-        animationStartedAt ??= timestamp;
-        const elapsedMs = timestamp - animationStartedAt;
-        desiredFrame = 0;
-        while (
-          desiredFrame < frameTransitionTimesMs.length
-          && elapsedMs >= frameTransitionTimesMs[desiredFrame]
-        ) {
-          desiredFrame += 1;
-        }
-        applyFrame(desiredFrame);
+            if (desiredFrame < frames.length - 1) {
+              animationFrameId = window.requestAnimationFrame(advanceFrame);
+            } else {
+              animationFrameId = 0;
+            }
+          };
 
-        if (desiredFrame < frames.length - 1) {
           animationFrameId = window.requestAnimationFrame(advanceFrame);
-        } else {
-          animationFrameId = 0;
+        };
+
+        const handleMotionPreference = () => {
+          if (reducedMotion.matches) {
+            window.cancelAnimationFrame(animationFrameId);
+            animationFrameId = 0;
+            animationStartedAt = undefined;
+            hasPlayed = false;
+            desiredFrame = 0;
+            applyFrame(0);
+            return;
+          }
+
+          hasPlayed = false;
+          void prepareActiveSequence();
+        };
+
+        const handleViewportChange = () => {
+          void prepareActiveSequence();
+        };
+
+        const handlePageReady = () => {
+          pageReady = true;
+          playSequence();
+        };
+
+        if (!pageReady) {
+          window.addEventListener("nnco:page-ready", handlePageReady, {
+            once: true,
+          });
         }
-      };
 
-      animationFrameId = window.requestAnimationFrame(advanceFrame);
-    };
+        if (!reducedMotion.matches) {
+          void prepareActiveSequence();
+        }
 
-    const handleMotionPreference = () => {
-      if (reducedMotion.matches) {
-        window.cancelAnimationFrame(animationFrameId);
-        animationFrameId = 0;
-        animationStartedAt = undefined;
-        hasPlayed = false;
-        desiredFrame = 0;
-        applyFrame(0);
-        return;
-      }
+        document.addEventListener(
+          "astro:before-swap",
+          () => {
+            window.cancelAnimationFrame(animationFrameId);
+            window.removeEventListener("nnco:page-ready", handlePageReady);
+            reducedMotion.removeEventListener("change", handleMotionPreference);
+            mobileViewport.removeEventListener("change", handleViewportChange);
+          },
+          { once: true },
+        );
 
-      hasPlayed = false;
-      void prepareActiveSequence();
-    };
+        reducedMotion.addEventListener("change", handleMotionPreference);
+        mobileViewport.addEventListener("change", handleViewportChange);
+      });
+  };
 
-    const handleViewportChange = () => {
-      void prepareActiveSequence();
-    };
-
-    const handlePageReady = () => {
-      pageReady = true;
-      playSequence();
-    };
-
-    if (!pageReady) {
-      window.addEventListener("nnco:page-ready", handlePageReady, { once: true });
-    }
-
-    if (!reducedMotion.matches) {
-      void prepareActiveSequence();
-    }
-
-    document.addEventListener(
-      "astro:before-swap",
-      () => {
-        window.cancelAnimationFrame(animationFrameId);
-        window.removeEventListener("nnco:page-ready", handlePageReady);
-        reducedMotion.removeEventListener("change", handleMotionPreference);
-        mobileViewport.removeEventListener("change", handleViewportChange);
-      },
-      { once: true },
-    );
-
-    reducedMotion.addEventListener("change", handleMotionPreference);
-    mobileViewport.addEventListener("change", handleViewportChange);
-  }
+  initialiseHeroSequences();
+  document.addEventListener("astro:page-load", initialiseHeroSequences);
 </script>

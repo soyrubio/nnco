@@ -1,10 +1,14 @@
 <script>
-  const header = document.querySelector<HTMLElement>(
-    '[data-site-header="hero"]',
-  );
-  const hero = document.querySelector<HTMLElement>("[data-marketing-hero]");
+  const initialiseMarketingBehavior = () => {
+    const header = document.querySelector<HTMLElement>(
+      '[data-site-header="hero"]',
+    );
+    const hero = document.querySelector<HTMLElement>("[data-marketing-hero]");
+    if (!header || !hero || hero.dataset.marketingBehaviorReady === "true") {
+      return;
+    }
 
-  if (header && hero) {
+    hero.dataset.marketingBehaviorReady = "true";
     const headerObserver = new IntersectionObserver(
       ([entry]) => {
         const heroHasPassed =
@@ -19,5 +23,13 @@
     );
 
     headerObserver.observe(hero);
-  }
+    document.addEventListener(
+      "astro:before-swap",
+      () => headerObserver.disconnect(),
+      { once: true },
+    );
+  };
+
+  initialiseMarketingBehavior();
+  document.addEventListener("astro:page-load", initialiseMarketingBehavior);
 </script>

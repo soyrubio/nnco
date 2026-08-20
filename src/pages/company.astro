@@ -170,11 +170,18 @@ const faqSchema = buildFaqSchema(faq, "/company");
   </main>
   <Footer />
   <script>
-    const companyThesis = document.querySelector<HTMLElement>(
-      ".company-about__lead",
-    );
+    const initialiseCompanyThesis = () => {
+      const companyThesis = document.querySelector<HTMLElement>(
+        ".company-about__lead",
+      );
+      if (
+        !companyThesis ||
+        companyThesis.dataset.companyThesisReady === "true"
+      ) {
+        return;
+      }
 
-    if (companyThesis) {
+      companyThesis.dataset.companyThesisReady = "true";
       const reducedMotion = window.matchMedia(
         "(prefers-reduced-motion: reduce)",
       );
@@ -207,6 +214,9 @@ const faqSchema = buildFaqSchema(faq, "/company");
           { once: true },
         );
       }
-    }
+    };
+
+    initialiseCompanyThesis();
+    document.addEventListener("astro:page-load", initialiseCompanyThesis);
   </script>
 </BaseLayout>

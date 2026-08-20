@@ -184,6 +184,10 @@ test("desktop under-nav spans the viewport and keeps a ruled vertical link seque
     /\.site-nav-mega a > span:not\(\.card-affordance\)\s*\{[^}]*font-size:\s*var\(--type-size-body\);[^}]*font-weight:\s*var\(--type-weight-regular\);/s,
   );
   assert.match(
+    stylesSource,
+    /\.site-nav-mega \.card-affordance\s*\{[^}]*align-self:\s*start;[^}]*justify-self:\s*end;/s,
+  );
+  assert.match(
     headerSource,
     /class="site-nav-mega"[\s\S]*?class="content-rail site-nav-mega__inner"[\s\S]*?class="site-nav-mega__title"[\s\S]*?class="site-nav-mega__links"[\s\S]*?<CardAffordance \/>[\s\S]*?class="nnco-header-rule site-nav-mega__rule"/,
   );

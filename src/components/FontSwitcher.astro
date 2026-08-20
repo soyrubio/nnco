@@ -45,36 +45,41 @@ const { visible = true } = Astro.props;
     syncFontSelects(preference);
   }
 
-  const activePreference = root.getAttribute("data-font");
-  applyFontPreference(
-    isStoredFontPreference(activePreference) ? activePreference : null,
-  );
+  function initialiseFontSwitchers() {
+    const activePreference = root.getAttribute("data-font");
+    applyFontPreference(
+      isStoredFontPreference(activePreference) ? activePreference : null,
+    );
 
-  document.querySelectorAll<HTMLSelectElement>("[data-font-select]").forEach(
-    (select) => {
-      select.addEventListener("change", () => {
-        const value = select.value;
-        if (value !== "" && !isStoredFontPreference(value)) {
-          syncFontSelects(
-            isStoredFontPreference(root.dataset.font)
-              ? root.dataset.font
-              : null,
-          );
-          return;
-        }
+    document.querySelectorAll<HTMLSelectElement>("[data-font-select]").forEach(
+      (select) => {
+        if (select.dataset.fontSelectReady === "true") return;
+        select.dataset.fontSelectReady = "true";
 
-        const preference = isStoredFontPreference(value) ? value : null;
-        applyFontPreference(preference);
-        try {
-          if (preference === null) {
-            localStorage.removeItem(FONT_PREFERENCE_STORAGE_KEY);
-          } else {
-            localStorage.setItem(FONT_PREFERENCE_STORAGE_KEY, preference);
+        select.addEventListener("change", () => {
+          const value = select.value;
+          if (value !== "" && !isStoredFontPreference(value)) {
+            syncFontSelects(
+              isStoredFontPreference(root.dataset.font)
+                ? root.dataset.font
+                : null,
+            );
+            return;
           }
-        } catch {}
-      });
-    },
-  );
+
+          const preference = isStoredFontPreference(value) ? value : null;
+          applyFontPreference(preference);
+          try {
+            if (preference === null) {
+              localStorage.removeItem(FONT_PREFERENCE_STORAGE_KEY);
+            } else {
+              localStorage.setItem(FONT_PREFERENCE_STORAGE_KEY, preference);
+            }
+          } catch {}
+        });
+      },
+    );
+  }
 
   window.addEventListener("storage", (event) => {
     if (event.key !== FONT_PREFERENCE_STORAGE_KEY) return;
@@ -84,6 +89,9 @@ const { visible = true } = Astro.props;
       applyFontPreference(event.newValue);
     }
   });
+
+  initialiseFontSwitchers();
+  document.addEventListener("astro:page-load", initialiseFontSwitchers);
 </script>
 
 <style>

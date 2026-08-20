@@ -160,7 +160,10 @@ The structure is deliberately blocky:
   remote Geist loading, global tokens and the single site-wide font utility.
   The default root has no font data attribute and renders Helvetica;
   `html[data-font="ronzino"]`, `html[data-font="geist"]` and
-  `html[data-font="poppins"]` are the only alternate states.
+  `html[data-font="poppins"]` are the only alternate states. Internal page
+  navigation uses Astro's client router with an immediate, non-animated swap.
+  The initial page cover does not replay between routes, and client-side
+  behaviors reinitialize after each swap.
 - `Header`: large official NNCo. mark, single-line navigation and one CTA.
   Primary navigation labels use the 16px control size at regular weight; the
   active tab remains regular because its inverted surface supplies emphasis.
@@ -385,7 +388,7 @@ The structure is deliberately blocky:
   title and standard-body summary together on the left, followed by a small
   outlined date capsule whose 1px border uses the same softer rule colour as a
   secondary button;
-  only the shared arrow remains on the right, aligned to the row's bottom.
+  only the shared arrow remains on the right, aligned to the row's top.
   Keyboard focus uses the shared
   visible outline without changing the row surface. Dates use sentence case
   and the long English format `6 August 2026`. The `/blog` list progressively

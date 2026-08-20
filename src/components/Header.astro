@@ -212,6 +212,7 @@ const navigationDropdowns = siteNavigation.flatMap((item) =>
     const reducedNavigationMotion = window.matchMedia(
       "(prefers-reduced-motion: reduce)",
     );
+    const navigationController = new AbortController();
     const navigationAnimationDuration = 500;
     let megaMenuCloseTimer = 0;
     let mobileMenuCloseTimer = 0;
@@ -461,7 +462,7 @@ const navigationDropdowns = siteNavigation.flatMap((item) =>
         return;
       }
       closeNavigation();
-    });
+    }, { signal: navigationController.signal });
 
     header.addEventListener("keydown", (event) => {
       if (event.key !== "Escape") return;
@@ -476,7 +477,20 @@ const navigationDropdowns = siteNavigation.flatMap((item) =>
       else mobileMenu?.querySelector<HTMLElement>("summary")?.focus();
     });
 
-    mobileNavigation.addEventListener("change", () => closeNavigation());
+    mobileNavigation.addEventListener("change", () => closeNavigation(), {
+      signal: navigationController.signal,
+    });
+
+    document.addEventListener(
+      "astro:before-swap",
+      () => {
+        cancelMegaMenuClose();
+        cancelMobileMenuClose();
+        cancelMegaMenuHeightAnimation();
+        navigationController.abort();
+      },
+      { once: true },
+    );
   };
 
   const initialiseHeaderTone = (header: HTMLElement) => {
