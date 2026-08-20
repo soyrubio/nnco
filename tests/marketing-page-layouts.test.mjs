@@ -76,6 +76,15 @@ test("programme and audit sections use the requested shared card patterns", () =
 });
 
 test("Private AI and operation use their requested page and section treatments", () => {
+  assert.match(sources.styles, /--dark-body:\s*#d0d0d0;/);
+  assert.match(
+    sources.styles,
+    /\.editorial-page--dark\s*\{[^}]*--muted:\s*#b8b8b8;/s,
+  );
+  assert.match(
+    sources.styles,
+    /\.editorial-page--dark \.editorial-hero__introduction\s*\{\s*color:\s*var\(--dark-body\);/s,
+  );
   const privateAi = programmeSubpages["private-ai"];
   assert.equal(privateAi.tone, "dark");
   const lead = section(privateAi, "Private AI scope");

@@ -27,7 +27,7 @@ source to copy page by page.
 --muted: #4d4d4d;
 --faint: #606060;
 --rule: rgba(17, 17, 17, 0.18);
---dark-body: #b8b8b8;
+--dark-body: #d0d0d0;
 --fine-rule-thickness: 1px;
 --content-max: 1440px;
 --structural-rule-thickness: 5px;
@@ -84,10 +84,10 @@ inherits the shared `--font-sans` token.
 - Desktop composition may be asymmetric. Every multi-column component collapses
   to one column below 768px.
 - Header height is 80px on desktop and 72px on mobile.
-- While the shared header overlays the homepage hero, its surface is transparent
-  with a strong 24px backdrop blur; the hero's existing top gradient keeps
-  the white identity and navigation legible. After the hero, it returns to the
-  paper surface. On every marketing route, the shared header observes dark
+- The complete navigation surface, including the header row and any open
+  dropdown, always shares one solid tone. It uses ink over the homepage hero
+  and dark sections, and paper over light sections. On every marketing route,
+  the shared header observes dark
   `SectionFrame` regions and switches to its ink surface with paper identity,
   navigation, rule and controls precisely while it overlaps them.
 - Desktop navigation begins immediately after the logo rather than floating in
@@ -164,19 +164,23 @@ The structure is deliberately blocky:
 - `Header`: large official NNCo. mark, single-line navigation and one CTA.
   Primary navigation labels use the 16px control size at regular weight; the
   active tab remains regular because its inverted surface supplies emphasis.
-  Dropdown controls hard-switch between the outlined Google Material Symbols
-  `keyboard_arrow_down` and `keyboard_arrow_up`; interface text inherits the
-  shared typeface token. On desktop, a dropdown reveals a full-viewport-width
+  Navigation dropdown controls omit decorative carets; interface text inherits
+  the shared typeface token. On desktop, a dropdown reveals a full-viewport-width
   under-nav over the existing page content. Its content remains on the shared
   rail: the dropdown title occupies the left two-sixths and a vertical sequence
   of links occupies the right four-sixths. Each link keeps its concise
-  description. Link titles use the shared item-heading role and descriptions
-  use regular body typography. Rows have no horizontal padding and only the
+  description. Each row places its title above its description and keeps the
+  card-style arrow vertically centred at the right edge. The description may
+  use the full lower-row width available before the arrow.
+  Link titles use the shared item-heading role and descriptions use regular
+  body typography. Rows have no horizontal padding and only the
   interior boundaries carry a fine rule, leaving the first edge and final edge
   open. The panel ends with the same rail-aligned 5px separator as the header.
-  Its surface follows the header tone: paper with ink text on light headers,
-  and ink with paper text on dark or transparent hero headers. Current items
-  keep the same presentation as every other row. Hover keeps the row surface
+  Header and under-nav surfaces are always solid: paper with ink text on light
+  headers and ink with paper text on dark headers. The homepage header is solid
+  ink while it sits over the hero and switches to solid paper after scrolling.
+  Current items keep
+  the same presentation as every other row. Hover keeps the row surface
   unchanged, softens only its text and retains the shared card-style forward
   arrow on the right. Desktop dropdown
   buttons control one shared panel attached directly below the header's 5px
@@ -201,7 +205,7 @@ The structure is deliberately blocky:
   open outer list edges and rail-aligned bottom separator. Its established
   grouped information hierarchy remains intact in one column.
 - `DisclosureChevron`: the shared, decorative Material Symbols down/up pair for
-  native header and FAQ disclosures. Open state hard-switches the glyph without
+  FAQ disclosures. Open state hard-switches the glyph without
   rotation, fading or motion.
 - `nnco-header-rule`: the single heavy rule primitive shared by the marketing
   header and discovery header.
@@ -229,8 +233,10 @@ The structure is deliberately blocky:
 - `SectionFrame`: full-width paper or dark background plus the shared content
   rail. A dark frame remains full-bleed horizontally, adds the shared paper
   margin above and below, and uses the larger dark-section content padding.
-  Body paragraphs and list copy on every ink surface use `--dark-body`; titles,
-  controls, rules and inverted highlight text retain the brighter paper colour.
+  Primary body paragraphs, hero introductions and list copy on every ink
+  surface use the softer off-white `--dark-body`; titles, controls, rules and
+  inverted highlight text retain the brighter paper colour. Truly secondary
+  metadata and footer copy remain at the quieter dark-page muted value.
   The Private AI route is the deliberate exception: its entire page surface is
   dark, so its adjacent dark frames have no paper margins and use the standard
   section rhythm.
@@ -270,6 +276,13 @@ The structure is deliberately blocky:
 - `PageHero`: shared introduction for non-home marketing and index pages. It
   uses a consistent `clamp(40rem, 80dvh, 56rem)` minimum height and contains a
   title, introduction and optional actions. Its content is bottom-aligned.
+- The not-found route is a deliberate utility-page exception. Its main surface
+  has a `100dvh` minimum height and keeps the shared two-to-four desktop split:
+  title on the left, original recovery links and a compact game on the right.
+  The game is a functional six-by-four ruled board with one keyboard-accessible
+  target. Each catch hard-cuts the target to a new cell, and the fourth catch
+  resolves to a short status message. It has no automatic motion, preserves a
+  direct route home, announces progress, and collapses to one column on mobile.
 - `EditorialCard`: shared text card for standard content and large industry
   panels. All cards use generous responsive internal padding. Titles and
   descriptions align to the top. An optional modular glyph sits above the copy
@@ -390,11 +403,10 @@ The structure is deliberately blocky:
   rows stay flush to the content rail with no movement, transition or surface
   change on hover. The first row relies on the shared content inset and the
   final row uses only a small 0.75rem bottom inset, echoing the compact FAQ list
-  edges. Each post keeps its card-heading
-  title and standard-body summary together on the left, followed by a small
-  outlined date capsule whose 1px border uses the same softer rule colour as a
-  secondary button;
-  only the shared arrow remains on the right, aligned to the row's top.
+  edges. Each post keeps its card-heading title and standard-body summary
+  together on the left, followed by a small outlined date capsule whose 1px
+  border uses the same softer rule colour as a secondary button; only the
+  shared arrow remains on the right, aligned to the row's bottom.
   Keyboard focus uses the shared
   visible outline without changing the row surface. Dates use sentence case
   and the long English format `6 August 2026`. The `/blog` list progressively

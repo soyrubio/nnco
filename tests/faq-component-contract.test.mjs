@@ -16,15 +16,12 @@ const sources = Object.fromEntries(
   ),
 );
 
-test("header and FAQ disclosures compose the same decorative chevron", () => {
+test("FAQ disclosures compose the decorative chevron while navigation omits carets", () => {
   assert.match(
     sources.chevron,
     /<span class="disclosure-chevron" aria-hidden="true">[\s\S]*?class="material-symbols-outlined navigation-caret__down"[\s\S]*?keyboard_arrow_down[\s\S]*?class="material-symbols-outlined navigation-caret__up"[\s\S]*?keyboard_arrow_up/,
   );
-  assert.match(
-    sources.header,
-    /import DisclosureChevron[\s\S]*?<DisclosureChevron \/>[\s\S]*?<DisclosureChevron \/>/,
-  );
+  assert.doesNotMatch(sources.header, /DisclosureChevron/);
   assert.match(
     sources.faq,
     /import DisclosureChevron[\s\S]*?<details name=\{groupName\}>\s*<summary>[\s\S]*?<DisclosureChevron \/>[\s\S]*?<div class="faq-list__answer">/,

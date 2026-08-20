@@ -338,7 +338,7 @@ test("blog list rows remain static on hover", () => {
   );
   assert.match(
     sourceEntries.styles,
-    /\.news-row > \.card-affordance\s*\{[^}]*align-self:\s*start;[^}]*justify-self:\s*end;/s,
+    /\.news-row > \.card-affordance\s*\{[^}]*align-self:\s*end;[^}]*justify-self:\s*end;/s,
   );
 
   assert.doesNotMatch(

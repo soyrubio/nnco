@@ -1,0 +1,82 @@
+<section
+  class="not-found-game"
+  aria-labelledby="not-found-game-title"
+  data-not-found-game
+>
+  <div class="not-found-game__header">
+    <h2 id="not-found-game-title">Catch the missing page</h2>
+    <p id="not-found-game-status" aria-live="polite">Caught 0 of 4</p>
+  </div>
+  <p>Catch the block four times. It is not especially cooperative.</p>
+  <div
+    class="not-found-game__board"
+    role="group"
+    aria-label="Catch the missing page game board"
+  >
+    <button
+      type="button"
+      class="not-found-game__target"
+      aria-label="Catch the missing page, attempt 1 of 4"
+      aria-describedby="not-found-game-status"
+      data-not-found-game-target
+    >
+      404
+    </button>
+  </div>
+</section>
+
+<script>
+  const initialiseNotFoundGame = (game: HTMLElement) => {
+    if (game.dataset.notFoundGameReady === "true") return;
+    game.dataset.notFoundGameReady = "true";
+
+    const target = game.querySelector<HTMLButtonElement>(
+      "[data-not-found-game-target]",
+    );
+    const status = game.querySelector<HTMLElement>("#not-found-game-status");
+    if (!target || !status) return;
+
+    const positions = [
+      [4, 1],
+      [1, 3],
+      [5, 2],
+      [2, 0],
+    ] as const;
+    let catches = 0;
+
+    const setPosition = ([column, row]: (typeof positions)[number]) => {
+      target.style.setProperty("--not-found-column", String(column));
+      target.style.setProperty("--not-found-row", String(row));
+    };
+
+    setPosition(positions[0]);
+    target.addEventListener("click", () => {
+      catches += 1;
+
+      if (catches === positions.length) {
+        game.dataset.notFoundGameComplete = "true";
+        target.disabled = true;
+        target.textContent = "Found";
+        target.setAttribute("aria-label", "Missing page recovered");
+        status.textContent = "Page recovered. Wrong page, unfortunately.";
+        return;
+      }
+
+      setPosition(positions[catches]);
+      status.textContent = `Caught ${catches} of ${positions.length}`;
+      target.setAttribute(
+        "aria-label",
+        `Catch the missing page, attempt ${catches + 1} of ${positions.length}`,
+      );
+    });
+  };
+
+  const initialiseNotFoundGames = () => {
+    document
+      .querySelectorAll<HTMLElement>("[data-not-found-game]")
+      .forEach(initialiseNotFoundGame);
+  };
+
+  initialiseNotFoundGames();
+  document.addEventListener("astro:page-load", initialiseNotFoundGames);
+</script>

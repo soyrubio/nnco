@@ -67,6 +67,10 @@ test("header keeps ancestor styling separate from exact page semantics", () => {
     /class="site-nav-dropdown-trigger"[\s\S]*?data-current-section=/,
   );
   assert.match(headerSource, /class="site-nav-dropdown-trigger"[\s\S]*?aria-expanded="false"/);
+  assert.doesNotMatch(
+    headerSource,
+    /DisclosureChevron/,
+  );
   assert.match(stylesSource, /\[data-current-section="true"\]/);
   assert.doesNotMatch(blogArticleSource, /<Header\s+currentPath="\/blog"/);
 });
@@ -98,15 +102,32 @@ test("header stacking keeps navigation overlays above the structural rule", () =
 });
 
 test("desktop dropdown palette follows the header tone", () => {
-  assert.match(stylesSource, /--nav-dropdown-surface:\s*var\(--paper\);/);
+  assert.match(stylesSource, /--nav-surface:\s*var\(--paper\);/);
   assert.match(
     stylesSource,
-    /\.site-header--over-hero:not\(\.is-scrolled\),\s*\.site-header\.is-over-dark\s*\{[^}]*--nav-dropdown-surface:\s*var\(--ink\);/s,
+    /--nav-dropdown-surface:\s*var\(--nav-surface\);/,
+  );
+  assert.match(
+    stylesSource,
+    /\.site-header--over-hero:not\(\.is-scrolled\),\s*\.site-header\.is-over-dark\s*\{[^}]*--nav-surface:\s*var\(--ink\);/s,
   );
   assert.match(
     stylesSource,
     /\.site-nav-mega__clip\s*\{[^}]*background:\s*var\(--nav-dropdown-surface\);/s,
   );
+  assert.match(
+    stylesSource,
+    /\.site-header\s*\{[^}]*background:\s*var\(--nav-surface\);[^}]*color:\s*var\(--nav-text\);[^}]*backdrop-filter:\s*none;/s,
+  );
+  assert.match(
+    stylesSource,
+    /\.site-header--over-hero\s*\{[^}]*background:\s*var\(--nav-surface\);[^}]*color:\s*var\(--nav-text\);[^}]*backdrop-filter:\s*none;/s,
+  );
+  assert.match(
+    stylesSource,
+    /\.site-header--over-hero\.is-scrolled\s*\{[^}]*background:\s*var\(--nav-surface\);[^}]*color:\s*var\(--nav-text\);[^}]*backdrop-filter:\s*none;/s,
+  );
+  assert.doesNotMatch(stylesSource, /\.site-nav-mega__clip\s*\{[^}]*backdrop-filter:/s);
   assert.match(
     stylesSource,
     /\.site-nav-mega a:is\(:hover, :focus-visible\) strong,[\s\S]*?> span:not\(\.card-affordance\)\s*\{[^}]*opacity:\s*0\.62;/s,
@@ -138,7 +159,7 @@ test("every dark section frame switches the shared marketing header tone", () =>
   assert.doesNotMatch(marketingBehaviorSource, /private-ai-section|is-over-dark/);
   assert.match(
     stylesSource,
-    /\.site-header\.is-over-dark\s*\{[^}]*background:\s*var\(--ink\);[^}]*color:\s*var\(--paper\);/s,
+    /\.site-header\.is-over-dark\s*\{[^}]*background:\s*var\(--nav-surface\);[^}]*color:\s*var\(--nav-text\);/s,
   );
   assert.match(
     stylesSource,
@@ -173,19 +194,27 @@ test("desktop under-nav spans the viewport and keeps a ruled vertical link seque
   );
   assert.match(
     stylesSource,
+    /\.site-nav-mega a\s*\{[^}]*grid-template-columns:\s*minmax\(0, 1fr\) auto;[^}]*grid-template-areas:\s*"title arrow"\s*"description arrow";[^}]*align-items:\s*start;[^}]*row-gap:\s*0\.75rem;/s,
+  );
+  assert.match(
+    stylesSource,
     /\.site-nav-mega a:first-child\s*\{[^}]*padding-top:\s*0;[^}]*\}[\s\S]*?\.site-nav-mega a:last-child\s*\{[^}]*padding-bottom:\s*0;/s,
   );
   assert.match(
     stylesSource,
-    /\.site-nav-mega a strong\s*\{[^}]*font-size:\s*var\(--type-size-item-heading\);[^}]*font-weight:\s*var\(--type-weight-medium\);/s,
+    /\.site-nav-mega a strong\s*\{[^}]*grid-area:\s*title;[^}]*font-size:\s*var\(--type-size-item-heading\);[^}]*font-weight:\s*var\(--type-weight-medium\);/s,
   );
   assert.match(
     stylesSource,
-    /\.site-nav-mega a > span:not\(\.card-affordance\)\s*\{[^}]*font-size:\s*var\(--type-size-body\);[^}]*font-weight:\s*var\(--type-weight-regular\);/s,
+    /\.site-nav-mega a > span:not\(\.card-affordance\)\s*\{[^}]*grid-area:\s*description;[^}]*font-size:\s*var\(--type-size-body\);[^}]*font-weight:\s*var\(--type-weight-regular\);/s,
+  );
+  assert.doesNotMatch(
+    stylesSource,
+    /\.site-nav-mega a > span:not\(\.card-affordance\)\s*\{[^}]*max-width:/s,
   );
   assert.match(
     stylesSource,
-    /\.site-nav-mega \.card-affordance\s*\{[^}]*align-self:\s*start;[^}]*justify-self:\s*end;/s,
+    /\.site-nav-mega \.card-affordance\s*\{[^}]*grid-area:\s*arrow;[^}]*align-self:\s*center;[^}]*justify-self:\s*end;/s,
   );
   assert.match(
     headerSource,

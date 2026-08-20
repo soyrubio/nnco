@@ -3,7 +3,6 @@ import BlockArrow from "./BlockArrow.astro";
 import BrandLogo from "./BrandLogo.astro";
 import Button from "./Button.astro";
 import CardAffordance from "./CardAffordance.astro";
-import DisclosureChevron from "./DisclosureChevron.astro";
 import { siteNavigation } from "@/data/site";
 import {
   isExactNavigationPage,
@@ -80,7 +79,6 @@ const navigationDropdowns = siteNavigation.flatMap((item) =>
                   aria-controls="site-navigation-mega-menu"
                 >
                   <span>{item.label}</span>
-                  <DisclosureChevron />
                 </button>
               ),
             )}
@@ -89,7 +87,6 @@ const navigationDropdowns = siteNavigation.flatMap((item) =>
           <details class="site-menu" data-navigation-menu>
             <summary>
               <span>Menu</span>
-              <DisclosureChevron />
             </summary>
             <div class="site-menu__panel">
               <div class="site-menu__surface">
