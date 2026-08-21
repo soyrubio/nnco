@@ -12,6 +12,7 @@ const sources = Object.fromEntries(
       header: "../src/components/Header.astro",
       hero: "../src/components/Hero.astro",
       marketing: "../src/components/MarketingBehavior.astro",
+      viewport: "../src/components/ViewportMotion.astro",
       privateAi: "../src/components/PrivateAiBoundary.astro",
       company: "../src/pages/company.astro",
       styles: "../src/styles/global.css",
@@ -68,8 +69,7 @@ test("page-specific DOM behaviors reinitialize after every Astro swap", () => {
     "header",
     "hero",
     "marketing",
-    "privateAi",
-    "company",
+    "viewport",
   ]) {
     assert.match(
       sources[name],
@@ -81,8 +81,13 @@ test("page-specific DOM behaviors reinitialize after every Astro swap", () => {
   assert.match(sources.header, /navigationController\.abort\(\);/);
   assert.match(sources.hero, /dataset\.sequenceReady/);
   assert.match(sources.marketing, /dataset\.marketingBehaviorReady/);
-  assert.match(sources.privateAi, /dataset\.privateAiBoundaryReady/);
-  assert.match(sources.company, /dataset\.companyThesisReady/);
+  assert.match(sources.viewport, /disconnectViewportMotion/);
+  assert.match(
+    sources.viewport,
+    /document\.addEventListener\("astro:before-swap"/,
+  );
+  assert.doesNotMatch(sources.privateAi, /<script>|astro:page-load/);
+  assert.doesNotMatch(sources.company, /initialiseCompanyThesis|astro:page-load/);
 });
 
 test("the design contract documents the restrained navigation behavior", () => {

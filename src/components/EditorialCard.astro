@@ -33,6 +33,7 @@ const Element = href ? "a" : "article";
     glyph && "editorial-card--with-glyph",
   ]}
   href={href}
+  data-viewport-motion
 >
   {
     glyph && (
@@ -45,7 +46,12 @@ const Element = href ? "a" : "article";
       </div>
     )
   }
-  <h3>{title}</h3>
-  <p>{text}</p>
+  <h3 data-viewport-motion-item>{title}</h3>
+  <p
+    data-viewport-motion-item
+    style="--viewport-motion-delay: 140ms"
+  >
+    {text}
+  </p>
   {href && <CardAffordance />}
 </Element>

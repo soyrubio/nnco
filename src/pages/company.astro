@@ -35,7 +35,7 @@ const faqSchema = buildFaqSchema(faq, "/company");
     <SectionFrame>
       <div class="company-about__lead-section">
         <span class="section-anatomy__rule" aria-hidden="true"></span>
-        <p class="company-about__lead">
+        <p class="company-about__lead" data-viewport-motion>
           Large institutions have no shortage of AI pilots. The challenge is
           getting them <span class="company-about__highlight" style="--highlight-index: 0"><span>into production</span></span>.
           A workshop identifies a use case, and an agency proves that it can
@@ -169,54 +169,4 @@ const faqSchema = buildFaqSchema(faq, "/company");
     />
   </main>
   <Footer />
-  <script>
-    const initialiseCompanyThesis = () => {
-      const companyThesis = document.querySelector<HTMLElement>(
-        ".company-about__lead",
-      );
-      if (
-        !companyThesis ||
-        companyThesis.dataset.companyThesisReady === "true"
-      ) {
-        return;
-      }
-
-      companyThesis.dataset.companyThesisReady = "true";
-      const reducedMotion = window.matchMedia(
-        "(prefers-reduced-motion: reduce)",
-      );
-
-      if (!reducedMotion.matches) {
-        const highlightObserver = new IntersectionObserver(
-          ([entry]) => {
-            if (!entry.isIntersecting) return;
-            companyThesis.classList.add("is-highlight-visible");
-            highlightObserver.disconnect();
-          },
-          { threshold: 0.3 },
-        );
-
-        const observeHighlights = () => {
-          highlightObserver.observe(companyThesis);
-        };
-
-        if (document.querySelector("[data-page-loader]")) {
-          window.addEventListener("nnco:page-ready", observeHighlights, {
-            once: true,
-          });
-        } else {
-          observeHighlights();
-        }
-
-        document.addEventListener(
-          "astro:before-swap",
-          () => highlightObserver.disconnect(),
-          { once: true },
-        );
-      }
-    };
-
-    initialiseCompanyThesis();
-    document.addEventListener("astro:page-load", initialiseCompanyThesis);
-  </script>
 </BaseLayout>

@@ -1,0 +1,64 @@
+<script>
+  const visibilityThreshold = 0.15;
+  const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+  let viewportObserver: IntersectionObserver | undefined;
+  let pageReadyHandler: (() => void) | undefined;
+
+  const disconnectViewportMotion = () => {
+    viewportObserver?.disconnect();
+    viewportObserver = undefined;
+
+    if (pageReadyHandler) {
+      window.removeEventListener("nnco:page-ready", pageReadyHandler);
+      pageReadyHandler = undefined;
+    }
+  };
+
+  const observeViewportMotion = () => {
+    const targets = document.querySelectorAll<HTMLElement>(
+      "[data-viewport-motion]",
+    );
+
+    if (reducedMotion.matches) {
+      targets.forEach((target) => target.classList.add("is-in-view"));
+      return;
+    }
+
+    viewportObserver = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.intersectionRatio >= visibilityThreshold) {
+            entry.target.classList.add("is-in-view");
+          } else if (!entry.isIntersecting) {
+            entry.target.classList.remove("is-in-view");
+          }
+        });
+      },
+      { threshold: [0, visibilityThreshold] },
+    );
+
+    targets.forEach((target) => viewportObserver?.observe(target));
+  };
+
+  const initialiseViewportMotion = () => {
+    disconnectViewportMotion();
+
+    if (document.querySelector("[data-page-loader]")) {
+      pageReadyHandler = () => {
+        pageReadyHandler = undefined;
+        observeViewportMotion();
+      };
+      window.addEventListener("nnco:page-ready", pageReadyHandler, {
+        once: true,
+      });
+      return;
+    }
+
+    observeViewportMotion();
+  };
+
+  initialiseViewportMotion();
+  document.addEventListener("astro:page-load", initialiseViewportMotion);
+  document.addEventListener("astro:before-swap", disconnectViewportMotion);
+  reducedMotion.addEventListener("change", initialiseViewportMotion);
+</script>

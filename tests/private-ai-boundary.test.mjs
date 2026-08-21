@@ -5,7 +5,7 @@ import test from "node:test";
 const read = (relativePath) =>
   readFile(new URL(relativePath, import.meta.url), "utf8");
 
-test("the homepage keeps the view-triggered private AI boundary scene", async () => {
+test("the homepage keeps the automatic in-view private AI boundary scene", async () => {
   const [component, home, marketingPage, design] = await Promise.all([
     read("../src/components/PrivateAiBoundary.astro"),
     read("../src/pages/index.astro"),
@@ -39,19 +39,30 @@ test("the homepage keeps the view-triggered private AI boundary scene", async ()
   assert.match(component, /--private-ai-pane-outline: #b8b8b8/);
   assert.match(component, /stroke: var\(--private-ai-pane-outline\)/);
   assert.match(component, /stroke: #ffffff/);
-  assert.match(component, /0, -92, 238/);
-  assert.match(component, /79\.67, 46, 119/);
-  assert.match(component, /-79\.67, 46, 184/);
-  assert.match(component, /rangeProgress\(coverProgress, 0\.18, 1\)/);
-  assert.match(component, /outline\.style\.stroke = `rgb/);
+  assert.match(component, /--private-ai-entry-y: -92px/);
+  assert.match(component, /--private-ai-entry-x: 79\.67px/);
+  assert.match(component, /--private-ai-entry-x: -79\.67px/);
+  assert.match(component, /--private-ai-entry-delay: 200ms/);
+  assert.match(component, /--private-ai-entry-delay: 620ms/);
+  assert.match(component, /--private-ai-entry-delay: 1040ms/);
   assert.match(component, /stroke-linecap: round/);
   assert.match(component, /stroke-linejoin: round/);
   assert.match(component, /private-ai-boundary__final-frame/);
-  assert.match(component, /import \{ scroll \} from "motion"/);
-  assert.match(component, /scroll\(render/);
-  assert.match(component, /offset: \["start 60%", "start 10%"\]/);
-  assert.match(component, /rangeProgress\(sceneProgress, 0\.84, 1\)/);
-  assert.match(component, /outline\.style\.opacity = String\(1 - frameProgress\)/);
+  assert.match(component, /data-viewport-motion/);
+  assert.match(
+    component,
+    /private-ai-cover-enter 980ms cubic-bezier\(0\.2, 0\.7, 0\.2, 1\)/,
+  );
+  assert.match(
+    component,
+    /private-ai-outline-handoff 420ms ease-in-out 2020ms/,
+  );
+  assert.match(
+    component,
+    /private-ai-frame-enter 420ms ease-in-out 2020ms/,
+  );
+  assert.match(component, /@keyframes private-ai-outline-resolve/);
+  assert.doesNotMatch(component, /from "motion"|scroll\(render/);
   assert.doesNotMatch(component, /perspective|rotate[XY]\(/);
   assert.doesNotMatch(component, /IntersectionObserver/);
   assert.doesNotMatch(component, /animation-timeline/);
@@ -59,4 +70,5 @@ test("the homepage keeps the view-triggered private AI boundary scene", async ()
   assert.doesNotMatch(component, /requestAnimationFrame/);
   assert.match(component, /@media \(prefers-reduced-motion: reduce\)/);
   assert.match(design, /`PrivateAiBoundary`/);
+  assert.match(design, /2\.44-second automatic/);
 });

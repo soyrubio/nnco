@@ -12,7 +12,7 @@ BrainCo is a category reference for proportion, typography and calm, not a
 source to copy page by page.
 
 - `DESIGN_VARIANCE: 7`
-- `MOTION_INTENSITY: 3`
+- `MOTION_INTENSITY: 4`
 - `VISUAL_DENSITY: 3` on marketing pages
 - `VISUAL_DENSITY: 3` in discovery
 
@@ -257,10 +257,10 @@ The structure is deliberately blocky:
   vertical margin that adjacent boxes never touch. Neutral span wrappers avoid
   the browser's default yellow `mark` paint before styles load. The JavaScript
   animation-ready state is established in the document head before content can
-  paint. As the thesis first enters
-  view, fully opaque paper text starts completely below each paint-clipped ink
-  box, then rises into place after a 240ms pause, over 680ms and staggered by
-  160ms. Reduced-motion
+  paint. Each time the thesis reaches the shared viewport threshold after fully
+  leaving the viewport, fully opaque paper text starts completely below each
+  paint-clipped ink box, then rises into place after a 280ms pause, over 820ms
+  and staggered by 180ms. Reduced-motion
   users see the final static
   state. A separate standard
   Implementation gap section follows with the shared spacing and 5px rule. Its
@@ -287,6 +287,9 @@ The structure is deliberately blocky:
   panels. All cards use generous responsive internal padding. Titles and
   descriptions align to the top. An optional modular glyph sits above the copy
   with the same generous responsive gap in every card context.
+  The stable card surface owns the shared viewport trigger. Its title and
+  description reveal as one reading unit, with the description following the
+  title by 140ms. The surface, glyph and arrow remain static.
   An optional `href` changes the semantic root from `article` to `a` and pins
   the outlined Material Symbols `arrow_forward` affordance to the bottom without
   shifting the copy. Linked cards reserve a generous gap below their description
@@ -364,7 +367,8 @@ The structure is deliberately blocky:
 - `PrivateAiBoundary`: the decorative isometric scene in the Home Private AI
   dark section. Three filled monochrome planes form a visible cube.
   The core cube has no outline. Three identically sized black planes enter one
-  by one along equal radial axes and replace it. Each wrapping plane's outline
+  by one along equal radial axes and replace it in an automatic sequence. Each
+  wrapping plane's outline
   begins at the exact monochrome value of its matching core face, then
   brightens continuously to white over its own entry. The completed outlines
   resolve into one clean wireframe at rest.
@@ -487,12 +491,22 @@ The structure is deliberately blocky:
 
 ## Motion and accessibility
 
-- Motion exists only for interaction feedback and state transitions.
-- Fades and crossfades are not used except for the shared navigation header's
-  560ms background-colour transition, its mega-menu content reveal, and the
-  homepage Private AI scene's boundary handoff. Its grey-to-white boundary is
-  the only scroll-linked colour interpolation; every other surface change
-  remains instant.
+- Motion exists only for hierarchy, storytelling, interaction feedback and
+  state transitions.
+- Page titles and Editorial Card copy use one shared viewport reveal. They fade
+  from fully transparent while rising 16px over 900ms with the standard
+  restrained easing, after a 140ms entry pause. The homepage hero title uses a
+  more prominent 32px rise. Page and homepage introductions, plus card
+  descriptions, use the standard movement with a further 140ms delay. Section
+  titles remain static.
+  The stable copy or card surface is observed rather than the moving text.
+  The reveal starts at 15% visibility, remains resolved while any part of the
+  wrapper is visible, resets only after the wrapper is fully outside the
+  viewport and replays when it reaches the threshold again.
+- Outside those text reveals, fades and crossfades are not used except for the
+  shared navigation header's 560ms background-colour transition, its mega-menu
+  content reveal, and the homepage Private AI scene's boundary handoff. Every
+  other surface change remains instant.
 - Discovery questions use a keyed 300ms horizontal entry only: forward
   arrives from the right and Back arrives from the left. There is no opacity,
   scale, bounce, stagger or option-selection motion.
@@ -512,21 +526,21 @@ The structure is deliberately blocky:
   end through progressively longer 140ms to 300ms frame holds, without
   crossfading, panning or scaling. Scrolling has no effect on the sequence and
   it never loops. Reduced-motion users remain on frame one.
-- The homepage Private AI boundary scene is scrubbed directly by scroll position through
-  Motion's framework-independent DOM `scroll()` API. From the visual reaching
-  40% entry to 90% entry, the black boundary planes enter from the top,
-  lower-right and lower-left across successive overlapping progress ranges.
+- The homepage Private AI boundary scene starts its own 2.44-second automatic
+  sequence 200ms after the shared viewport observer activates it. The black boundary
+  planes enter from the top, lower-right and lower-left over successive
+  overlapping 980ms entries, separated by 420ms.
   Each wrapping plane carries an outline matching the brightness of the core
   face beneath it; that outline brightens to white over the plane's own travel.
   The core cube remains borderless, and the final combined wireframe begins
-  after the last plane lands.
-  Forward and reverse scrolling control the assembly directly; no React island
-  or elapsed-time fallback is involved. Reduced-motion users receive the
-  completed static boundary.
-- Every viewport-triggered decorative animation removes its active state below
-  its visibility threshold and replays when it crosses that threshold again.
-  Page-load sequences and interaction state transitions keep their own
-  lifecycle.
+  as the last plane lands. The resolved wireframe holds while any part of the
+  scene remains visible. Once the scene is fully outside the viewport it resets,
+  then replays at the next 15% entry. No scroll progress, React island or
+  continuous loop is involved. Reduced-motion users receive the completed
+  static boundary.
+- One framework-independent `IntersectionObserver` controls every viewport
+  animation and reinitialises after Astro page swaps. Page-load sequences and
+  interaction state transitions keep their own lifecycle.
 - Respect `prefers-reduced-motion`.
 - Keep persistent labels above fields.
 - Never use placeholder text as the only label.

@@ -1,6 +1,7 @@
 ---
 import PageLoader from "@/components/PageLoader.astro";
 import Schema from "@/components/Schema.astro";
+import ViewportMotion from "@/components/ViewportMotion.astro";
 import { FAVICON_ASSETS, PRIMARY_LOGO } from "@/lib/brand-assets";
 import "@/styles/global.css";
 import { ClientRouter } from "astro:transitions";
@@ -200,6 +201,7 @@ const loaderTone =
     <div data-page-content>
       <slot />
     </div>
+    <ViewportMotion />
     <script is:inline>
       if (!document.documentElement.classList.contains("skip-page-loader")) {
         document

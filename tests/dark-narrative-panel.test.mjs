@@ -27,7 +27,7 @@ test("Company confidentiality uses the standard full-width dark section", () => 
 test("Company separates its highlighted thesis from the standard Implementation gap", () => {
   assert.match(
     company,
-    /<SectionFrame>\s*<div class="company-about__lead-section">[\s\S]*?<p class="company-about__lead">[\s\S]*?<\/div>\s*<\/SectionFrame>\s*<SectionFrame labelledBy="why-title">/,
+    /<SectionFrame>\s*<div class="company-about__lead-section">[\s\S]*?<p class="company-about__lead" data-viewport-motion>[\s\S]*?<\/div>\s*<\/SectionFrame>\s*<SectionFrame labelledBy="why-title">/,
   );
   assert.equal(company.match(/class="company-about__highlight"/g)?.length, 5);
   assert.doesNotMatch(company, /<mark\b/);
@@ -66,9 +66,10 @@ test("Company separates its highlighted thesis from the standard Implementation 
     /@keyframes company-highlight-enter\s*\{\s*from\s*\{\s*transform:\s*translateY\(120%\);[\s\S]*?to\s*\{\s*transform:\s*translateY\(0\);/s,
   );
   assert.match(
-    company,
-    /IntersectionObserver[\s\S]*?nnco:page-ready[\s\S]*?astro:before-swap/,
+    styles,
+    /\.has-js \.company-about__lead\.is-in-view[\s\S]*?animation:\s*company-highlight-enter/s,
   );
+  assert.doesNotMatch(company, /IntersectionObserver|is-highlight-visible/);
 });
 
 test("Company Meet the team follows Implementation gap with wide portrait cards", () => {

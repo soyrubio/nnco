@@ -1,4 +1,9 @@
-<div class="private-ai-boundary" data-private-ai-boundary aria-hidden="true">
+<div
+  class="private-ai-boundary"
+  data-private-ai-boundary
+  data-viewport-motion
+  aria-hidden="true"
+>
   <svg
     class="private-ai-boundary__svg"
     viewBox="0 0 600 600"
@@ -72,86 +77,6 @@
   </svg>
 </div>
 
-<script>
-  import { scroll } from "motion";
-
-  const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
-
-  const clamp = (value: number) => Math.min(1, Math.max(0, value));
-  const rangeProgress = (progress: number, start: number, end: number) =>
-    clamp((progress - start) / (end - start));
-  const coverRanges = [
-    [".private-ai-boundary__cover--top", 0.05, 0.5, 0, -92, 238],
-    [".private-ai-boundary__cover--right", 0.22, 0.67, 79.67, 46, 119],
-    [".private-ai-boundary__cover--left", 0.39, 0.84, -79.67, 46, 184],
-  ] as const;
-
-  const initialisePrivateAiBoundaries = () => {
-    document
-      .querySelectorAll<HTMLElement>("[data-private-ai-boundary]")
-      .forEach((scene) => {
-        if (scene.dataset.privateAiBoundaryReady === "true") return;
-        scene.dataset.privateAiBoundaryReady = "true";
-
-        const finalFrame = scene.querySelector<SVGUseElement>(
-          ".private-ai-boundary__final-frame",
-        );
-        const render = (progress: number) => {
-          const sceneProgress = reduceMotion.matches ? 1 : progress;
-          const frameProgress = rangeProgress(sceneProgress, 0.84, 1);
-
-          coverRanges.forEach(
-            ([selector, start, end, entryX, entryY, outlineStartChannel]) => {
-              const cover = scene.querySelector<SVGGElement>(selector);
-              if (!cover) return;
-
-              const coverProgress = rangeProgress(sceneProgress, start, end);
-              const visibilityProgress = rangeProgress(
-                coverProgress,
-                0,
-                0.18,
-              );
-              const outlineProgress = rangeProgress(coverProgress, 0.18, 1);
-              const outlineChannel = Math.round(
-                outlineStartChannel +
-                  (255 - outlineStartChannel) * outlineProgress,
-              );
-              const outline = cover.querySelector<SVGUseElement>(
-                ".private-ai-boundary__cover-outline",
-              );
-              cover.style.opacity = String(visibilityProgress);
-              cover.style.transform = `translate(${entryX * (1 - coverProgress)}px, ${entryY * (1 - coverProgress)}px)`;
-              if (outline) {
-                outline.style.opacity = String(1 - frameProgress);
-                outline.style.stroke = `rgb(${outlineChannel} ${outlineChannel} ${outlineChannel})`;
-              }
-            },
-          );
-
-          if (finalFrame) finalFrame.style.opacity = String(frameProgress);
-        };
-
-        render(reduceMotion.matches ? 1 : 0);
-
-        const stopScroll = reduceMotion.matches
-          ? undefined
-          : scroll(render, {
-              target: scene,
-              offset: ["start 60%", "start 10%"],
-            });
-
-        document.addEventListener(
-          "astro:before-swap",
-          () => stopScroll?.(),
-          { once: true },
-        );
-      });
-  };
-
-  initialisePrivateAiBoundaries();
-  document.addEventListener("astro:page-load", initialisePrivateAiBoundaries);
-</script>
-
 <style>
   .private-ai-boundary {
     width: 100%;
@@ -178,20 +103,35 @@
   }
 
   .private-ai-boundary__cover {
+    --private-ai-entry-x: 0px;
+    --private-ai-entry-y: 0px;
+    --private-ai-entry-delay: 0ms;
     opacity: 0;
+    transform: translate(
+      var(--private-ai-entry-x),
+      var(--private-ai-entry-y)
+    );
     transform-box: view-box;
     transform-origin: center;
   }
 
   .private-ai-boundary__cover--top {
+    --private-ai-entry-y: -92px;
+    --private-ai-entry-delay: 200ms;
     --private-ai-pane-outline: #eeeeee;
   }
 
   .private-ai-boundary__cover--right {
+    --private-ai-entry-x: 79.67px;
+    --private-ai-entry-y: 46px;
+    --private-ai-entry-delay: 620ms;
     --private-ai-pane-outline: #777777;
   }
 
   .private-ai-boundary__cover--left {
+    --private-ai-entry-x: -79.67px;
+    --private-ai-entry-y: 46px;
+    --private-ai-entry-delay: 1040ms;
     --private-ai-pane-outline: #b8b8b8;
   }
 
@@ -216,6 +156,69 @@
   .private-ai-boundary__final-frame {
     opacity: 0;
     stroke: #ffffff;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .private-ai-boundary.is-in-view .private-ai-boundary__cover {
+      animation: private-ai-cover-enter 980ms cubic-bezier(0.2, 0.7, 0.2, 1)
+        var(--private-ai-entry-delay) both;
+    }
+
+    .private-ai-boundary.is-in-view .private-ai-boundary__cover-outline {
+      animation:
+        private-ai-outline-resolve 980ms cubic-bezier(0.2, 0.7, 0.2, 1)
+          var(--private-ai-entry-delay) both,
+        private-ai-outline-handoff 420ms ease-in-out 2020ms forwards;
+    }
+
+    .private-ai-boundary.is-in-view .private-ai-boundary__final-frame {
+      animation: private-ai-frame-enter 420ms ease-in-out 2020ms both;
+    }
+  }
+
+  @keyframes private-ai-cover-enter {
+    from {
+      opacity: 0;
+      transform: translate(
+        var(--private-ai-entry-x),
+        var(--private-ai-entry-y)
+      );
+    }
+
+    to {
+      opacity: 1;
+      transform: translate(0, 0);
+    }
+  }
+
+  @keyframes private-ai-outline-resolve {
+    from {
+      stroke: var(--private-ai-pane-outline);
+    }
+
+    to {
+      stroke: #ffffff;
+    }
+  }
+
+  @keyframes private-ai-outline-handoff {
+    from {
+      opacity: 1;
+    }
+
+    to {
+      opacity: 0;
+    }
+  }
+
+  @keyframes private-ai-frame-enter {
+    from {
+      opacity: 0;
+    }
+
+    to {
+      opacity: 1;
+    }
   }
 
   @media (prefers-reduced-motion: reduce) {

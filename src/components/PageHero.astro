@@ -28,11 +28,17 @@ const ActionsContainer = actionsLabel ? "nav" : "div";
   class:list={["editorial-hero", className]}
   aria-labelledby={titleId}
 >
-  <div class="content-rail editorial-hero__inner">
-    <h1 id={titleId}>{title}</h1>
+  <div class="content-rail editorial-hero__inner" data-viewport-motion>
+    <h1 id={titleId} data-viewport-motion-item>{title}</h1>
     {
       introduction && (
-        <p class="editorial-hero__introduction">{introduction}</p>
+        <p
+          class="editorial-hero__introduction"
+          data-viewport-motion-item
+          style="--viewport-motion-delay: 140ms"
+        >
+          {introduction}
+        </p>
       )
     }
     {
