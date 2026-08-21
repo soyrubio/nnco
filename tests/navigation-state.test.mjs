@@ -226,10 +226,10 @@ test("desktop under-nav spans the viewport and keeps a ruled vertical link seque
   );
 });
 
-test("desktop navigation and diagnosis action remain vertically centered", () => {
+test("desktop navigation and header action remain vertically centered", () => {
   assert.match(
     headerSource,
-    /<Button href="\/discovery" size="small" class="site-header__cta">/,
+    /<Button href=\{headerAction\.href\} size="small" class="site-header__cta">/,
   );
   assert.match(stylesSource, /--header-height:\s*80px;/);
   assert.match(stylesSource, /--header-logo-height:\s*60px;/);

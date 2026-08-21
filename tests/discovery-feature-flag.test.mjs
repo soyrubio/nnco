@@ -36,7 +36,14 @@ test("public hero and navigation surfaces use the Discovery feature flag", async
     );
   }
 
-  assert.match(header, /discoveryEnabled && \([\s\S]*?href="\/discovery"/);
+  assert.match(
+    header,
+    /const headerAction = discoveryEnabled[\s\S]*?href: "\/discovery"[\s\S]*?label: "Start diagnosis"[\s\S]*?href: "\/contact"[\s\S]*?label: "Book a call"/,
+  );
+  assert.match(
+    header,
+    /<Button href=\{headerAction\.href\} size="small" class="site-header__cta">/,
+  );
   assert.match(hero, /discoveryEnabled && \([\s\S]*?href="\/discovery"/);
   assert.match(
     pageHero,

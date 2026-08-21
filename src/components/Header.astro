@@ -25,6 +25,9 @@ const isDiscovery = variant === "discovery";
 const discoveryEnabled = isDiscoveryEnabled(
   import.meta.env.DISCOVERY_ENABLED,
 );
+const headerAction = discoveryEnabled
+  ? { href: "/discovery", label: "Start diagnosis" }
+  : { href: "/contact", label: "Book a call" };
 const isExactPage = (href: string) => isExactNavigationPage(currentPath, href);
 const isAncestorSection = (href: string) =>
   !isExactPage(href) && isNavigationSection(currentPath, href);
@@ -133,12 +136,10 @@ const navigationDropdowns = siteNavigation.flatMap((item) =>
             </div>
           </details>
 
-          {discoveryEnabled && (
-            <Button href="/discovery" size="small" class="site-header__cta">
-              Start diagnosis
-              <BlockArrow />
-            </Button>
-          )}
+          <Button href={headerAction.href} size="small" class="site-header__cta">
+            {headerAction.label}
+            <BlockArrow />
+          </Button>
         </>
       )
     }

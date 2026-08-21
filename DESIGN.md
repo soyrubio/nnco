@@ -93,7 +93,7 @@ inherits the shared `--font-sans` token.
   navigation, rule and controls precisely while it overlaps them.
 - Desktop navigation begins immediately after the logo rather than floating in
   the centre. Links form a loose, unnumbered text run and remain vertically
-  centred with the optional Start diagnosis action in the unchanged 80px
+  centred with the header action in the unchanged 80px
   header. Primary navigation labels use the 16px control size at regular weight.
   Only the current section becomes a compact square tab whose background hugs
   the label: paper on dark headers, ink on light ones. Inactive links remain
@@ -164,8 +164,9 @@ The structure is deliberately blocky:
   non-animated swap.
   The initial page cover does not replay between routes, and client-side
   behaviors reinitialize after each swap.
-- `Header`: large official NNCo. mark, single-line navigation and an optional
-  Discovery CTA.
+- `Header`: large official NNCo. mark, single-line navigation and one CTA.
+  It links to Discovery as `Start diagnosis` when the feature is enabled and
+  falls back to `Book a call` at `/contact` when it is disabled.
   Primary navigation labels use the 16px control size at regular weight; the
   active tab remains regular because its inverted surface supplies emphasis.
   Navigation dropdown controls omit decorative carets; interface text inherits
@@ -452,10 +453,11 @@ The structure is deliberately blocky:
 
 ## Discovery and report
 
-- Public Discovery entry points in the homepage hero, shared page heroes,
-  header and footer navigation render only when the build-time
-  `DISCOVERY_ENABLED` value is exactly `true`. Missing or different values keep
-  those links hidden while preserving direct route access for private testing.
+- Public Discovery entry points in the homepage hero, shared page heroes and
+  footer navigation render only when the build-time `DISCOVERY_ENABLED` value
+  is exactly `true`. Missing or different values keep those links hidden while
+  preserving direct route access for private testing. The shared header keeps
+  its CTA in either state and falls back to `Book a call` at `/contact`.
 - Discovery is one calm diagnostic canvas, not a dashboard or cockpit.
 - The discovery workspace is canonical ink `#111111` with paper text
   `#f5f5f5`. Report pages remain paper artifacts on the dark workspace.
