@@ -166,7 +166,8 @@ The structure is deliberately blocky:
   behaviors reinitialize after each swap.
 - `Header`: large official NNCo. mark, single-line navigation and one CTA.
   It links to Discovery as `Start diagnosis` when the feature is enabled and
-  falls back to `Book a call` at `/contact` when it is disabled.
+  falls back to `Book a call` at `/contact` when it is disabled. The action uses
+  the shared bordered secondary-button treatment.
   Primary navigation labels use the 16px control size at regular weight; the
   active tab remains regular because its inverted surface supplies emphasis.
   Navigation dropdown controls omit decorative carets; interface text inherits

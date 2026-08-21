@@ -136,7 +136,12 @@ const navigationDropdowns = siteNavigation.flatMap((item) =>
             </div>
           </details>
 
-          <Button href={headerAction.href} size="small" class="site-header__cta">
+          <Button
+            href={headerAction.href}
+            variant="secondary"
+            size="small"
+            class="site-header__cta"
+          >
             {headerAction.label}
             <BlockArrow />
           </Button>

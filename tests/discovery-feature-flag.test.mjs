@@ -42,7 +42,7 @@ test("public hero and navigation surfaces use the Discovery feature flag", async
   );
   assert.match(
     header,
-    /<Button href=\{headerAction\.href\} size="small" class="site-header__cta">/,
+    /<Button\s+href=\{headerAction\.href\}\s+variant="secondary"\s+size="small"\s+class="site-header__cta"/,
   );
   assert.match(hero, /discoveryEnabled && \([\s\S]*?href="\/discovery"/);
   assert.match(
