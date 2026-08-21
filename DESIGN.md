@@ -92,8 +92,8 @@ inherits the shared `--font-sans` token.
   navigation, rule and controls precisely while it overlaps them.
 - Desktop navigation begins immediately after the logo rather than floating in
   the centre. Links form a loose, unnumbered text run and remain vertically
-  centred with the Start diagnosis action in the unchanged 80px header. Primary
-  navigation labels use the 16px control size at regular weight.
+  centred with the optional Start diagnosis action in the unchanged 80px
+  header. Primary navigation labels use the 16px control size at regular weight.
   Only the current section becomes a compact square tab whose background hugs
   the label: paper on dark headers, ink on light ones. Inactive links remain
   plain text. Mobile keeps the menu and uses the same restrained text-hugging
@@ -163,7 +163,8 @@ The structure is deliberately blocky:
   non-animated swap.
   The initial page cover does not replay between routes, and client-side
   behaviors reinitialize after each swap.
-- `Header`: large official NNCo. mark, single-line navigation and one CTA.
+- `Header`: large official NNCo. mark, single-line navigation and an optional
+  Discovery CTA.
   Primary navigation labels use the 16px control size at regular weight; the
   active tab remains regular because its inverted surface supplies emphasis.
   Navigation dropdown controls omit decorative carets; interface text inherits
@@ -225,6 +226,7 @@ The structure is deliberately blocky:
 - `BlockArrow`: official arrow asset used as a current-color CSS mask.
 - `Button`: primary, secondary and quiet variants. Always full-pill.
 - `Hero`: full-bleed visual with copy constrained to the common rail.
+  Its Discovery action renders only when the shared feature flag is enabled.
   Its opening cloud field is an eleven-state responsive frame sequence: 128×72
   desktop and 48×85 mobile WebP mosaics scale with nearest-neighbour rendering.
   Only frame one is preloaded; the remaining ten load behind the page cover,
@@ -444,6 +446,10 @@ The structure is deliberately blocky:
 
 ## Discovery and report
 
+- Public Discovery entry points in the homepage hero, shared page heroes,
+  header and footer navigation render only when the build-time
+  `DISCOVERY_ENABLED` value is exactly `true`. Missing or different values keep
+  those links hidden while preserving direct route access for private testing.
 - Discovery is one calm diagnostic canvas, not a dashboard or cockpit.
 - The discovery workspace is canonical ink `#111111` with paper text
   `#f5f5f5`. Report pages remain paper artifacts on the dark workspace.

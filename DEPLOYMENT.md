@@ -26,6 +26,7 @@ Copy `.env.example` to `.env` and keep:
 ```dotenv
 PUBLIC_APP_URL=http://localhost:4321
 LEAD_HANDOFF_MODE=local
+DISCOVERY_ENABLED=false
 OPENAI_API_KEY=
 OPENAI_DISCOVERY_MODEL=gpt-5.6-luna
 OPENAI_API_BASE_URL=https://api.openai.com
@@ -66,6 +67,14 @@ finally from `stage` to `main`. The `CI` workflow checks `development` pushes
 and pull requests into the two release branches. Only pushes to `stage` or
 `main` build and deploy a Worker.
 
+`DISCOVERY_ENABLED` is a build-time, strict opt-in flag for public Discovery
+entry points. Only the exact value `true` shows Discovery in the homepage hero,
+shared page heroes, header or footer navigation. A missing, empty or different
+value resolves to `false`. Configure it as a GitHub Environment variable on
+`stage` or `production` only when that environment is ready to expose those
+links. The direct `/discovery` route and its APIs remain available for private
+testing while the flag is off.
+
 ### One-time GitHub setup
 
 1. Create `stage` from `main`. Keep `development` as the personal working
@@ -78,7 +87,9 @@ and pull requests into the two release branches. Only pushes to `stage` or
    matching branch. Keep a required reviewer on `production` through the first
    DNS cutover; it can be removed later if fully automatic production releases
    are preferred.
-5. Protect `stage` and `main` with pull requests and the `CI / Test and build`
+5. Leave the optional `DISCOVERY_ENABLED` variable unset in both environments
+   until Discovery should be linked publicly, then set it to exactly `true`.
+6. Protect `stage` and `main` with pull requests and the `CI / Test and build`
    required check. `development` does not need protection.
 
 The Cloudflare token and account ID authenticate deployments only. Application

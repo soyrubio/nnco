@@ -44,6 +44,8 @@ jobs:
         run: pnpm test
 
       - name: Build production Worker
+        env:
+          DISCOVERY_ENABLED: ${{ vars.DISCOVERY_ENABLED || 'false' }}
         run: pnpm build
 
       - name: Deploy production Worker

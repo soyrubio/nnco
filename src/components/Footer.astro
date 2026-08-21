@@ -1,12 +1,16 @@
 ---
 import BrandLogo from "./BrandLogo.astro";
 import { footerGroups } from "@/data/site";
+import { isDiscoveryEnabled } from "@/lib/feature-flags";
 
 interface Props {
   tone?: "paper" | "dark";
 }
 
 const { tone = "paper" } = Astro.props;
+const discoveryEnabled = isDiscoveryEnabled(
+  import.meta.env.DISCOVERY_ENABLED,
+);
 ---
 
 <footer
@@ -24,9 +28,11 @@ const { tone = "paper" } = Astro.props;
         footerGroups.map((group) => (
           <div>
             <p>{group.label}</p>
-            {group.links.map((link) => (
-              <a href={link.href}>{link.label}</a>
-            ))}
+            {group.links
+              .filter((link) => discoveryEnabled || link.href !== "/discovery")
+              .map((link) => (
+                <a href={link.href}>{link.label}</a>
+              ))}
           </div>
         ))
       }
