@@ -101,7 +101,7 @@ Wrangler environments do not inherit them. Configure production without
 ```text
 OPENAI_API_KEY
 SUPABASE_URL
-SUPABASE_SERVICE_ROLE_KEY
+SUPABASE_SECRET_KEY
 DISCOVERY_CONTEXT_SIGNING_SECRET
 DISCOVERY_RATE_LIMIT_SECRET
 ```
@@ -171,7 +171,7 @@ and model defaults. The corresponding production behavior is:
 PUBLIC_APP_URL=https://nnco.ai
 LEAD_HANDOFF_MODE=supabase
 SUPABASE_URL=https://your-project.supabase.co
-SUPABASE_SERVICE_ROLE_KEY=server-only-value
+SUPABASE_SECRET_KEY=sb_secret_server-only-value
 DISCOVERY_RATE_LIMIT_MODE=supabase
 DISCOVERY_CONTEXT_SIGNING_SECRET=at-least-32-random-characters
 DISCOVERY_RATE_LIMIT_SECRET=a-different-32-character-random-secret
@@ -181,8 +181,10 @@ Apply every file in `supabase/migrations/` in order before enabling Supabase.
 The retention migration adds a 90-day expiry and a nightly deletion job. Mark
 only records that must move into an engagement or legal hold with
 `retention_hold = true`.
-The service-role key is read only by the server repository and must never use a
-`PUBLIC_` prefix or enter a browser island.
+The current Supabase secret key is read only by the server repository and must
+never use a `PUBLIC_` prefix or enter a browser island. Legacy
+`SUPABASE_SERVICE_ROLE_KEY` values remain supported while existing projects
+migrate, but new projects should use `SUPABASE_SECRET_KEY`.
 
 Supabase is optional for local product validation. Production fails closed
 unless durable Supabase mode is configured.

@@ -32,7 +32,10 @@ test("deployment credentials are referenced without copying runtime secrets", ()
   for (const workflow of [stage, production]) {
     assert.match(workflow, /secrets\.CLOUDFLARE_API_TOKEN/);
     assert.match(workflow, /vars\.CLOUDFLARE_ACCOUNT_ID/);
-    assert.doesNotMatch(workflow, /OPENAI_API_KEY|SUPABASE_SERVICE_ROLE_KEY/);
+    assert.doesNotMatch(
+      workflow,
+      /OPENAI_API_KEY|SUPABASE_SECRET_KEY|SUPABASE_SERVICE_ROLE_KEY/,
+    );
     assert.doesNotMatch(workflow, /^\s+secrets:\s*\|/m);
   }
 });

@@ -155,13 +155,13 @@ export const team = [
   },
   {
     name: "Josef Bazal",
-    role: "Founding Product Manager",
+    role: "Co-Founder, Product Manager",
     bio: "Product Manager at Ackee Blockchain. Turns an operational problem into a specification that survives contact with the people who have to use it.",
     image: "/assets/team/josef-bazal-reframed.png",
   },
   {
     name: "Lukáš Rajnoha",
-    role: "Founding Engineer",
+    role: "Co-Founder, Engineer",
     bio: "Engineer at Ackee Blockchain. Builds the systems and the infrastructure they run on.",
     image: "/assets/team/lukas-rajnoha-reframed.png",
   },

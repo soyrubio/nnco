@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { isDiscoveryReleaseReport } from "../lib/discovery-release.ts";
+import { supabaseAdminConfig } from "./supabase-admin.ts";
 
 export interface LeadRecord {
   requestId: string;
@@ -303,21 +304,16 @@ export async function persistLead(record: LeadRecord): Promise<PersistedLead> {
     );
   }
 
-  const supabaseUrl = process.env.SUPABASE_URL;
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!supabaseUrl || !serviceRoleKey) {
+  const config = supabaseAdminConfig(process.env);
+  if (!config) {
     throw new LeadRepositoryError(
       "CONFIGURATION_ERROR",
       "The production handoff is not configured.",
     );
   }
 
-  const headers = {
-    apikey: serviceRoleKey,
-    Authorization: `Bearer ${serviceRoleKey}`,
-    "Content-Type": "application/json",
-  };
-  const tableUrl = `${supabaseUrl.replace(/\/$/, "")}/rest/v1/lead_requests`;
+  const headers = config.headers;
+  const tableUrl = `${config.url}/rest/v1/lead_requests`;
   const existing = await readSupabaseLead(
     tableUrl,
     record.requestId,
@@ -442,21 +438,16 @@ function supabaseConfig(): {
   if ((process.env.LEAD_HANDOFF_MODE ?? "local") !== "supabase") {
     throw new LeadRepositoryError("CONFIGURATION_ERROR", "Unsupported handoff mode");
   }
-  const url = process.env.SUPABASE_URL?.replace(/\/$/, "");
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!url || !key) {
+  const config = supabaseAdminConfig(process.env);
+  if (!config) {
     throw new LeadRepositoryError(
       "CONFIGURATION_ERROR",
       "The production handoff is not configured.",
     );
   }
   return {
-    url,
-    headers: {
-      apikey: key,
-      Authorization: `Bearer ${key}`,
-      "Content-Type": "application/json",
-    },
+    url: config.url,
+    headers: config.headers,
   };
 }
 

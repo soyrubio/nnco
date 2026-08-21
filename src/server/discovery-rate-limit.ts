@@ -1,9 +1,11 @@
 import { createHmac } from "node:crypto";
+import { supabaseAdminConfig } from "./supabase-admin.ts";
 
 export interface DiscoveryRateLimitEnvironment {
   NODE_ENV?: string;
   DISCOVERY_RATE_LIMIT_MODE?: string;
   SUPABASE_URL?: string;
+  SUPABASE_SECRET_KEY?: string;
   SUPABASE_SERVICE_ROLE_KEY?: string;
   DISCOVERY_RATE_LIMIT_SECRET?: string;
 }
@@ -34,9 +36,8 @@ export async function checkDiscoveryRateLimit({
   if ((env.DISCOVERY_RATE_LIMIT_MODE || "supabase") !== "supabase") {
     throw new DiscoveryRateLimitError("Unsupported production rate-limit mode");
   }
-  const supabaseUrl = env.SUPABASE_URL?.replace(/\/$/, "");
-  const serviceRoleKey = env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!supabaseUrl || !serviceRoleKey) {
+  const supabase = supabaseAdminConfig(env);
+  if (!supabase) {
     throw new DiscoveryRateLimitError("Shared rate limiting is not configured");
   }
   const rateLimitSecret = env.DISCOVERY_RATE_LIMIT_SECRET?.trim();
@@ -45,14 +46,10 @@ export async function checkDiscoveryRateLimit({
   }
 
   const response = await fetch(
-    `${supabaseUrl}/rest/v1/rpc/check_discovery_rate_limit`,
+    `${supabase.url}/rest/v1/rpc/check_discovery_rate_limit`,
     {
       method: "POST",
-      headers: {
-        apikey: serviceRoleKey,
-        Authorization: `Bearer ${serviceRoleKey}`,
-        "Content-Type": "application/json",
-      },
+      headers: supabase.headers,
       body: JSON.stringify({
         p_scope: scope,
         p_key_hash: createHmac("sha256", rateLimitSecret).update(key).digest("hex"),

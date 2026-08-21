@@ -38,7 +38,7 @@ test("production shared limiting fails closed without its HMAC secret", async ()
       env: {
         NODE_ENV: "production",
         SUPABASE_URL: "https://project.supabase.co",
-        SUPABASE_SERVICE_ROLE_KEY: "server-only-test-key",
+        SUPABASE_SECRET_KEY: "sb_secret_server-only-test-key",
       },
       key: "203.0.113.7",
       limit: 5,

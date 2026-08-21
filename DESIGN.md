@@ -146,10 +146,12 @@ inherits the shared `--font-sans` token.
 
 The structure is deliberately blocky:
 
-- panels, cards, sections, fields, choice controls and report surfaces are
-  square;
+- panels, cards, sections, fields, single-choice controls and report surfaces
+  are square;
 - there are no shadows, glass effects or decorative soft containers;
 - the reusable `Button` component is the only fully rounded component;
+- multi-select choices are compact full-pill controls because their wrapped
+  grouping communicates that several options can be selected;
 - status tags may become compact pills later only when they represent real
   state.
 
@@ -454,15 +456,19 @@ The structure is deliberately blocky:
   the website path contains Website followed by the same five diagnostic
   questions. Both paths therefore stay within six steps.
 - Sector is inferred from public context or selected on the manual path and
-  routes Banking, Insurance, Healthcare and general workflows into their
-  relevant options.
+  routes Banking, Insurance, Healthcare, Capital Markets and general workflows
+  into their relevant options.
 - One dominant question and exactly one choice surface are visible at a time.
+- Workflow accepts one or two related processes and assesses them together as
+  one operating scope.
 - Required free text is deliberately absent from the diagnostic. The website
   is the only text entry before the contact gate; the remaining five answers
   use single-select or multi-select options.
-- Choice sets are one connected ruled stack: no gaps, no radio dots and no
-  doubled borders. Unselected surfaces use canonical ink, while the selected
-  surface inverts to paper.
+- Single-select choice sets are one connected ruled stack: no gaps, no radio
+  dots and no doubled borders. Multi-select choice sets wrap as compact,
+  content-width pills so their selection model is visually distinct.
+  Unselected surfaces use canonical ink, while selected surfaces invert to
+  paper.
 - Text fields use one restrained rule for keyboard focus, never an exterior
   focus halo.
 - Intake preserves the established two-column composition inside the shared
@@ -486,8 +492,8 @@ The structure is deliberately blocky:
   bounded for A4 without changing the stored diagnostic.
 - Discovery and its print report consume the same Geist-backed `--font-sans`
   token as the marketing site.
-- Structural panels stay square. Interactive action buttons are the only
-  rounded controls.
+- Structural panels stay square. Interactive action buttons and multi-select
+  pills are the only rounded controls.
 
 ## Motion and accessibility
 
