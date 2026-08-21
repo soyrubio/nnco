@@ -94,15 +94,14 @@ pnpm wrangler secret put BASIC_AUTH_USER --env stage
 pnpm wrangler secret put BASIC_AUTH_PASS --env stage
 ```
 
-The manual `Deploy stage` GitHub workflow builds with the stage environment and
-uploads both values from the GitHub `stage` environment before deployment. Add
-these GitHub environment secrets before its first run:
+The manual `Deploy stage` GitHub workflow builds and deploys the stage
+environment without uploading application secrets. Configure the Basic Auth
+values directly on the `nnco-stage` Worker before running it. The GitHub
+`stage` environment requires only these deployment credentials:
 
 ```text
 CLOUDFLARE_API_TOKEN
 CLOUDFLARE_ACCOUNT_ID
-BASIC_AUTH_USER
-BASIC_AUTH_PASS
 ```
 
 Stage needs its own copies of every other server secret used by the application

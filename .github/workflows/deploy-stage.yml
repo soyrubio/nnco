@@ -46,9 +46,3 @@ jobs:
           packageManager: pnpm
           wranglerVersion: 4.122.0
           command: deploy
-          secrets: |
-            BASIC_AUTH_USER
-            BASIC_AUTH_PASS
-        env:
-          BASIC_AUTH_USER: ${{ secrets.BASIC_AUTH_USER }}
-          BASIC_AUTH_PASS: ${{ secrets.BASIC_AUTH_PASS }}

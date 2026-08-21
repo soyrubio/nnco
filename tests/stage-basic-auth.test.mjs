@@ -127,6 +127,6 @@ test("stage Wrangler environment runs the auth Worker before every asset", async
   assert.match(workerSource, /getStageAuthResponse\(request, env\)/);
   assert.match(workerSource, /return handle\(request, env, ctx\)/);
   assert.match(workflowSource, /CLOUDFLARE_API_TOKEN/);
-  assert.match(workflowSource, /BASIC_AUTH_USER/);
-  assert.match(workflowSource, /BASIC_AUTH_PASS/);
+  assert.doesNotMatch(workflowSource, /BASIC_AUTH_USER|BASIC_AUTH_PASS/);
+  assert.doesNotMatch(workflowSource, /^\s+secrets:\s*\|/m);
 });
