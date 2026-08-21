@@ -26,7 +26,7 @@ function validPayload(email = `alex-${crypto.randomUUID()}@example.com`) {
     company,
     companyContextToken: createDiscoveryContextToken(company, { NODE_ENV: "test" }),
     answers: {
-      workflow: workflowChoicesFor(company)[0].value,
+      workflow: workflowChoicesFor(company).slice(0, 2).map((choice) => choice.value),
       friction: ["document-review"],
       scale: "daily",
       systems: ["email", "documents"],

@@ -47,6 +47,24 @@ test("release diagnostic uses URL entry followed by choices without free text", 
   assert.doesNotMatch(contactScreen, /autoComplete="organization"/);
 });
 
+test("release exposes capital markets and bounds workflow multiselect to two", () => {
+  assert.match(release, /\{ value: "capital-markets", label: "Capital Markets" \}/);
+  assert.match(release, /prompt: "Which workflows should we examine\?"/);
+  assert.match(release, /help: "Choose up to two related processes\. We will assess them together\."/);
+  assert.match(
+    release,
+    /id: "workflow",[\s\S]*?kind: "multi",[\s\S]*?maximum: 2,[\s\S]*?choices: workflowChoicesFor\(company\)/,
+  );
+  assert.match(
+    styles,
+    /\.discovery-options--multi \{[\s\S]*?flex-direction: row;[\s\S]*?flex-wrap: wrap;[\s\S]*?border: 0;[\s\S]*?\}/,
+  );
+  assert.match(
+    styles,
+    /\.discovery-options--multi button,[\s\S]*?width: auto;[\s\S]*?border-radius: var\(--radius-button\);[\s\S]*?\}/,
+  );
+});
+
 test("release supports skipping enrichment and confirms fetched context", () => {
   assert.match(release, />Continue without a website<\/button>/);
   assert.match(release, /if \(screen === "sector"\)/);

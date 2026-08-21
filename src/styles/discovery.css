@@ -278,6 +278,33 @@
   line-height: var(--type-leading-small);
 }
 
+.discovery-options--multi {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 0.65rem 0.55rem;
+  border: 0;
+}
+
+.discovery-options--multi button,
+.discovery-options--multi button:last-child {
+  width: auto;
+  max-width: 100%;
+  min-width: 0;
+  min-height: 2.85rem;
+  flex: 0 1 auto;
+  justify-content: flex-start;
+  gap: 0;
+  padding: 0.7rem 1rem;
+  border: 1px solid var(--discovery-option-border);
+  border-radius: var(--radius-button);
+}
+
+.discovery-options--multi button strong {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
 .discovery-actions {
   display: flex;
   align-items: center;

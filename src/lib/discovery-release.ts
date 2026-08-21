@@ -15,6 +15,7 @@ export type ReleaseSector =
   | "banking"
   | "insurance"
   | "healthcare"
+  | "capital-markets"
   | "other";
 
 export interface ReleaseSource {
@@ -46,7 +47,7 @@ export type DiscoveryEnrichmentResponse =
     };
 
 export interface ReleaseAnswers {
-  workflow: string;
+  workflow: string[];
   friction: string[];
   scale: string;
   systems: string[];
@@ -179,6 +180,13 @@ const WORKFLOW_CHOICES: Record<ReleaseSector, ReleaseChoice[]> = {
     { value: "scheduling", label: "Scheduling" },
     { value: "back-office", label: "Back-office operations" },
   ],
+  "capital-markets": [
+    { value: "fund-investor-reporting", label: "Fund and investor reporting" },
+    { value: "due-diligence-review", label: "Due diligence document review" },
+    { value: "ddq-rfp-responses", label: "DDQ and RFP responses" },
+    { value: "portfolio-reporting", label: "Portfolio company reporting" },
+    { value: "compliance-monitoring", label: "Compliance monitoring" },
+  ],
   other: [
     { value: "document-intake", label: "Document intake" },
     { value: "case-handling", label: "Case handling" },
@@ -209,6 +217,13 @@ const FRICTION_CHOICES: Record<ReleaseSector, ReleaseChoice[]> = {
     { value: "handoffs", label: "Waiting between teams" },
     { value: "scheduling", label: "Scheduling and coordination" },
     { value: "exceptions", label: "Handling incomplete cases" },
+  ],
+  "capital-markets": [
+    { value: "reconciling-figures", label: "Locating and reconciling figures" },
+    { value: "document-review", label: "Reviewing large document sets" },
+    { value: "missing-inputs", label: "Chasing portfolio inputs" },
+    { value: "repeated-responses", label: "Repeating DDQ and RFP answers" },
+    { value: "compliance-exceptions", label: "Reviewing compliance exceptions" },
   ],
   other: [
     { value: "manual-checks", label: "Manual checks" },
@@ -267,6 +282,17 @@ export function labelForChoice(
   return choices.find((choice) => choice.value === value)?.label ?? value;
 }
 
+export function labelForReleaseSector(sector: ReleaseSector): string {
+  const labels: Record<ReleaseSector, string> = {
+    banking: "Banking",
+    insurance: "Insurance",
+    healthcare: "Healthcare",
+    "capital-markets": "Capital Markets",
+    other: "Another sector",
+  };
+  return labels[sector];
+}
+
 export function normalizeWebsiteInput(value: string): URL | null {
   const trimmed = value.trim();
   if (!trimmed || trimmed.length > DISCOVERY_RELEASE_LIMITS.website) return null;
@@ -316,7 +342,7 @@ export function buildFallbackCompanyContext({
     sector,
     summary:
       boundText(description, 220) ||
-      `${name} is a ${sector === "other" ? "company" : sector} organisation.`,
+      `${name} is a ${sector === "other" ? "company" : labelForReleaseSector(sector).toLocaleLowerCase("en")} organisation.`,
     offerings: fallbackOfferings(sector),
     suggestedWorkflows: WORKFLOW_CHOICES[sector]
       .slice(0, 3)
@@ -364,7 +390,14 @@ export function buildFallbackReleaseReport(
 ): DiscoveryReleaseReport {
   const workflowChoices = workflowChoicesFor(payload.company);
   const frictionChoices = frictionChoicesFor(payload.company.sector);
-  const workflow = labelForChoice(workflowChoices, payload.answers.workflow);
+  const workflowLabels = payload.answers.workflow.map((value) =>
+    labelForChoice(workflowChoices, value),
+  );
+  const workflow = boundText(formatList(workflowLabels), 100);
+  const workflowSubject = workflowLabels.length === 1
+    ? workflow
+    : "The selected workflows";
+  const workflowVerb = workflowLabels.length === 1 ? "appears" : "appear";
   const friction = payload.answers.friction
     .map((value) => labelForChoice(frictionChoices, value))
     .join(", ");
@@ -403,7 +436,7 @@ export function buildFallbackReleaseReport(
     schemaVersion: 1,
     generatedAt: now,
     title: boundText(`${payload.company.name} workflow diagnostic`, 80),
-    executiveSummary: `${workflow} appears suitable for a focused validation sprint. The first objective is to reduce repeated preparation while preserving the controls around material decisions.`,
+    executiveSummary: `${workflowSubject} ${workflowVerb} suitable for a focused validation sprint. The first objective is to reduce repeated preparation while preserving the controls around material decisions.`,
     pageOne: {
       workflow,
       baseline: labelForChoice(RELEASE_SCALE_CHOICES, payload.answers.scale),
@@ -605,6 +638,7 @@ export function isReleaseSector(value: unknown): value is ReleaseSector {
     value === "banking" ||
     value === "insurance" ||
     value === "healthcare" ||
+    value === "capital-markets" ||
     value === "other"
   );
 }
@@ -612,7 +646,7 @@ export function isReleaseSector(value: unknown): value is ReleaseSector {
 function isReleaseAnswers(value: unknown): value is ReleaseAnswers {
   if (!isRecord(value)) return false;
   return (
-    boundedAnswer(value.workflow) &&
+    nonEmptyStringList(value.workflow, 2) &&
     nonEmptyStringList(value.friction, 2) &&
     boundedAnswer(value.scale) &&
     nonEmptyStringList(value.systems, DISCOVERY_RELEASE_LIMITS.answerList) &&
@@ -627,7 +661,7 @@ export function isReleaseAnswersForCompany(
   if (!isReleaseAnswers(value)) return false;
   const answers = value as ReleaseAnswers;
   return (
-    choiceIncludes(workflowChoicesFor(company), answers.workflow) &&
+    choicesInclude(workflowChoicesFor(company), answers.workflow) &&
     choicesInclude(frictionChoicesFor(company.sector), answers.friction) &&
     choiceIncludes(RELEASE_SCALE_CHOICES, answers.scale) &&
     choicesInclude(RELEASE_SYSTEM_CHOICES, answers.systems) &&
@@ -735,6 +769,13 @@ function stableJson(value: unknown): string {
 }
 
 function inferSector(text: string): ReleaseSector {
+  if (
+    /asset management|capital markets?|fund manager|fund reporting|investor reporting|portfolio compan|private equity|venture capital|aifmd|sfdr|mifid|due diligence questionnaire|\bddq\b/.test(
+      text,
+    )
+  ) {
+    return "capital-markets";
+  }
   if (/insurance|underwriting|claims|policyholder|actuar/.test(text)) {
     return "insurance";
   }
@@ -771,6 +812,11 @@ function fallbackOfferings(sector: ReleaseSector): string[] {
     banking: ["Banking operations", "Risk and compliance", "Customer servicing"],
     insurance: ["Underwriting", "Claims", "Policy operations"],
     healthcare: ["Patient administration", "Billing", "Clinical operations"],
+    "capital-markets": [
+      "Fund and investor reporting",
+      "Due diligence",
+      "Compliance monitoring",
+    ],
     other: ["Operations", "Customer workflows", "Reporting"],
   };
   return offerings[sector];
@@ -784,6 +830,11 @@ function uniqueChoices(choices: ReleaseChoice[]): ReleaseChoice[] {
     seen.add(key);
     return true;
   });
+}
+
+function formatList(values: string[]): string {
+  if (values.length <= 1) return values[0] ?? "Selected workflow";
+  return `${values.slice(0, -1).join(", ")} and ${values.at(-1)}`;
 }
 
 function slugify(value: string): string {

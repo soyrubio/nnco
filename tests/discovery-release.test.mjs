@@ -30,7 +30,7 @@ function validPayload() {
     company,
     companyContextToken: createDiscoveryContextToken(company, { NODE_ENV: "test" }),
     answers: {
-      workflow: workflowChoicesFor(company)[0].value,
+      workflow: workflowChoicesFor(company).slice(0, 2).map((choice) => choice.value),
       friction: ["document-review"],
       scale: "daily",
       systems: ["email", "documents"],
@@ -69,6 +69,31 @@ test("release context infers a sector and routes its workflow choices", () => {
   );
 });
 
+test("capital markets is a first-class inferred and manual sector", () => {
+  const company = buildFallbackCompanyContext({
+    website: "https://example-fund.test/",
+    title: "Example Asset Management | Funds",
+    description: "Fund and investor reporting for institutional portfolios.",
+    text: "Due diligence, portfolio company reporting, AIFMD and SFDR compliance.",
+    sourceUrls: ["https://example-fund.test/"],
+  });
+
+  assert.equal(company.sector, "capital-markets");
+  assert.equal(
+    workflowChoicesFor(company).some(
+      (choice) => choice.label === "Fund and investor reporting",
+    ),
+    true,
+  );
+  assert.equal(
+    frictionChoicesFor(company.sector).some(
+      (choice) => choice.value === "reconciling-figures",
+    ),
+    true,
+  );
+  assert.equal(buildManualCompanyContext("capital-markets").sector, "capital-markets");
+});
+
 test("release contract requires all five answers, work email data and consent", () => {
   const payload = validPayload();
   assert.equal(isDiscoveryReleasePayload(payload), true);
@@ -89,7 +114,8 @@ test("release contract requires all five answers, work email data and consent", 
 });
 
 test("fallback report always maps to exactly two report objects", () => {
-  const report = buildFallbackReleaseReport(validPayload(), "2026-08-10T12:00:00.000Z");
+  const payload = validPayload();
+  const report = buildFallbackReleaseReport(payload, "2026-08-10T12:00:00.000Z");
   assert.deepEqual(Object.keys(report).sort(), [
     "executiveSummary",
     "generatedAt",
@@ -100,6 +126,9 @@ test("fallback report always maps to exactly two report objects", () => {
   ]);
   assert.equal(report.pageOne.findings.length >= 2, true);
   assert.equal(report.pageTwo.opportunities.length >= 2, true);
+  assert.equal(payload.answers.workflow.length, 2);
+  assert.match(report.pageOne.workflow, /Underwriting/);
+  assert.match(report.pageOne.workflow, /Claims handling/);
   assert.equal(isDiscoveryReleaseReport(report), true);
   assert.equal(
     isDiscoveryReleaseReport({ ...report, pageTwo: { ...report.pageTwo, competitorStatus: "invalid" } }),
@@ -112,7 +141,7 @@ test("manual context keeps the diagnostic valid without a company website", () =
   payload.website = null;
   payload.company = buildManualCompanyContext("banking");
   payload.companyContextToken = null;
-  payload.answers.workflow = workflowChoicesFor(payload.company)[0].value;
+  payload.answers.workflow = [workflowChoicesFor(payload.company)[0].value];
   payload.answers.friction = [frictionChoicesFor(payload.company.sector)[0].value];
   payload.contact.organisation = "Not provided";
 
@@ -130,7 +159,19 @@ test("payload cannot mix manual and website-derived company contexts", () => {
 
 test("release contract rejects client-authored answers outside its choice sets", () => {
   const payload = validPayload();
-  payload.answers.workflow = "forged-workflow";
+  payload.answers.workflow = ["forged-workflow"];
+  assert.equal(isDiscoveryReleasePayload(payload), false);
+});
+
+test("release contract accepts at most two distinct workflows", () => {
+  const payload = validPayload();
+  const choices = workflowChoicesFor(payload.company);
+  assert.equal(isDiscoveryReleasePayload(payload), true);
+
+  payload.answers.workflow = choices.slice(0, 3).map((choice) => choice.value);
+  assert.equal(isDiscoveryReleasePayload(payload), false);
+
+  payload.answers.workflow = [choices[0].value, choices[0].value];
   assert.equal(isDiscoveryReleasePayload(payload), false);
 });
 
@@ -142,7 +183,7 @@ test("manual context must be the deterministic server contract", () => {
     summary: "Client-authored public claim",
   };
   payload.companyContextToken = null;
-  payload.answers.workflow = workflowChoicesFor(payload.company)[0].value;
+  payload.answers.workflow = [workflowChoicesFor(payload.company)[0].value];
   payload.answers.friction = [frictionChoicesFor(payload.company.sector)[0].value];
   payload.contact.organisation = "Not provided";
   assert.equal(isDiscoveryReleasePayload(payload), false);

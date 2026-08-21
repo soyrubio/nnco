@@ -18,6 +18,7 @@ import {
   RELEASE_SYSTEM_CHOICES,
   buildManualCompanyContext,
   frictionChoicesFor,
+  labelForReleaseSector,
   reclassifyCompanyContext,
   workflowChoicesFor,
   type CompanyContext,
@@ -62,7 +63,7 @@ interface ReleaseQuestion {
 }
 
 const INITIAL_ANSWERS: ReleaseAnswers = {
-  workflow: "",
+  workflow: [],
   friction: [],
   scale: "",
   systems: [],
@@ -76,6 +77,7 @@ const SECTOR_CHOICES: ReleaseChoice[] = [
   { value: "banking", label: "Banking" },
   { value: "insurance", label: "Insurance" },
   { value: "healthcare", label: "Healthcare" },
+  { value: "capital-markets", label: "Capital Markets" },
   { value: "other", label: "Another sector" },
 ];
 
@@ -127,9 +129,10 @@ export function DiscoveryRelease() {
       {
         id: "workflow",
         label: "Workflow",
-        prompt: "Which workflow should we examine?",
-        help: "Choose one process. The diagnostic will stay inside that boundary.",
-        kind: "single",
+        prompt: "Which workflows should we examine?",
+        help: "Choose up to two related processes. We will assess them together.",
+        kind: "multi",
+        maximum: 2,
         choices: workflowChoicesFor(company),
       },
       {
@@ -421,7 +424,7 @@ export function DiscoveryRelease() {
           <dl>
             <div>
               <dt>Sector</dt>
-              <dd>{company.sector}</dd>
+              <dd>{labelForReleaseSector(company.sector)}</dd>
             </div>
             <div>
               <dt>Public context</dt>
@@ -770,7 +773,7 @@ function DiscoveryReleaseReportView({
           <section className="discovery-report-scope">
             <span>Scope</span>
             <dl>
-              <div><dt>Workflow</dt><dd>{report.pageOne.workflow}</dd></div>
+              <div><dt>Workflows</dt><dd>{report.pageOne.workflow}</dd></div>
               <div><dt>Frequency</dt><dd>{report.pageOne.baseline}</dd></div>
             </dl>
           </section>
