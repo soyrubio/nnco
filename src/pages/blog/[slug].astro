@@ -40,11 +40,6 @@ const blogSchema = {
   description: post.data.summary,
   datePublished: post.data.publishedAt,
   dateModified: post.data.updatedAt,
-  author: {
-    "@type": "Person",
-    name: post.data.author,
-    url: "https://nnco.ai/company",
-  },
   publisher: { "@id": "https://nnco.ai/#organization" },
   mainEntityOfPage: canonical,
   inLanguage: "en",
@@ -81,7 +76,6 @@ const breadcrumbSchema = {
       <article class="news-article__layout">
         <header class="news-article__meta" aria-label="Publication details">
           <time datetime={post.data.publishedAt}>{publishedLabel}</time>
-          <span>{post.data.author}</span>
           <Button href="/blog" variant="secondary">
             <BlockArrow direction="left" /> All posts
           </Button>
@@ -97,7 +91,7 @@ const breadcrumbSchema = {
 
     <ClosingSection
       id="blog-closing"
-      description="If something here matches a problem you are working on, the fastest way to go further is 30 minutes with the people who wrote it."
+      description="If something here matches a problem you are working on, the fastest way to go further is a 30-minute call with NNCo."
       actions={[{ href: "/contact", label: "Book a 30-minute call" }]}
     />
   </main>

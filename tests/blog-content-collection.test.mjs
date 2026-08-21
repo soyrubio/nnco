@@ -32,9 +32,9 @@ const migratedSlugs = [
   "private-ai-starts-with-the-data-boundary",
 ];
 const migratedDateLabels = {
-  "what-goes-into-an-audit-trail-for-an-ai-workflow": "6 August 2026",
-  "where-human-review-belongs-in-an-ai-workflow": "24 July 2026",
-  "private-ai-starts-with-the-data-boundary": "10 July 2026",
+  "what-goes-into-an-audit-trail-for-an-ai-workflow": "20 August 2026",
+  "where-human-review-belongs-in-an-ai-workflow": "18 August 2026",
+  "private-ai-starts-with-the-data-boundary": "15 August 2026",
 };
 
 const markdownProcessor = await createSatteriMarkdownProcessor({
@@ -107,6 +107,7 @@ test("blog uses Astro 7 content collections with a glob-backed Markdown loader",
   assert.doesNotMatch(sourceEntries.config, /related:|reference\("blog"\)/);
   assert.match(sourceEntries.config, /publishedAt: z\.iso\.date\(\)/);
   assert.match(sourceEntries.config, /updatedAt: z\.iso\.date\(\)/);
+  assert.doesNotMatch(sourceEntries.config, /author:/);
   assert.match(
     sourceEntries.config,
     /title: z\.string\(\)\.trim\(\)\.min\(1, "title is required"\)/,
@@ -135,7 +136,6 @@ test("every Markdown post satisfies authoring and local-reference contracts", as
     for (const key of [
       "title",
       "category",
-      "author",
       "readingMinutes",
       "publishedAt",
       "updatedAt",
@@ -146,6 +146,7 @@ test("every Markdown post satisfies authoring and local-reference contracts", as
     assert.match(data.publishedAt, /^\d{4}-\d{2}-\d{2}$/);
     assert.match(data.updatedAt, /^\d{4}-\d{2}-\d{2}$/);
     assert.ok(data.updatedAt >= data.publishedAt, `${file}: date order`);
+    assert.equal(data.author, undefined, `${file}: no author metadata`);
     assert.ok(Number.isInteger(data.readingMinutes) && data.readingMinutes > 0);
     assert.equal(data.publishedLabel, undefined, `${file}: derived date label`);
 
@@ -212,8 +213,9 @@ test("article routes render frontmatter titles in the hero and Markdown on the r
   );
   assert.match(
     sourceEntries.route,
-    /const publishedLabel = formatBlogDate\(post\.data\.publishedAt\);[\s\S]*?<article class="news-article__layout">\s*<header class="news-article__meta" aria-label="Publication details">\s*<time datetime=\{post\.data\.publishedAt\}>\{publishedLabel\}<\/time>\s*<span>\{post\.data\.author\}<\/span>\s*<Button href="\/blog" variant="secondary">\s*<BlockArrow direction="left" \/> All posts\s*<\/Button>\s*<\/header>\s*<div class="news-article__content">\s*<ArticleProse>\s*<Content \/>/,
+    /const publishedLabel = formatBlogDate\(post\.data\.publishedAt\);[\s\S]*?<article class="news-article__layout">\s*<header class="news-article__meta" aria-label="Publication details">\s*<time datetime=\{post\.data\.publishedAt\}>\{publishedLabel\}<\/time>\s*<Button href="\/blog" variant="secondary">\s*<BlockArrow direction="left" \/> All posts\s*<\/Button>\s*<\/header>\s*<div class="news-article__content">\s*<ArticleProse>\s*<Content \/>/,
   );
+  assert.doesNotMatch(sourceEntries.route, /post\.data\.author|"@type": "Person"/);
   assert.match(
     sourceEntries.route,
     /ogType="article"\s*articlePublishedTime=\{post\.data\.publishedAt\}\s*articleModifiedTime=\{post\.data\.updatedAt\}/,
@@ -300,8 +302,8 @@ test("home and blog indexes share sorted collection summaries", () => {
 });
 
 test("blog display dates are derived centrally in UTC en-GB", () => {
-  assert.equal(formatBlogDate("2026-08-06"), "6 August 2026");
-  assert.equal(formatBlogDate("2026-07-24"), "24 July 2026");
+  assert.equal(formatBlogDate("2026-08-20"), "20 August 2026");
+  assert.equal(formatBlogDate("2026-08-18"), "18 August 2026");
   assert.match(sourceEntries.helper, /publishedLabel: formatBlogDate\(entry\.data\.publishedAt\)/);
 });
 

@@ -1,10 +1,9 @@
 ---
 title: Where human review belongs in an AI workflow
 category: Principles
-author: Dominik Veselý
 readingMinutes: 6
-publishedAt: "2026-07-24"
-updatedAt: "2026-07-24"
+publishedAt: "2026-08-18"
+updatedAt: "2026-08-18"
 summary: Human review works only when the reviewer can inspect the evidence, understand the system's reasoning and change the outcome before it matters.
 ---
 

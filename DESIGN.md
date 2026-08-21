@@ -416,8 +416,8 @@ The structure is deliberately blocky:
   renders its three latest posts without pagination and ends with the same row
   treatment linking to `/blog` as `See the blog`. Each article places its title
   alone in the shared PageHero.
-  The ruled content rail below uses two desktop columns: publication date,
-  author and an All posts button with a backward arrow on the left, and only
+  The ruled content rail below uses two desktop columns: publication date
+  and an All posts button with a backward arrow on the left, and only
   Markdown on the right. At 767px and below metadata moves above the full-width
   body. The shared Start here terminal section and footer follow the article.
 - `Meet the team`: one vertical stack of wide editorial profile cards. Each desktop card

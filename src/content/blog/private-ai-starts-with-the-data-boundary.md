@@ -1,10 +1,9 @@
 ---
 title: Private AI starts with the data boundary
 category: Systems
-author: Josef Gattermayer
 readingMinutes: 8
-publishedAt: "2026-07-10"
-updatedAt: "2026-07-10"
+publishedAt: "2026-08-15"
+updatedAt: "2026-08-15"
 summary: Private AI is an architecture decision about where data travels, where models execute and who can operate the system, not a label attached to a model.
 ---
 

@@ -1,10 +1,9 @@
 ---
 title: What goes into an audit trail for an AI workflow
 category: Systems
-author: Marek Kříž
 readingMinutes: 7
-publishedAt: "2026-08-06"
-updatedAt: "2026-08-09"
+publishedAt: "2026-08-20"
+updatedAt: "2026-08-20"
 summary: An audit trail for an AI workflow must reconstruct a decision as it stood when it was made, using only the evidence retained with the case.
 ---
 

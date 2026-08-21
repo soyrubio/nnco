@@ -8,7 +8,6 @@ const blog = defineCollection({
     .object({
       title: z.string().trim().min(1, "title is required"),
       category: z.enum(["Systems", "Field notes", "Regulation", "Principles"]),
-      author: z.string().min(1),
       readingMinutes: z.number().int().positive(),
       publishedAt: z.iso.date(),
       updatedAt: z.iso.date(),
