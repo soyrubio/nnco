@@ -8,6 +8,7 @@ import {
   isExactNavigationPage,
   isNavigationSection,
 } from "@/lib/navigation";
+import { isDiscoveryEnabled } from "@/lib/feature-flags";
 
 interface Props {
   currentPath?: string;
@@ -21,6 +22,12 @@ const {
   variant = "default",
 } = Astro.props;
 const isDiscovery = variant === "discovery";
+const discoveryEnabled = isDiscoveryEnabled(
+  import.meta.env.DISCOVERY_ENABLED,
+);
+const headerAction = discoveryEnabled
+  ? { href: "/discovery", label: "Start diagnosis" }
+  : { href: "/contact", label: "Book a call" };
 const isExactPage = (href: string) => isExactNavigationPage(currentPath, href);
 const isAncestorSection = (href: string) =>
   !isExactPage(href) && isNavigationSection(currentPath, href);
@@ -129,8 +136,13 @@ const navigationDropdowns = siteNavigation.flatMap((item) =>
             </div>
           </details>
 
-          <Button href="/discovery" size="small" class="site-header__cta">
-            Start diagnosis
+          <Button
+            href={headerAction.href}
+            variant="secondary"
+            size="small"
+            class="site-header__cta"
+          >
+            {headerAction.label}
             <BlockArrow />
           </Button>
         </>

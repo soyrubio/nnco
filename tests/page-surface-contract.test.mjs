@@ -64,6 +64,13 @@ test("standard page heroes use the shared four-fifths viewport height", () => {
   );
 });
 
+test("homepage hero keeps progressive full-viewport Safari fallbacks", () => {
+  assert.match(
+    sources.styles,
+    /\.hero\s*\{[^}]*min-height:\s*100vh;[^}]*min-height:\s*100svh;[^}]*min-height:\s*100dvh;/s,
+  );
+});
+
 test("shared terminal content composes the terminal section primitive", () => {
   assert.match(
     sources.closing,

@@ -1,6 +1,11 @@
 ---
 import BlockArrow from "./BlockArrow.astro";
 import Button from "./Button.astro";
+import { isDiscoveryEnabled } from "@/lib/feature-flags";
+
+const discoveryEnabled = isDiscoveryEnabled(
+  import.meta.env.DISCOVERY_ENABLED,
+);
 
 const desktopFrames = Array.from(
   { length: 11 },
@@ -39,13 +44,15 @@ const mobileFrames = Array.from(
           Book a 30-minute call
           <BlockArrow />
         </Button>
-        <Button
-          href="/discovery"
-          variant="secondary"
-        >
-          Start the diagnostic
-          <BlockArrow />
-        </Button>
+        {discoveryEnabled && (
+          <Button
+            href="/discovery"
+            variant="secondary"
+          >
+            Start the diagnostic
+            <BlockArrow />
+          </Button>
+        )}
       </div>
     </div>
   </div>

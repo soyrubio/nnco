@@ -2,6 +2,7 @@
 import BlockArrow from "./BlockArrow.astro";
 import Button from "./Button.astro";
 import type { LinkAction } from "./types";
+import { isDiscoveryEnabled } from "@/lib/feature-flags";
 
 interface Props {
   title: string;
@@ -21,6 +22,12 @@ const {
   class: className,
 } = Astro.props;
 
+const discoveryEnabled = isDiscoveryEnabled(
+  import.meta.env.DISCOVERY_ENABLED,
+);
+const visibleActions = actions.filter(
+  (action) => discoveryEnabled || action.href !== "/discovery",
+);
 const ActionsContainer = actionsLabel ? "nav" : "div";
 ---
 
@@ -42,12 +49,12 @@ const ActionsContainer = actionsLabel ? "nav" : "div";
       )
     }
     {
-      actions.length > 0 && (
+      visibleActions.length > 0 && (
         <ActionsContainer
           class="editorial-actions"
           aria-label={actionsLabel}
         >
-          {actions.map((action) => (
+          {visibleActions.map((action) => (
             <Button
               href={action.href}
               variant={action.variant ?? "primary"}

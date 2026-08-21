@@ -44,4 +44,6 @@ jobs:
         run: pnpm test
 
       - name: Verify production build
+        env:
+          DISCOVERY_ENABLED: "false"
         run: pnpm build

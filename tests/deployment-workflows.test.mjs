@@ -40,6 +40,20 @@ test("deployment credentials are referenced without copying runtime secrets", ()
   }
 });
 
+test("Discovery stays off by default and release builds accept an explicit opt-in", () => {
+  assert.match(
+    ci,
+    /name: Verify production build[\s\S]*?DISCOVERY_ENABLED: "false"[\s\S]*?run: pnpm build/,
+  );
+
+  for (const workflow of [stage, production]) {
+    assert.match(
+      workflow,
+      /name: Build [^\n]+[\s\S]*?DISCOVERY_ENABLED: \$\{\{ vars\.DISCOVERY_ENABLED \|\| 'false' \}\}/,
+    );
+  }
+});
+
 test("Wrangler keeps stage and production deployment targets explicit", () => {
   assert.equal(
     packageJson.scripts["deploy:stage"],
