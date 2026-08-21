@@ -214,7 +214,7 @@ test("compact placements preserve their old footprint without distorting Group 9
   );
   assert.match(
     sources.globalStyles,
-    /@media \(max-width: 767px\)[\s\S]*?\.nnco-navbar-rail > \.brand-logo \.brand-logo__stage\s*\{[^}]*width:\s*53\.4857143px;/s,
+    /@media \(max-width: 767px\)[\s\S]*?\.nnco-navbar-rail > \.brand-logo \.brand-logo__stage\s*\{[^}]*width:\s*41\.1428571px;/s,
   );
   assert.match(
     sources.globalStyles,

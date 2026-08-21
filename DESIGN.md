@@ -83,7 +83,8 @@ inherits the shared `--font-sans` token.
   gutters.
 - Desktop composition may be asymmetric. Every multi-column component collapses
   to one column below 768px.
-- Header height is 80px on desktop and 72px on mobile.
+- Header height is 80px on desktop and 54px on mobile. The mobile Menu control
+  retains a 44px minimum touch target inside that tighter row.
 - The complete navigation surface, including the header row and any open
   dropdown, always shares one solid tone. It uses ink over the homepage hero
   and dark sections, and paper over light sections. On every marketing route,
@@ -205,8 +206,10 @@ The structure is deliberately blocky:
   background emerge as one edge beneath the header and travel together through
   both the opening panel and category-height changes.
   On phones, Menu uses the same full-width overlay, downward and upward motion,
-  open outer list edges and rail-aligned bottom separator. Its established
-  grouped information hierarchy remains intact in one column.
+  open outer list edges and rail-aligned bottom separator. Primary items remain
+  flush to the content rail. Subitems use a smaller muted text role and move
+  1.25rem to the right together with their top and interior fine separators,
+  making the grouped hierarchy explicit without adding icons or decoration.
 - `DisclosureChevron`: the shared, decorative Material Symbols down/up pair for
   FAQ disclosures. Open state hard-switches the glyph without
   rotation, fading or motion.
@@ -214,7 +217,7 @@ The structure is deliberately blocky:
   header and discovery header.
 - `BrandLogo`: the canonical primary identity is the static 700×700 Group 97
   SVG. Compact placements retain the previous 720×700 outer footprint without
-  stretching the square artwork: 60px high in the desktop header, 52px in the
+  stretching the square artwork: 60px high in the desktop header, 40px in the
   mobile header and 48px in the footer. The discovery report toolbar keeps its
   existing fixed box. Dark placements invert the same black source mark.
 - Header, footer, discovery and Organization metadata use that one versioned
@@ -227,6 +230,9 @@ The structure is deliberately blocky:
 - `Button`: primary, secondary and quiet variants. Always full-pill.
 - `Hero`: full-bleed visual with copy constrained to the common rail.
   Its Discovery action renders only when the shared feature flag is enabled.
+  Its full-viewport minimum uses `100vh`, `100svh` and `100dvh` in progressive
+  order so Safari keeps a complete background when newer viewport units are
+  unavailable while modern browsers follow the live visual viewport.
   Its opening cloud field is an eleven-state responsive frame sequence: 128×72
   desktop and 48×85 mobile WebP mosaics scale with nearest-neighbour rendering.
   Only frame one is preloaded; the remaining ten load behind the page cover,

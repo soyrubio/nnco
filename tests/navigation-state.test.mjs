@@ -409,3 +409,32 @@ test("mobile header keeps the menu and hides the diagnosis action", () => {
     /\.site-header__cta\s*\{[^}]*display:\s*none;/s,
   );
 });
+
+test("phone navigation uses a compact row and inset ruled subitems", () => {
+  const phoneStart = stylesSource.indexOf("@media (max-width: 767px)");
+  const phoneNavigationStart = stylesSource.indexOf(
+    "@media (max-width: 767px)",
+    stylesSource.indexOf("/* Marketing information architecture v2 */"),
+  );
+
+  assert.notEqual(phoneStart, -1);
+  assert.notEqual(phoneNavigationStart, -1);
+  assert.match(
+    stylesSource.slice(phoneStart),
+    /:root\s*\{[^}]*--header-height:\s*54px;[^}]*--header-logo-height:\s*40px;/s,
+  );
+
+  const phoneNavigation = stylesSource.slice(phoneNavigationStart);
+  assert.match(
+    phoneNavigation,
+    /\.site-menu summary\s*\{[^}]*min-height:\s*44px;/s,
+  );
+  assert.match(
+    phoneNavigation,
+    /\.site-menu__links\s*\{[^}]*margin-inline-start:\s*1\.25rem;[^}]*border-top:\s*var\(--fine-rule-thickness\) solid var\(--nav-rule\);/s,
+  );
+  assert.match(
+    phoneNavigation,
+    /\.site-menu__links a \+ a\s*\{[^}]*border-top:\s*var\(--fine-rule-thickness\) solid var\(--nav-rule\);/s,
+  );
+});
