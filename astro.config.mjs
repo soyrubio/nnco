@@ -3,6 +3,18 @@ import sitemap from "@astrojs/sitemap";
 import cloudflare from "@astrojs/cloudflare";
 import { defineConfig } from "astro/config";
 
+export const shouldIncludeInSitemap = (page) => {
+  const pathname = new URL(page).pathname.replace(/\/$/, "") || "/";
+  return ![
+    "/glyphs",
+    "/industries",
+    "/news",
+    "/privacy",
+    "/team",
+    "/what-we-do",
+  ].includes(pathname) && !pathname.startsWith("/api/");
+};
+
 export default defineConfig({
   adapter: cloudflare({ imageService: "passthrough" }),
   compressHTML: true,
@@ -12,16 +24,7 @@ export default defineConfig({
   integrations: [
     react(),
     sitemap({
-      filter: (page) => {
-        const pathname = new URL(page).pathname.replace(/\/$/, "") || "/";
-        return ![
-          "/industries",
-          "/news",
-          "/privacy",
-          "/team",
-          "/what-we-do",
-        ].includes(pathname) && !pathname.startsWith("/api/");
-      },
+      filter: shouldIncludeInSitemap,
     }),
   ],
   output: "server",
