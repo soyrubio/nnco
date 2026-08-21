@@ -49,22 +49,88 @@ Contact enquiries and submitted diagnostics use the same repository and the
 same `lead_requests` table. Contact records are distinguished by the
 `contact-enquiry` snapshot kind.
 
-## Cloudflare deployment and Supabase
+## Release environments
 
-Cloudflare Workers Builds should use:
+GitHub Actions is the only deployment owner. Do not also connect Cloudflare
+Workers Builds, because that would deploy the same commit through a second,
+independent pipeline.
+
+| Git branch | Cloudflare Worker | Domain | Behavior |
+| --- | --- | --- | --- |
+| `development` | None | None | Personal branch; CI only |
+| `stage` | `nnco-stage` | `stage.nnco.ai` | Automatic, Basic Auth protected |
+| `main` | `nnco` | `nnco.ai` | Automatic production deployment |
+
+Work on `development`, then promote changes with pull requests to `stage` and
+finally from `stage` to `main`. The `CI` workflow checks `development` pushes
+and pull requests into the two release branches. Only pushes to `stage` or
+`main` build and deploy a Worker.
+
+### One-time GitHub setup
+
+1. Create `stage` from `main`. Keep `development` as the personal working
+   branch; it has no Cloudflare environment or deployment.
+2. Add the repository Actions secret `CLOUDFLARE_API_TOKEN`. Create it from
+   Cloudflare's **Edit Cloudflare Workers** token template and scope it only to
+   the NNCO account and `nnco.ai` zone.
+3. Add the repository Actions variable `CLOUDFLARE_ACCOUNT_ID`.
+4. Create GitHub Environments named `stage` and `production`. Limit each to its
+   matching branch. Keep a required reviewer on `production` through the first
+   DNS cutover; it can be removed later if fully automatic production releases
+   are preferred.
+5. Protect `stage` and `main` with pull requests and the `CI / Test and build`
+   required check. `development` does not need protection.
+
+The Cloudflare token and account ID authenticate deployments only. Application
+secrets stay in Cloudflare and are never copied into GitHub Actions.
+
+### One-time Cloudflare setup
+
+Keep the two independent Workers `nnco` and `nnco-stage`. Attach
+`stage.nnco.ai` as a Custom Domain on `nnco-stage`. During the approved
+production cutover, replace the existing apex origin with a Custom Domain from
+`nnco` to `nnco.ai`; handle `www.nnco.ai` as either a redirect to the apex or a
+second Custom Domain. Do not change the apex records until the production
+Worker has all runtime secrets and passes a direct preview check.
+
+The Wrangler configuration commits non-sensitive runtime settings so every
+deployment is reproducible. Secrets must be set independently on both Workers;
+Wrangler environments do not inherit them. Configure production without
+`--env`, and stage with `--env stage`:
 
 ```text
-Build command: pnpm build
-Deploy command: pnpm wrangler deploy
+OPENAI_API_KEY
+SUPABASE_URL
+SUPABASE_SERVICE_ROLE_KEY
+DISCOVERY_CONTEXT_SIGNING_SECRET
+DISCOVERY_RATE_LIMIT_SECRET
 ```
 
-The equivalent local deployment is `pnpm deploy`. The pnpm workspace permits
-only the `esbuild` and `workerd` dependency install scripts required by Astro
-and Cloudflare's local runtime; other dependency build scripts remain blocked.
-The Worker configuration sets `NODE_ENV=production`; secrets still belong in
-the Cloudflare dashboard and are not committed to the repository.
+Stage additionally requires:
 
-### Authenticated stage deployment
+```text
+BASIC_AUTH_PASS
+```
+
+Use `pnpm wrangler secret put <NAME>` for production and
+`pnpm wrangler secret put <NAME> --env stage` for stage. Prefer a separate
+Supabase project for stage so test submissions cannot enter production data.
+
+### Manual deployments
+
+GitHub Actions is the normal release path. For recovery, an authenticated
+operator can run:
+
+```bash
+pnpm deploy:stage
+pnpm deploy
+```
+
+The pnpm workspace permits only the `esbuild` and `workerd` dependency install
+scripts required by Astro and Cloudflare's local runtime; other dependency
+build scripts remain blocked.
+
+### Stage authentication
 
 Stage uses the separate `nnco-stage` Wrangler environment and Worker. Build it
 with `CLOUDFLARE_ENV=stage` so Astro selects the stage entrypoint during its
@@ -87,31 +153,22 @@ with `503`; invalid or absent credentials receive the browser's `401` password
 challenge. Gate responses are non-cacheable and excluded from indexing. Use
 Basic Auth only through Cloudflare HTTPS.
 
-Configure these encrypted secrets on the `stage` Worker environment:
+The stage username is the committed non-sensitive value `stage`. Configure the
+password as an encrypted secret on the `stage` Worker environment:
 
 ```text
-pnpm wrangler secret put BASIC_AUTH_USER --env stage
 pnpm wrangler secret put BASIC_AUTH_PASS --env stage
 ```
 
-The manual `Deploy stage` GitHub workflow builds and deploys the stage
-environment without uploading application secrets. Configure the Basic Auth
-values directly on the `nnco-stage` Worker before running it. The GitHub
-`stage` environment requires only these deployment credentials:
+The `Deploy stage` workflow builds and deploys the stage environment without
+uploading application secrets. Configure all runtime secrets directly on
+`nnco-stage` before merging into the `stage` branch.
 
-```text
-CLOUDFLARE_API_TOKEN
-CLOUDFLARE_ACCOUNT_ID
-```
-
-Stage needs its own copies of every other server secret used by the application
-(OpenAI, Supabase, signing and rate-limiting values). Wrangler environments do
-not inherit secrets from production.
-
-Recommended production values:
+The committed Wrangler variables provide the public origin, production modes,
+and model defaults. The corresponding production behavior is:
 
 ```dotenv
-PUBLIC_APP_URL=https://your-domain.example
+PUBLIC_APP_URL=https://nnco.ai
 LEAD_HANDOFF_MODE=supabase
 SUPABASE_URL=https://your-project.supabase.co
 SUPABASE_SERVICE_ROLE_KEY=server-only-value

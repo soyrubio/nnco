@@ -13,7 +13,7 @@
     "build:stage": "astro check && CLOUDFLARE_ENV=stage astro build",
     "check": "astro check",
     "deploy": "pnpm build && wrangler deploy",
-    "deploy:stage": "pnpm build:stage && wrangler deploy",
+    "deploy:stage": "pnpm build:stage && wrangler deploy --env stage",
     "test": "node --experimental-strip-types --test tests/*.test.mjs",
     "preview": "astro preview"
   },
@@ -24,7 +24,6 @@
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
     "astro": "7.2.0",
-    "motion": "13.1.0",
     "react": "^19.2.6",
     "react-dom": "^19.2.6"
   },

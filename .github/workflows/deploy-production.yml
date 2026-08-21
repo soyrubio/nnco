@@ -1,26 +1,26 @@
-name: Deploy stage
+name: Deploy production
 
 on:
   push:
     branches:
-      - stage
+      - main
   workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: deploy-stage
-  cancel-in-progress: true
+  group: deploy-production
+  cancel-in-progress: false
 
 jobs:
   deploy:
-    name: Deploy authenticated stage
+    name: Deploy production
     runs-on: ubuntu-latest
     timeout-minutes: 20
     environment:
-      name: stage
-      url: https://stage.nnco.ai
+      name: production
+      url: https://nnco.ai
     steps:
       - name: Check out repository
         uses: actions/checkout@v5
@@ -43,14 +43,14 @@ jobs:
       - name: Run tests
         run: pnpm test
 
-      - name: Build stage Worker
-        run: pnpm build:stage
+      - name: Build production Worker
+        run: pnpm build
 
-      - name: Deploy stage Worker
+      - name: Deploy production Worker
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
           packageManager: pnpm
           wranglerVersion: 4.122.0
-          command: deploy --env stage
+          command: deploy

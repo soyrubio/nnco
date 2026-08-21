@@ -1,9 +1,27 @@
-# Installation
+# NNCO website
+
+## Local development
 
 ```bash
 pnpm install --ignore-scripts
 pnpm dev
 ```
+
+## Release flow
+
+| Branch | Purpose | Deployment |
+| --- | --- | --- |
+| `development` | Personal working branch | None; checks only |
+| `stage` | Review candidate | Automatic to `stage.nnco.ai` |
+| `main` | Production source of truth | Automatic to `nnco.ai` |
+
+Work on `development`, then promote with pull requests: `development` →
+`stage` → `main`. `development` is never deployed. Stage and production
+deployments run through GitHub Actions; Cloudflare Workers Builds must remain
+disconnected so each commit has only one deployment owner.
+
+One-time account setup, runtime secrets, manual deployment commands, and the
+production DNS cutover are documented in [DEPLOYMENT.md](./DEPLOYMENT.md).
 
 ## Blog
 
@@ -23,4 +41,3 @@ summary: One-sentence article summary.
 
 Article content.
 ```
-
