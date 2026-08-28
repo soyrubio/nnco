@@ -547,6 +547,34 @@ details[open] > summary .disclosure-chevron > .navigation-caret__up {
   color: var(--ink);
 }
 
+.site-header .site-header__cta,
+.site-header--over-hero.is-scrolled .site-header__cta {
+  border-color: var(--rule-strong);
+  background: transparent;
+  color: var(--ink);
+}
+
+.site-header .site-header__cta:hover,
+.site-header--over-hero.is-scrolled .site-header__cta:hover {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.site-header--over-hero:not(.is-scrolled) .site-header__cta,
+.site-header.is-over-dark .site-header__cta {
+  border-color: var(--paper);
+  background: transparent;
+  color: var(--paper);
+}
+
+.site-header--over-hero:not(.is-scrolled) .site-header__cta:hover,
+.site-header.is-over-dark .site-header__cta:hover {
+  border-color: var(--paper);
+  background: var(--paper);
+  color: var(--ink);
+}
+
 .site-header.is-over-dark :focus-visible {
   outline-color: var(--paper);
 }
