@@ -1140,6 +1140,11 @@ h1 {
   height: auto;
 }
 
+.team-card__portrait picture {
+  width: 100%;
+  min-width: 0;
+}
+
 .team-card__content {
   display: flex;
   flex-direction: column;
@@ -2735,7 +2740,7 @@ a.editorial-card p {
 
 .site-footer nav.site-footer__navigation {
   display: grid;
-  grid-template-columns: repeat(4, minmax(8rem, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   grid-template-rows: none;
   grid-auto-flow: row;
   gap: 2rem;
@@ -2832,4 +2837,15 @@ a.editorial-card p {
     gap: 2rem 1.25rem;
   }
 
+}
+
+/* Keep the hero in document flow when a short viewport cannot contain its copy. */
+@media (max-height: 600px) {
+  .hero__copy {
+    position: relative;
+    top: auto;
+    left: auto;
+    width: 100%;
+    transform: none;
+  }
 }

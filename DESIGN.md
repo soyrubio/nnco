@@ -242,6 +242,9 @@ The structure is deliberately blocky:
   140ms to 300ms so the sequence settles progressively toward its final state.
   The sequence is independent of scroll and never loops. Never ship the source
   MP4 or encode image bytes in JavaScript.
+  In viewports at most 600px tall, copy participates in normal document flow
+  so the hero can grow to keep its text and actions clear of the header and
+  bottom edge.
 - `SectionFrame`: full-width paper or dark background plus the shared content
   rail. A dark frame remains full-bleed horizontally, adds the shared paper
   margin above and below, and uses the larger dark-section content padding.
@@ -451,6 +454,9 @@ The structure is deliberately blocky:
   quiet outlined metadata capsule built from the small type token, button radius
   and the same fine, softer border as a secondary button. The role capsule has
   no hover or interactive state.
+  Portraits offer 480px, 800px and 1254px WebP sources matched to their rendered
+  width, retain the transparent PNG fallback and explicit square dimensions,
+  and load lazily below the fold.
 
 ## Discovery and report
 
@@ -542,6 +548,8 @@ The structure is deliberately blocky:
 - The page loader remains an independent hard-cut sequence at 240ms per frame.
   It appears only once per browser session, with a 650ms minimum cover and an
   immediate overlay exit.
+  It releases when the document is ready and that minimum has elapsed, without
+  waiting for optional images or the window load event.
 - The hero frame sequence plays once after its active responsive frames have
   loaded and the page cover has exited. Its eleven hard states slow toward the
   end through progressively longer 140ms to 300ms frame holds, without

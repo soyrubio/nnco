@@ -81,14 +81,23 @@ const faqSchema = buildFaqSchema(faq, "/company");
             team.map((person) => (
               <article class="team-card">
                 <div class="team-card__portrait">
-                  <img
-                    src={person.image}
-                    alt={`Portrait of ${person.name}`}
-                    width="1254"
-                    height="1254"
-                    loading="lazy"
-                    decoding="async"
-                  />
+                  <picture>
+                    <source
+                      type="image/webp"
+                      srcset={[480, 800, 1254]
+                        .map((width) => `${person.image.replace(/\.png$/, `-${width}.webp`)} ${width}w`)
+                        .join(", ")}
+                      sizes="(max-width: 767px) calc(100vw - 4rem), (max-width: 1439px) 29vw, 420px"
+                    />
+                    <img
+                      src={person.image}
+                      alt={`Portrait of ${person.name}`}
+                      width="1254"
+                      height="1254"
+                      loading="lazy"
+                      decoding="async"
+                    />
+                  </picture>
                 </div>
                 <div class="team-card__content">
                   <h3>{person.name}</h3>

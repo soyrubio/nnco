@@ -141,6 +141,7 @@ const mobileFrames = Array.from(
               (src) =>
                 new Promise<boolean>((resolve) => {
                   const preload = new Image();
+                  preload.fetchPriority = "low";
                   preload.onload = () => resolve(true);
                   preload.onerror = () => resolve(false);
                   preload.src = src;
@@ -164,13 +165,17 @@ const mobileFrames = Array.from(
           if (!src) return;
 
           if (mobileViewport.matches) {
-            mobileSource.srcset = src;
-          } else {
+            if (mobileSource.srcset !== src) mobileSource.srcset = src;
+          } else if (image.getAttribute("src") !== src) {
             image.src = src;
           }
         };
 
         const prepareActiveSequence = async () => {
+          if (reducedMotion.matches) {
+            applyFrame(0);
+            return;
+          }
           const frames = getActiveSequence();
           if (frames.length !== 11 || !(await preloadSequence(frames))) return;
           if (getActiveSequence()[0] !== frames[0]) return;

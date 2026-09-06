@@ -107,7 +107,7 @@ const { tone = "light" } = Astro.props;
     };
 
     const cleanup = () => {
-      window.removeEventListener("load", dismissAfterMinimum);
+      document.removeEventListener("DOMContentLoaded", dismissAfterMinimum);
       motionPreference.removeEventListener("change", syncMotionPreference);
       window.clearInterval(frameTimer);
       window.clearTimeout(safetyTimer);
@@ -148,10 +148,14 @@ const { tone = "light" } = Astro.props;
       minimumTimer = window.setTimeout(beginExit, remaining);
     };
 
-    if (document.readyState === "complete") {
+    // The document and its deferred scripts are ready before optional images
+    // finish loading. Do not keep the usable page covered waiting for them.
+    if (document.readyState !== "loading") {
       dismissAfterMinimum();
     } else {
-      window.addEventListener("load", dismissAfterMinimum, { once: true });
+      document.addEventListener("DOMContentLoaded", dismissAfterMinimum, {
+        once: true,
+      });
     }
 
     const safetyTimer = window.setTimeout(dismissAfterMinimum, loadSafetyMs);
