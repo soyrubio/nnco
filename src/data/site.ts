@@ -149,7 +149,7 @@ export const team = [
   },
   {
     name: "Josef Gattermayer",
-    role: "Co-Founder, AI & R&D",
+    role: "Co-Founder, AI & R&D consultant",
     bio: "CTO at Ackee, then founder of Ackee Blockchain, a security audit firm. Audit work is the discipline of proving that a system does what it claims, which is the same discipline an AI system needs before a regulator looks at it.",
     image: "/assets/team/josef-gattermayer-reframed.png",
   },
