@@ -155,13 +155,13 @@ export const team = [
   },
   {
     name: "Josef Bazal",
-    role: "Co-Founder",
+    role: "Co-Founder, Product & Delivery consultant",
     bio: "Turns complex business and operational problems into clear direction. Connects client needs, user workflows and delivery so that AI systems solve real problems and work in everyday practice.",
     image: "/assets/team/josef-bazal-reframed.png",
   },
   {
     name: "Lukáš Rajnoha",
-    role: "Co-Founder",
+    role: "Co-Founder, Technical consultant",
     bio: "Previously a security engineer at Ackee Blockchain, securing high-value DeFi protocols and building a top-performing AI security analysis system for automated code security analysis. Now helps build AI systems end to end, from architecture and infrastructure to production.",
     image: "/assets/team/lukas-rajnoha-reframed.png",
   },
