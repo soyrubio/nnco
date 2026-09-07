@@ -1,3 +1,5 @@
+import { isOpportunityDiscoveryReport, type OpportunityDiscoveryReport } from "./discovery-report.ts";
+
 export const DISCOVERY_RELEASE_CONSENT_VERSION = "2026-08-10";
 
 export const DISCOVERY_RELEASE_LIMITS = {
@@ -140,7 +142,7 @@ export type ReleaseCompetitorStatus =
   | "included"
   | "not-found";
 
-export interface DiscoveryReleaseReport {
+export interface LegacyDiscoveryReleaseReport {
   schemaVersion: 1;
   generatedAt: string;
   title: string;
@@ -160,6 +162,8 @@ export interface DiscoveryReleaseReport {
     competitorNotes: ReleaseCompetitorNote[];
   };
 }
+
+export type DiscoveryReleaseReport = LegacyDiscoveryReleaseReport | OpportunityDiscoveryReport;
 
 export interface DiscoveryReleaseSuccessResponse {
   ok: true;
@@ -422,7 +426,7 @@ export function reclassifyCompanyContext(
 export function buildFallbackReleaseReport(
   payload: DiscoveryReleasePayload,
   now = new Date().toISOString(),
-): DiscoveryReleaseReport {
+): LegacyDiscoveryReleaseReport {
   const workflowChoices = workflowChoicesFor(payload.company);
   const frictionChoices = frictionChoicesFor(payload.company.sector);
   const workflowLabels = payload.answers.workflow.map((value) =>
@@ -553,6 +557,7 @@ export function isDiscoveryReleasePayload(
 export function isDiscoveryReleaseReport(
   value: unknown,
 ): value is DiscoveryReleaseReport {
+  if (isOpportunityDiscoveryReport(value)) return true;
   if (!isRecord(value) || !isRecord(value.pageOne) || !isRecord(value.pageTwo)) {
     return false;
   }

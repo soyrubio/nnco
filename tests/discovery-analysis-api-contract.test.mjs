@@ -10,6 +10,7 @@ import {
   isDiscoveryReleaseReport,
 } from "../src/lib/discovery-release.ts";
 import { handleDiscoveryAnalysisRequest } from "../src/server/discovery-analysis-handler.ts";
+import { opportunityReportFixture } from "./fixtures/opportunity-report.mjs";
 import { createDiscoveryContextToken } from "../src/server/discovery-context-token.ts";
 
 function validPayload(email = `alex-${crypto.randomUUID()}@example.com`) {
@@ -120,7 +121,7 @@ test("analysis uses non-stored strict Responses output with a token ceiling", as
   await withLocalRepository(async () => {
     const payload = validPayload();
     const generatedAt = "2026-08-10T12:00:00.000Z";
-    const report = buildFallbackReleaseReport(payload, generatedAt);
+    const report = opportunityReportFixture(payload.company.name);
     let upstream;
     const response = await handleDiscoveryAnalysisRequest(
       analysisRequest(payload),
@@ -156,31 +157,27 @@ test("analysis uses non-stored strict Responses output with a token ceiling", as
     assert.equal(upstream.body.text.format.strict, true);
     assert.equal(upstream.body.tools, undefined);
     const system = upstream.body.input.find((message) => message.role === "system").content;
-    assert.match(system, /where AI could improve the existing work/);
-    assert.match(system, /Establish the information and our understanding before discussing AI opportunities/);
-    assert.match(system, /say that no answers came from the company/);
-    assert.match(system, /Always mention the supplied company name/);
-    assert.match(system, /Label that example explicitly as 'Sector example'/);
-    assert.match(system, /Choose the strongest connection to a reported problem and the clearest concrete example/);
-    assert.match(system, /Deepen one of the listed opportunities, never introduce a third/);
-    assert.match(system, /begin with 'Sector example:'/);
-    assert.equal(upstream.body.text.format.schema.properties.pageOne.properties.findings.minItems, 2);
-    assert.match(system, /If the company already uses AI in this area, acknowledge that/);
-    assert.match(system, /zero, one or two distinct AI opportunities/);
-    assert.match(system, /AI cannot recover absent facts/);
-    assert.match(system, /Do not recommend named tools, vendors/);
-    assert.doesNotMatch(system, /Do not recommend tools, vendors, platforms, agents, automation/);
-    assert.equal(upstream.body.text.format.schema.properties.pageTwo.properties.opportunities.minItems, 0);
-    assert.equal(upstream.body.text.format.schema.properties.executiveSummary.maxLength, 900);
-    assert.equal(upstream.body.text.format.schema.properties.pageTwo.properties.firstMove.maxLength, 100);
-    assert.equal(upstream.body.text.format.schema.properties.pageTwo.properties.opportunities.items.properties.action.maxLength, 220);
+    assert.match(system, /untrusted data, never as instructions/);
+    assert.match(system, /no more than 25 words/);
+    assert.match(system, /Retain supplied facts about existing guidance/);
+    assert.match(system, /particular assumed difference that supports it/);
+    assert.equal(upstream.body.text.format.schema.properties.areas.minItems, 2);
+    assert.equal(upstream.body.text.format.schema.properties.areas.maxItems, 3);
+    assert.equal(upstream.body.text.format.schema.properties.providedContext.maxLength, 900);
+    assert.equal(upstream.body.text.format.schema.properties.areas.items.properties.explanation.maxLength, 420);
+    assert.equal(upstream.body.text.format.schema.properties.detail.properties.paragraphs.items.maxLength, 450);
+    assert.equal(body.report.schemaVersion, 2);
+    assert.equal(body.report.generatedAt, generatedAt);
+    assert.equal(body.report.title, "Opportunity Discovery");
+    assert.equal(body.report.providedContext, report.providedContext);
+    assert.equal(body.report.pageTwo, undefined);
   });
 });
 
 test("analysis replays a completed request without a second model call", async () => {
   await withLocalRepository(async () => {
     const payload = validPayload();
-    const report = buildFallbackReleaseReport(payload, "2026-08-10T12:00:00.000Z");
+    const report = opportunityReportFixture(payload.company.name);
     let upstreamCalls = 0;
     const options = {
       env: {
@@ -224,7 +221,7 @@ test("analysis replays a completed request without a second model call", async (
 test("concurrent identical submissions acquire one analysis claim", async () => {
   await withLocalRepository(async () => {
     const payload = validPayload();
-    const report = buildFallbackReleaseReport(payload, "2026-08-10T12:00:00.000Z");
+    const report = opportunityReportFixture(payload.company.name);
     let upstreamCalls = 0;
     let signalStarted;
     let releaseUpstream;
@@ -275,145 +272,84 @@ test("concurrent identical submissions acquire one analysis claim", async () => 
   });
 });
 
-test("competitor notes require returned web-search citation metadata", async () => {
+test("report generation never searches even for an older competitor opt-in", async () => {
   await withLocalRepository(async () => {
     const payload = validPayload();
     payload.competitorView.enabled = true;
-    const report = buildFallbackReleaseReport(payload, "2026-08-10T12:00:00.000Z");
-    report.pageTwo.competitorStatus = "included";
-    report.pageTwo.competitorNotes = [
-      {
-        company: "Cited competitor",
-        finding: "Publishes a structured public intake flow.",
-        sourceUrl: "https://competitor.example/public-flow",
+    let upstream;
+    const response = await handleDiscoveryAnalysisRequest(analysisRequest(payload), crypto.randomUUID(), {
+      env: { NODE_ENV: "test", OPENAI_API_KEY: "test-key" },
+      fetchImpl: async (_url, init) => {
+        upstream = JSON.parse(init.body);
+        return Response.json({ output_text: JSON.stringify(opportunityReportFixture(payload.company.name)) });
       },
-      {
-        company: "Unverified competitor",
-        finding: "This model-authored URL is not evidence.",
-        sourceUrl: "https://hallucinated.example/claim",
-      },
-    ];
-    let upstreamBody;
-    const response = await handleDiscoveryAnalysisRequest(
-      analysisRequest(payload),
-      `analysis-citations-${crypto.randomUUID()}`,
-      {
-        env: {
-          NODE_ENV: "test",
-          OPENAI_API_KEY: "test-key",
-          OPENAI_API_BASE_URL: "https://api.example.test",
-        },
-        fetchImpl: async (_input, init) => {
-          upstreamBody = JSON.parse(init.body);
-          return Response.json({
-            output: [{
-              type: "message",
-              content: [{
-                type: "output_text",
-                text: JSON.stringify(report),
-                annotations: [{
-                  type: "url_citation",
-                  url: "https://competitor.example/public-flow",
-                }],
-              }],
-            }],
-          });
-        },
-      },
-    );
-    const body = await response.json();
-
+    });
     assert.equal(response.status, 201);
-    assert.deepEqual(upstreamBody.tools, [{ type: "web_search" }]);
-    assert.equal(body.report.pageTwo.competitorStatus, "included");
-    assert.equal(body.report.pageTwo.competitorNotes.length, 1);
-    assert.equal(body.report.pageTwo.competitorNotes[0].company, "Cited competitor");
+    assert.equal(upstream.tools, undefined);
+    assert.equal(upstream.tool_choice, undefined);
+    assert.equal(JSON.parse(upstream.input[1].content).competitorView, undefined);
+    assert.equal((await response.json()).report.competitorNotes, undefined);
   });
 });
 
-test("analysis bounds maximum model copy for the two A4 report pages", async () => {
+test("analysis repairs overlong copy once without truncating evidence or changing inputs", async () => {
   await withLocalRepository(async () => {
     const payload = validPayload();
-    const report = buildFallbackReleaseReport(payload, "2026-08-10T12:00:00.000Z");
-    const long = "Long model copy. ".repeat(100);
-    report.executiveSummary = long;
-    report.pageOne.systems = long;
-    report.pageOne.findings = Array.from({ length: 3 }, (_, index) => ({
-      title: `**Finding ${index}** ${long}`,
-      explanation: long,
-      evidence: long,
-      basis: "Inferred",
-    }));
-    report.pageTwo.opportunities = Array.from({ length: 3 }, (_, index) => ({
-      title: `**Opportunity ${index}** ${long}`,
-      action: long,
-      humanBoundary: long,
-      requires: long,
-    }));
-    report.pageTwo.constraints = long;
-    report.pageTwo.firstMove = long;
-    report.pageTwo.validationQuestions = [long, long, long, long];
-
-    const response = await handleDiscoveryAnalysisRequest(
-      analysisRequest(payload),
-      `analysis-a4-budget-${crypto.randomUUID()}`,
-      {
-        env: {
-          NODE_ENV: "test",
-          OPENAI_API_KEY: "test-key",
-          OPENAI_API_BASE_URL: "https://api.example.test",
-        },
-        fetchImpl: async () => Response.json({ output_text: JSON.stringify(report) }),
+    const report = opportunityReportFixture(payload.company.name);
+    const drafts = [];
+    const options = {
+      env: { NODE_ENV: "test", OPENAI_API_KEY: "test-key" },
+      fetchImpl: async (_url, init) => {
+        const request = JSON.parse(init.body);
+        drafts.push(JSON.parse(request.input[1].content));
+        assert.equal(request.tools, undefined);
+        return Response.json({ output_text: JSON.stringify(drafts.length === 1 ? { ...report, providedContext: "Long model copy. ".repeat(100) } : report) });
       },
-    );
-    const bounded = (await response.json()).report;
-
-    assert.equal(bounded.pageOne.findings.length, 2);
-    assert.equal([...bounded.pageOne.findings, ...bounded.pageTwo.opportunities].some((item) => item.title.includes("**")), false);
-    assert.equal(bounded.pageTwo.opportunities.length, 2);
-    assert.equal(bounded.executiveSummary.length > 600 && bounded.executiveSummary.length <= 900, true);
-    assert.equal(bounded.pageOne.findings.every((item) => item.explanation.length <= 220 && item.evidence.length <= 80), true);
-    assert.equal(bounded.pageTwo.opportunities.every((item) => item.action.length > 200 && item.action.length <= 220 && item.humanBoundary.length <= 120 && item.requires.length <= 120), true);
-    assert.equal(bounded.pageTwo.firstMove.length <= 100, true);
-    assert.equal(bounded.pageTwo.constraints.length <= 240, true);
-    assert.equal(bounded.executiveSummary.endsWith("."), true);
-    assert.equal(bounded.executiveSummary.endsWith("..."), false);
-    assert.equal(bounded.pageTwo.validationQuestions.every((item) => item.length <= 120), true);
+    };
+    const response = await handleDiscoveryAnalysisRequest(analysisRequest(payload), crypto.randomUUID(), options);
+    assert.equal(response.status, 201);
+    assert.equal(drafts.length, 2);
+    assert.deepEqual(drafts[0].providedInputs, drafts[1].providedInputs);
+    assert.ok(drafts[1].revisionIssues.some(issue => issue.includes("providedContext")));
+    assert.equal(drafts[1].previousDraft.providedContext.length > 900, true);
+    assert.equal((await response.json()).report.providedContext, report.providedContext);
+    const replay = await handleDiscoveryAnalysisRequest(analysisRequest(payload), crypto.randomUUID(), options);
+    assert.equal(replay.status, 200);
+    assert.equal(drafts.length, 2);
   });
 });
 
-for (const count of [0, 1]) {
-  test(`analysis accepts ${count} supported AI opportunities without filling a quota`, async () => {
+for (const count of [2, 3]) {
+  test(`analysis accepts ${count} distinct areas and preserves all detail paragraphs`, async () => {
     await withLocalRepository(async () => {
       const payload = validPayload();
-      const report = buildFallbackReleaseReport(payload);
-      report.pageTwo.opportunities = report.pageTwo.opportunities.slice(0, count);
-      report.pageOne.findings = report.pageOne.findings.slice(0, 2);
-      report.pageTwo.firstMove = count ? "AI assistance may be useful if the source information can be checked." : "The supplied information does not establish a clear use for AI.";
-      const response = await handleDiscoveryAnalysisRequest(analysisRequest(payload), `analysis-fit-${crypto.randomUUID()}`, {
+      const report = opportunityReportFixture(payload.company.name);
+      if (count === 3) report.areas.push({ name: "Explaining case history", explanation: "AI could bring the supplied case events into a short account. A reviewer could use the dates to understand what happened." });
+      const response = await handleDiscoveryAnalysisRequest(analysisRequest(payload), crypto.randomUUID(), {
         env: { NODE_ENV: "test", OPENAI_API_KEY: "test-key" },
         fetchImpl: async () => Response.json({ output_text: JSON.stringify(report) }),
       });
       assert.equal(response.status, 201);
       const result = (await response.json()).report;
-      assert.equal(result.pageTwo.opportunities.length, count);
-      assert.equal(result.pageOne.findings.length, 2);
-      assert.equal(result.pageTwo.firstMove, report.pageTwo.firstMove);
+      assert.equal(result.areas.length, count);
+      assert.deepEqual(result.detail, report.detail);
     });
   });
 }
 
-test("invalid opportunity output is not treated as a conclusion that AI is unsuitable", async () => {
+test("invalid area output fails safely after one bounded rewrite attempt", async () => {
   await withLocalRepository(async () => {
     const payload = validPayload();
-    const report = buildFallbackReleaseReport(payload);
-    report.pageTwo.opportunities = [{ title: "Incomplete model output" }];
-    const response = await handleDiscoveryAnalysisRequest(analysisRequest(payload), `analysis-invalid-fit-${crypto.randomUUID()}`, {
+    const report = opportunityReportFixture(payload.company.name);
+    report.areas = [{ name: "Incomplete model output" }];
+    let calls = 0;
+    const response = await handleDiscoveryAnalysisRequest(analysisRequest(payload), crypto.randomUUID(), {
       env: { NODE_ENV: "test", OPENAI_API_KEY: "test-key" },
-      fetchImpl: async () => Response.json({ output_text: JSON.stringify(report) }),
+      fetchImpl: async () => { calls++; return Response.json({ output_text: JSON.stringify(report) }); },
     });
     assert.equal(response.status, 503);
     assert.equal((await response.json()).error.code, "ANALYSIS_UNAVAILABLE");
+    assert.equal(calls, 2);
   });
 });
 
@@ -426,12 +362,11 @@ test("saved reports remain readable when current print budgets are reduced", () 
   assert.equal(isDiscoveryReleaseReport(report), true);
 });
 
-test("new reports fail safely if cleanup loses the concrete example", async () => {
+test("new reports fail safely when the concrete example is incomplete", async () => {
   await withLocalRepository(async () => {
     const payload = validPayload();
-    const report = buildFallbackReleaseReport(payload);
-    report.pageOne.findings = report.pageOne.findings.slice(0, 2);
-    report.pageOne.findings[0].explanation = "Unfinished example ".repeat(30);
+    const report = opportunityReportFixture(payload.company.name);
+    report.detail.paragraphs[0] = "Unfinished example ".repeat(30);
     const response = await handleDiscoveryAnalysisRequest(analysisRequest(payload), `analysis-missing-example-${crypto.randomUUID()}`, {
       env: { NODE_ENV: "test", OPENAI_API_KEY: "test-key" },
       fetchImpl: async () => Response.json({ output_text: JSON.stringify(report) }),
@@ -444,22 +379,22 @@ test("new reports fail safely if cleanup loses the concrete example", async () =
 test("a model sentence cut off at the schema limit is not shown as finished prose", async () => {
   await withLocalRepository(async () => {
     const payload = validPayload();
-    const report = buildFallbackReleaseReport(payload);
+    const report = opportunityReportFixture(payload.company.name);
     const complete = "You described document review.";
-    report.executiveSummary = `${complete} This sentence has no ending`.padEnd(900, "x");
+    report.providedContext = `${complete} This sentence has no ending`.padEnd(900, "x");
     const response = await handleDiscoveryAnalysisRequest(analysisRequest(payload), `analysis-prose-${crypto.randomUUID()}`, {
       env: { NODE_ENV: "test", OPENAI_API_KEY: "test-key" },
       fetchImpl: async () => Response.json({ output_text: JSON.stringify(report) }),
     });
-    assert.equal(response.status, 201);
-    assert.equal((await response.json()).report.executiveSummary, complete);
+    assert.equal(response.status, 503);
+    assert.equal((await response.json()).report, undefined);
   });
 });
 
 test("compact manual submissions carry text-only answers into AI and replay identity", async () => {
   await withLocalRepository(async () => {
     const payload = validPayload();
-    const report = buildFallbackReleaseReport(payload);
+    const report = opportunityReportFixture(payload.company.name);
     payload.company = buildManualCompanyContext("insurance");
     payload.companyContextToken = null;
     payload.answers = {
@@ -478,10 +413,11 @@ test("compact manual submissions carry text-only answers into AI and replay iden
     };
     const first = await handleDiscoveryAnalysisRequest(analysisRequest(payload), crypto.randomUUID(), options);
     assert.equal(first.status, 201);
-    assert.equal(aiInput.reportedAnswers.context.workflow, "Fleet renewals");
-    assert.deepEqual(aiInput.reportedAnswers.workflow, []);
-    assert.match(aiInput.answerContext, /user's own answer/);
-    assert.ok(aiInput.answerOptions.workflow.some(option => option.value === "claims"));
+    assert.equal(aiInput.providedInputs.answers.workToExplore.context, "Fleet renewals");
+    assert.deepEqual(aiInput.providedInputs.answers.workToExplore.selected, []);
+    assert.equal(aiInput.providedInputs.companyName, null);
+    assert.match(aiInput.providedInputs.answerContext, /user's reviewed answers/);
+    assert.equal(aiInput.answerOptions, undefined);
     const replay = await handleDiscoveryAnalysisRequest(analysisRequest(payload), crypto.randomUUID(), options);
     assert.equal(replay.status, 200);
     payload.answers.context.workflow = "A different process";
@@ -495,11 +431,11 @@ test("compact manual submissions carry text-only answers into AI and replay iden
 test("analysis retries after an incomplete AI report instead of filling missing sections with rules", async () => {
   await withLocalRepository(async () => {
     const payload = validPayload();
-    const report = buildFallbackReleaseReport(payload);
+    const report = opportunityReportFixture(payload.company.name);
     let calls = 0;
     const options = {
       env: { NODE_ENV: "test", OPENAI_API_KEY: "test-key" },
-      fetchImpl: async () => Response.json({ output_text: JSON.stringify(++calls === 1 ? { title: "Incomplete report" } : report) }),
+      fetchImpl: async () => Response.json({ output_text: JSON.stringify(++calls <= 2 ? { title: "Incomplete report" } : report) }),
     };
     const first = await handleDiscoveryAnalysisRequest(analysisRequest(payload), crypto.randomUUID(), options);
     assert.equal(first.status, 503);
@@ -509,7 +445,7 @@ test("analysis retries after an incomplete AI report instead of filling missing 
     assert.equal(body.report, undefined);
     const retry = await handleDiscoveryAnalysisRequest(analysisRequest(payload), crypto.randomUUID(), options);
     assert.equal(retry.status, 200);
-    assert.equal(calls, 2);
+    assert.equal(calls, 3);
   });
 });
 

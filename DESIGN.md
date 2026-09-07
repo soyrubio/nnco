@@ -567,32 +567,31 @@ The structure is deliberately blocky:
   breakpoint, it moves into normal flow below the report. One on-screen
   disclaimer follows the report text at every size. PDF preparation errors
   appear there only when needed, outside the action column.
-- The report explains its purpose and evidence before discussing possible AI
-  improvements. It has four sections across two pages. Page one starts with
-  About this report, a fixed plain-language explanation. What we understand
-  about [company] combines the important inputs and their meaning in one
-  AI-written paragraph. Always name the company in the heading and summary
-  when supplied; do not invent a name on the manual path. Include systems,
-  frequency and requirements when they help explain the work. Up to three
-  public research links follow.
-  Page two presents Where AI might help, with zero, one or two opportunities,
-  then One area in more detail. Choose the area most closely tied to the
-  reported problem and use a clear, concrete example. Two numbered
-  paragraphs explain a concrete example, then its possible benefit and limit;
-  they are not implementation steps or additional opportunities. Unanswered
-  questions and a brief conclusion finish this section. If no opportunity is
-  supported, use What we still need to know and explain what is missing.
-  Use relevant supplied detail when available. With sparse answers, choose a
-  focus from those answers, the company website and a clearly labelled sector
-  example. Do not add broader research to fill gaps or present a sector example
-  as the company's actual problem. Acknowledge existing AI use instead of
-  proposing it as a new capability. Claims distinguish reported answers,
-  public facts and inference; public-information examples state that no company
-  answers were supplied. AI cannot recover absent facts, and a repetitive task
-  or simple lookup alone does not establish value. Reports do not recommend
-  named tools, vendors, new workflows, pilots or implementation plans, or promise
-  savings, accuracy or compliance. Requested, sourced competitor comparisons
-  follow the company summary on page one.
+- The report explains its purpose and supplied context before discussing AI.
+  New reports have five sections across two pages. Page one contains About this
+  report, the fixed explanation; Provided context, one AI-written paragraph
+  based solely on supplied company facts and reviewed answers; and Sector
+  opportunities, one paragraph about relevant general possibilities. Name the
+  company in the context when provided; never invent a name on the manual path.
+  Retain relevant existing guidance and support so possibilities are not
+  presented as confirmed gaps. State material unknowns once in context.
+  Page two contains Potential areas for improvement, with a short introduction
+  and two or three distinct numbered paragraphs. Each has a concrete task,
+  relevant information, understandable result and practical use. Detail:
+  [selected area] then develops that area in two or three plain paragraphs,
+  without numbering or extra internal headings. Explain a recognisable input,
+  a specific possible result, its use and a relevant limit. Clearly label
+  hypothetical examples and the information they assume. When similar cases
+  or items are compared, explain the particular assumed difference.
+  Detailed answers determine the focus; sparse answers support clearly framed
+  sector possibilities rather than invented company problems. Acknowledge
+  existing capability. AI cannot recover absent facts, and a repetitive task
+  or simple lookup alone does not establish value. Do not recommend named
+  tools, vendors, new workflows, pilots or implementation plans, or promise
+  savings, accuracy or compliance. Report generation has no search tools and
+  does not claim current adoption. Website enrichment remains a separate,
+  earlier step. After Controls, both intake paths go directly to contact;
+  the competitor-comparison question is no longer offered.
 - Browser print is the only PDF exporter. Users select Save as PDF in the print
   dialog. Save PDF waits for the site fonts and report logos,
   then opens the print dialog. A named print page produces two A4 sheets with
@@ -615,23 +614,20 @@ The structure is deliberately blocky:
   facts, not repeated caveats or stock sector paragraphs. When input is sparse,
   a sector example may illustrate a relevant possibility if clearly labelled. Page two ends with
   a short invitation to a formal assessment and a linked NNCo. contact address.
-- New reports have two closer-look paragraphs; older reports may contain one.
-  Shared backend and display limits allow zero to two opportunities. The combined company summary is capped at 900
-  characters, bold lead-ins at 56, each finding at 220 plus 80 evidence characters,
-  and each opportunity overview at 220 characters. The supporting 120-character
-  human-check and 120-character requirement fields, and finding evidence fields,
-  remain in stored reports but are not printed; the closer look explains the
-  relevant benefit and limit in complete paragraphs. Public notes are capped at two, with
-  40-character names, 60-character descriptions and 40-character source labels.
-  The final section has a 240-character account of the unknowns and a
-  100-character conclusion chosen from complete sentences for potential value,
-  a weak case or insufficient information. The response schema carries the text caps. If generation ends a field
-  mid-sentence at its limit, keep only its complete sentences. Storage
-  validation continues to accept older, longer reports;
-  display uses the current limits. These are ceilings,
-  not targets: do not fill space when the supplied evidence is thin. Full
-  submitted answers remain unchanged. Print uses
-  fixed A4 sizes and never clips content with hidden overflow or line clamps.
+- New reports use the version-two content contract. Company and sector
+  paragraphs are each capped at 900 characters, the areas introduction at 220,
+  area names at 56, area explanations at 420, and each detail paragraph at 450.
+  Page two has a shared 2,400-character budget across the introduction, all
+  area names and explanations, the detail name and detail paragraphs. The
+  model must fit two or three areas and two or three detail paragraphs within
+  this budget. Sentences are limited to 25 words. The server validates these
+  limits and permits one bounded rewrite of invalid copy; it never silently
+  cuts away incomplete sentences or important limitations. Existing saved
+  version-one reports retain their older validation and display limits.
+  Submitted answers remain unchanged. Print uses fixed A4 sizes and never
+  clips content with hidden overflow or line clamps. Both page headers read
+  Opportunity Discovery. Keep the existing CSS, typography, margins, rules,
+  logo placement, paragraph spacing and contact invitation.
 - Discovery and its print report consume the same Geist-backed `--font-sans`
   token as the marketing site.
 - Structural panels stay square. Interactive action buttons and multi-select

@@ -89,7 +89,6 @@ export function DiscoveryRelease({ introGlyph }: { introGlyph: ReactNode }) {
   const [answers, setAnswers] = useState<ReleaseAnswers>(emptyDiscoveryAnswers);
   const [entryError, setEntryError] = useState("");
   const [contact, setContact] = useState({ workEmail: "" });
-  const [competitorChoice, setCompetitorChoice] = useState<"include" | "skip" | "">("");
   const [direction, setDirection] = useState<"forward" | "back">("forward");
   const [analysisError, setAnalysisError] = useState("");
   const [report, setReport] = useState<DiscoveryReleaseReport | null>(null);
@@ -200,7 +199,6 @@ export function DiscoveryRelease({ introGlyph }: { introGlyph: ReactNode }) {
       researchedWebsiteRef.current = origin;
       setIntakeMode("website");
       setAnswers(current => prefillDiscoveryAnswers(result, sameWebsite ? current : emptyDiscoveryAnswers(), reviewed, sector));
-      setCompetitorChoice("");
       setQuestionIndex(0);
       setDirection("forward");
       setScreen("context");
@@ -223,7 +221,6 @@ export function DiscoveryRelease({ introGlyph }: { introGlyph: ReactNode }) {
     confirmedSectorRef.current = "";
     setIntakeMode("manual");
     setManualSector("");
-    setCompetitorChoice("");
     setAnswers(emptyDiscoveryAnswers());
     setQuestionIndex(0);
     setDirection("forward");
@@ -263,7 +260,7 @@ export function DiscoveryRelease({ introGlyph }: { introGlyph: ReactNode }) {
     if (activeQuestion) reviewedAnswersRef.current.add(activeQuestion.id);
     if (questionIndex >= questions.length - 1) {
       setDirection("forward");
-      setScreen(research ? "competitor" : "contact");
+      setScreen("contact");
       return;
     }
     setDirection("forward");
@@ -291,7 +288,7 @@ export function DiscoveryRelease({ introGlyph }: { introGlyph: ReactNode }) {
       sector: manualSector,
       answers,
       workEmail: contact.workEmail.trim(),
-      includeCompetitors: Boolean(research && competitorChoice === "include"),
+      includeCompetitors: false,
       consent: {
         accepted: true,
         version: DISCOVERY_RELEASE_CONSENT_VERSION,
@@ -602,54 +599,6 @@ export function DiscoveryRelease({ introGlyph }: { introGlyph: ReactNode }) {
       );
     }
 
-    if (screen === "competitor" && research) {
-      const choices: ReleaseChoice[] = [
-        { value: "include", label: "Include a public market comparison" },
-        { value: "skip", label: "No comparison" },
-      ];
-      return (
-        <DiscoveryIntakeFrame
-          activeStep={null}
-          progress={progress}
-          steps={MANUAL_STEPS}
-          progressLabel="Diagnostic complete"
-        >
-          <article className={`discovery-question discovery-step-motion is-${direction}`}>
-            <h1 ref={headingRef} tabIndex={-1} id="release-competitor-title">{discoveryCopy.competitor.title}</h1>
-            <p>{discoveryCopy.competitor.help}</p>
-            <div className="discovery-options" role="radiogroup" aria-labelledby="release-competitor-title">
-              {choices.map((choice, index) => (
-                <button
-                  type="button"
-                  className={competitorChoice === choice.value ? "is-selected" : ""}
-                  role="radio"
-                  aria-checked={competitorChoice === choice.value}
-                  tabIndex={rovingTabIndex(
-                    competitorChoice === choice.value,
-                    Boolean(competitorChoice),
-                    index,
-                  )}
-                  onKeyDown={(event) => handleRadioKeyDown(event, index, choices, (value) => setCompetitorChoice(value as "include" | "skip"))}
-                  onClick={() => setCompetitorChoice(choice.value as "include" | "skip")}
-                  key={choice.value}
-                >
-                  <span><strong>{choice.label}</strong></span>
-                </button>
-              ))}
-            </div>
-            <div className="discovery-actions">
-              <button type="button" onClick={() => { setDirection("back"); setQuestionIndex(questions.length - 1); setScreen("questions"); }}>Back</button>
-              <div>
-                <button className="discovery-primary" type="button" disabled={!competitorChoice} onClick={() => { setDirection("forward"); setScreen("contact"); }}>
-                  Continue <BlockArrow />
-                </button>
-              </div>
-            </div>
-          </article>
-        </DiscoveryIntakeFrame>
-      );
-    }
-
     if (screen === "contact" && manualSector) {
       return (
         <DiscoveryIntakeFrame
@@ -676,7 +625,7 @@ export function DiscoveryRelease({ introGlyph }: { introGlyph: ReactNode }) {
             </label>
             {analysisError ? <p className="discovery-notice" role="alert">{analysisError}</p> : null}
             <div className="discovery-actions">
-              <button type="button" onClick={() => { setDirection("back"); if (research) setScreen("competitor"); else { setQuestionIndex(questions.length - 1); setScreen("questions"); } }}>Back</button>
+              <button type="button" onClick={() => { setDirection("back"); setQuestionIndex(questions.length - 1); setScreen("questions"); }}>Back</button>
               <div>
                 <button className="discovery-primary" type="submit">
                   Generate report <BlockArrow />
@@ -790,7 +739,7 @@ function DiscoveryProgress({
   );
 }
 
-function DiscoveryReleaseReportView({
+export function DiscoveryReleaseReportView({
   companyName,
   report,
   sources = [],
@@ -823,6 +772,12 @@ function DiscoveryReleaseReportView({
     });
     return () => window.cancelAnimationFrame(frame);
   }, []);
+  const current = report.schemaVersion === 2 ? report : null;
+  const legacy = report.schemaVersion === 1 ? report : null;
+  const areas = current?.areas ?? legacy!.pageTwo.opportunities.slice(0, reportLimits.points).map(opportunity => ({
+    name: limitReportText(opportunity.title, reportLimits.heading),
+    explanation: limitReportText(opportunity.action, reportLimits.action),
+  }));
   const preparedDate = new Intl.DateTimeFormat("en", {
     day: "numeric",
     month: "long",
@@ -842,55 +797,62 @@ function DiscoveryReleaseReportView({
                   <p>{discoveryReportCopy.purpose}</p>
                 </section>
                 <section className="discovery-report-summary" aria-labelledby="discovery-context-heading">
-                  <h2 id="discovery-context-heading">{discoveryReportCopy.context} {limitReportText(companyName, reportLimits.company)}</h2>
-                  <p>{limitReportText(report.executiveSummary, reportLimits.summary)}</p>
-                  {sources.length > 0 && <p className="discovery-report-sources">
+                  <h2 id="discovery-context-heading">{discoveryReportCopy.context}</h2>
+                  <p>{current?.providedContext ?? limitReportText(legacy!.executiveSummary, reportLimits.summary)}</p>
+                  {legacy && sources.length > 0 && <p className="discovery-report-sources">
                     {discoveryReportCopy.sources}:{" "}
                     {sources.slice(0, 3).map((source, index) => <span key={source.url}>
                       {index > 0 && "; "}<a href={source.url}>{limitReportText(source.label, reportLimits.sourceLabel)}</a>
                     </span>)}.
                   </p>}
-                {report.pageTwo.competitorNotes.length > 0 && (
-                  <div className="discovery-release-market" aria-label={discoveryReportCopy.publicContext}>
-                    {report.pageTwo.competitorNotes.slice(0, reportLimits.points).map((note, index) => (
-                      <p key={index}>
-                        {limitReportText(note.company, reportLimits.competitorName)}: {limitReportText(note.finding, reportLimits.competitorFinding)}{" "}
-                        <a href={note.sourceUrl}>{limitReportText(new URL(note.sourceUrl).hostname, reportLimits.sourceLabel)}</a>
-                      </p>
-                    ))}
-                  </div>
-                )}
-                {report.pageTwo.competitorStatus === "not-found" && (
-                  <p className="discovery-report-note">No reliable public comparison was found in the available sources.</p>
-                )}
+                  {legacy && legacy.pageTwo.competitorNotes.length > 0 && (
+                    <div className="discovery-release-market" aria-label={discoveryReportCopy.publicContext}>
+                      {legacy.pageTwo.competitorNotes.slice(0, reportLimits.points).map((note, index) => (
+                        <p key={index}>
+                          {limitReportText(note.company, reportLimits.competitorName)}: {limitReportText(note.finding, reportLimits.competitorFinding)}{" "}
+                          <a href={note.sourceUrl}>{limitReportText(new URL(note.sourceUrl).hostname, reportLimits.sourceLabel)}</a>
+                        </p>
+                      ))}
+                    </div>
+                  )}
+                  {legacy?.pageTwo.competitorStatus === "not-found" && (
+                    <p className="discovery-report-note">No reliable public comparison was found in the available sources.</p>
+                  )}
                 </section>
+                {current && <section className="discovery-report-summary" aria-labelledby="discovery-sector-heading">
+                  <h2 id="discovery-sector-heading">{discoveryReportCopy.sectorOpportunities}</h2>
+                  <p>{current.sectorOpportunities}</p>
+                </section>}
                 <DiscoveryReportFooter page={1} />
               </article>
-              <article className="discovery-report-page discovery-report-page--final" aria-label={discoveryReportCopy.suitabilityTitle}>
-                <DiscoveryReportHeader label={discoveryReportCopy.suitabilityTitle} />
-                <section className="discovery-report-findings" aria-labelledby="discovery-opportunities-heading">
+              <article className="discovery-report-page discovery-report-page--final" aria-label={discoveryReportCopy.title}>
+                <DiscoveryReportHeader label={discoveryReportCopy.title} />
+                <section className="discovery-report-summary" aria-labelledby="discovery-opportunities-heading">
                   <h2 id="discovery-opportunities-heading">{discoveryReportCopy.opportunities}</h2>
-                  {report.pageTwo.opportunities.length > 0 ? <ol className="discovery-priorities">
-                    {report.pageTwo.opportunities.slice(0, reportLimits.points).map((opportunity, index) => (
-                      <li key={index}>
-                        <p><strong>{limitReportText(opportunity.title, reportLimits.heading).replace(/[.!?:;]+$/, "")}.</strong>{" "}
-                          {limitReportText(opportunity.action, reportLimits.action)}</p>
-                      </li>
-                    ))}
-                  </ol> : <p>{discoveryReportCopy.noOpportunity}</p>}
+                  {current && <p>{current.areasIntro}</p>}
+                  <div className="discovery-release-market">
+                    {areas.length > 0 ? <ol className="discovery-priorities">
+                      {areas.map((area, index) => (
+                        <li key={index}>
+                          <p><strong>{area.name.replace(/[.!?:;]+$/, "")}.</strong>{" "}{area.explanation}</p>
+                        </li>
+                      ))}
+                    </ol> : <p>{discoveryReportCopy.noOpportunity}</p>}
+                  </div>
                 </section>
                 <section className="discovery-report-summary" aria-labelledby="discovery-suitability-heading">
-                  <h2 id="discovery-suitability-heading">{report.pageTwo.opportunities.length > 0 ? discoveryReportCopy.closerLook : discoveryReportCopy.suitability}</h2>
-                  <ol className="discovery-priorities">
-                  {report.pageOne.findings.slice(0, reportLimits.points).map((finding, index) => (
-                    <li key={index}>
-                      <p><strong>{limitReportText(finding.title, reportLimits.heading).replace(/[.!?:;]+$/, "")}.</strong>{" "}
-                        {limitReportText(finding.explanation, reportLimits.explanation)}</p>
-                    </li>
-                  ))}
-                  </ol>
-                  <p className="discovery-report-conclusion">{limitReportText(report.pageTwo.constraints, reportLimits.constraints)} {limitReportText(report.pageTwo.firstMove, reportLimits.firstMove)}</p>
-
+                  <h2 id="discovery-suitability-heading">{current ? `${discoveryReportCopy.detail}: ${current.detail.areaName}` : areas.length > 0 ? discoveryReportCopy.closerLook : discoveryReportCopy.suitability}</h2>
+                  {current ? current.detail.paragraphs.map((paragraph, index) => <p key={index}>{paragraph}</p>) : <>
+                    <ol className="discovery-priorities">
+                      {legacy!.pageOne.findings.slice(0, reportLimits.points).map((finding, index) => (
+                        <li key={index}>
+                          <p><strong>{limitReportText(finding.title, reportLimits.heading).replace(/[.!?:;]+$/, "")}.</strong>{" "}
+                            {limitReportText(finding.explanation, reportLimits.explanation)}</p>
+                        </li>
+                      ))}
+                    </ol>
+                    <p className="discovery-report-conclusion">{limitReportText(legacy!.pageTwo.constraints, reportLimits.constraints)} {limitReportText(legacy!.pageTwo.firstMove, reportLimits.firstMove)}</p>
+                  </>}
                 </section>
                 <p className="discovery-report-assessment">
                   {discoveryReportCopy.assessment}{" "}

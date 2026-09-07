@@ -16,7 +16,7 @@ test("question progress counts preceding steps rather than the unanswered questi
 });
 
 test("discovery reaches completion after the last question and follows back navigation", () => {
-  for (const screen of ["competitor", "contact", "analyzing", "report"]) {
+  for (const screen of ["contact", "analyzing", "report"]) {
     assert.equal(discoveryProgress(screen, 4, 6), 100, screen);
   }
   assert.equal(discoveryProgress("questions", 4, 6), 83);

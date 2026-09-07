@@ -16,12 +16,15 @@ const copy = await readFile(new URL("../src/data/discovery.ts", import.meta.url)
 
 test("the report explains its purpose and evidence before offering AI opportunities", () => {
   const report = release.slice(release.indexOf("function DiscoveryReleaseReportView"), release.indexOf("function DiscoveryReportActions"));
-  const order = ["discoveryReportCopy.purpose", "discoveryReportCopy.context", "report.executiveSummary", "discoveryReportCopy.sources", "<DiscoveryReportFooter page={1}", "report.pageTwo.opportunities", "report.pageOne.findings", "report.pageTwo.constraints"];
+  const order = ["discoveryReportCopy.purpose", "discoveryReportCopy.context", "current?.providedContext", "discoveryReportCopy.sectorOpportunities", "<DiscoveryReportFooter page={1}", "discoveryReportCopy.opportunities", "current.areasIntro", "areas.map", "current.detail.paragraphs"];
   const positions = order.map((item) => report.indexOf(item));
   assert.ok(positions.every((position, index) => position >= 0 && (index === 0 || position > positions[index - 1])));
   assert.match(copy, /summary: "About this report"/);
-  assert.match(copy, /context: "What we understand about"/);
-  assert.match(report, /discoveryReportCopy.context} \{limitReportText\(companyName/);
+  assert.match(copy, /context: "Provided context"/);
+  assert.match(copy, /sectorOpportunities: "Sector opportunities"/);
+  assert.match(copy, /opportunities: "Potential areas for improvement"/);
+  assert.match(report, /discoveryReportCopy.detail}: \$\{current.detail.areaName}/);
+  assert.equal(report.match(/<DiscoveryReportHeader label=\{discoveryReportCopy.title\}/g)?.length, 2);
   assert.match(copy, /closerLook: "One area in more detail"/);
   assert.match(copy, /suitability: "What we still need to know"/);
 });
@@ -227,4 +230,10 @@ test("print preserves report text and isolates the page from site chrome", () =>
   assert.match(printStyles, /\.discovery-release-report \.discovery-canvas,\s*\.discovery-report-layout,\s*\.discovery-report-reading\s*\{\s*display: block;/);
   assert.doesNotMatch(printStyles, /line-clamp|overflow: hidden/);
   assert.doesNotMatch(styles, /@media \(max-width:/);
+});
+
+test("the final questionnaire answer leads to contact without offering report research", () => {
+  assert.doesNotMatch(release, /setScreen\("competitor"\)|competitorChoice/);
+  assert.doesNotMatch(copy, /Would you like a competitor comparison/);
+  assert.match(release, /includeCompetitors: false/);
 });

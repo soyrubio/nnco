@@ -256,9 +256,12 @@ OPENAI_API_BASE_URL=https://api.openai.com
 The OpenAI requests use Structured Outputs, disable response storage with
 `store: false`, and apply bounded timeouts and output-token ceilings. Public
 web search is mandatory for company research, scoped to the submitted domain.
-The final report can search more broadly only when the user requests the
-optional competitor view. Research has a 45-second upstream timeout; report
-generation has 48 seconds. Both fail when the key is absent, the call fails or
+Report generation has no search tools, including for older submissions with
+`includeCompetitors: true`. It uses the supplied company context and reviewed
+answers; sector possibilities use general knowledge without claiming current
+adoption. The competitor-comparison question is no longer offered. Research
+has a 45-second upstream timeout. Report generation has a shared 48-second
+budget for the initial response and, if needed, one content-validation rewrite. Both fail when the key is absent, the call fails or
 the structured result is incomplete. There is no runtime rules fallback.
 Failed research offers retry or manual questionnaire entry.
 
@@ -283,8 +286,13 @@ The public contracts are:
   `answers.context` optionally holds up to 1,000 characters for each multi-select
   answer (`workflow`, `friction`, `systems`, `controls`); it can supplement or
   replace selections. All six answers still require review in the interface.
-- Analysis success: `{ ok: true, report }`. Storage mode, handoff identifiers
-  and generation metadata are not browser-facing response fields.
+- Analysis success: `{ ok: true, report }`. New reports use `schemaVersion: 2`,
+  server-owned `generatedAt` and `title`, and the content fields `providedContext`,
+  `sectorOpportunities`, `areasIntro`, `areas: [{ name, explanation }]`, and
+  `detail: { areaName, paragraphs }`. Storage mode and handoff identifiers are
+  not browser-facing response fields. Version-one stored reports still replay
+  and render. `includeCompetitors` remains in the request for compatibility;
+  it cannot enable report research.
 - Failures retain `{ ok: false, error: { code, message, retryable } }`.
 
 Full company context and the valid workflow catalogue are carried in the
@@ -317,6 +325,17 @@ audio uploads up to 4 MB, applies process-local rate limiting, and does not
 store recordings or transcript text.
 
 ## Report export
+
+New report content is validated before storage. Each paragraph must finish its
+sentences, and each sentence is limited to 25 words. Character caps are 900 for
+context and sector paragraphs, 220 for the areas introduction, 56 for area
+names, 420 for area explanations, and 450 per detail paragraph. Two to three
+areas and two to three detail paragraphs share a 2,400-character page-two
+budget, including their names and introduction. The selected detail name must
+match an area. Invalid copy gets at most one rewrite within the existing
+48-second budget, with the same inputs, schema and no search tools. Each call
+retains the 2,500-token ceiling. A second invalid result fails with the existing
+retry-safe error; text is not silently truncated and no rules report is used.
 
 Browser print is the only PDF path. It exports exactly two A4 pages after the
 contact gate and excludes the report toolbar. No report-generation service or
