@@ -15,7 +15,7 @@ test("Discovery is disabled unless the build-time value is exactly true", () => 
   assert.equal(isDiscoveryEnabled("true"), true);
 });
 
-test("public hero and navigation surfaces use the Discovery feature flag", async () => {
+test("the header always links to Discovery while other entry points use the feature flag", async () => {
   const [header, hero, pageHero, footer] = await Promise.all([
     read("../src/components/Header.astro"),
     read("../src/components/Hero.astro"),
@@ -24,7 +24,6 @@ test("public hero and navigation surfaces use the Discovery feature flag", async
   ]);
 
   for (const [name, source] of Object.entries({
-    header,
     hero,
     pageHero,
     footer,
@@ -38,8 +37,9 @@ test("public hero and navigation surfaces use the Discovery feature flag", async
 
   assert.match(
     header,
-    /const headerAction = discoveryEnabled[\s\S]*?href: "\/discovery"[\s\S]*?label: "Start diagnosis"[\s\S]*?href: "\/contact"[\s\S]*?label: "Book a call"/,
+    /const headerAction = \{ href: "\/discovery", label: "Start diagnosis" \};/,
   );
+  assert.doesNotMatch(header, /DISCOVERY_ENABLED|isDiscoveryEnabled/);
   assert.match(
     header,
     /<Button\s+href=\{headerAction\.href\}\s+variant="secondary"\s+size="small"\s+class="site-header__cta"/,

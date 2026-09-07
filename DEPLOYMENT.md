@@ -85,13 +85,13 @@ finally from `stage` to `main`. The `CI` workflow checks `development` pushes
 and pull requests into the two release branches. Only pushes to `stage` or
 `main` build and deploy a Worker.
 
-`DISCOVERY_ENABLED` is a build-time, strict opt-in flag for public Discovery
-entry points. Only the exact value `true` shows Discovery in the homepage hero,
-shared page heroes, header or footer navigation. A missing, empty or different
-value resolves to `false`. Configure it as a GitHub Environment variable on
-`stage` or `production` only when that environment is ready to expose those
-links. The direct `/discovery` route and its APIs remain available for private
-testing while the flag is off.
+`DISCOVERY_ENABLED` is a build-time, strict opt-in flag for Discovery links in
+the homepage hero, shared page heroes and footer navigation. Only the exact
+value `true` shows those links; a missing, empty or different value resolves to
+`false`. Configure it as a GitHub Environment variable on `stage` or
+`production` to expose those additional entry points. The shared header always
+links to `/discovery` as `Start diagnosis`, independently of the flag. The route
+and its APIs also remain available in either state.
 
 ### One-time GitHub setup
 
@@ -105,8 +105,8 @@ testing while the flag is off.
    matching branch. Keep a required reviewer on `production` through the first
    DNS cutover; it can be removed later if fully automatic production releases
    are preferred.
-5. Leave the optional `DISCOVERY_ENABLED` variable unset in both environments
-   until Discovery should be linked publicly, then set it to exactly `true`.
+5. Set the optional `DISCOVERY_ENABLED` variable to exactly `true` to add
+   Discovery links in heroes and the footer. The header link is always visible.
 6. Protect `stage` and `main` with pull requests and the `CI / Test and build`
    required check. `development` does not need protection.
 

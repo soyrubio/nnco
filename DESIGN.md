@@ -166,8 +166,7 @@ The structure is deliberately blocky:
   The initial page cover does not replay between routes, and client-side
   behaviors reinitialize after each swap.
 - `Header`: large official NNCo. mark, single-line navigation and one CTA.
-  It links to Discovery as `Start diagnosis` when the feature is enabled and
-  falls back to `Book a call` at `/contact` when it is disabled. The action uses
+  It always links to Discovery as `Start diagnosis`. The action uses
   the shared bordered secondary-button treatment.
   Primary navigation labels use the 16px control size at regular weight; the
   active tab remains regular because its inverted surface supplies emphasis.
@@ -464,8 +463,8 @@ The structure is deliberately blocky:
 - Public Discovery entry points in the homepage hero, shared page heroes and
   footer navigation render only when the build-time `DISCOVERY_ENABLED` value
   is exactly `true`. Missing or different values keep those links hidden while
-  preserving direct route access for private testing. The shared header keeps
-  its CTA in either state and falls back to `Book a call` at `/contact`.
+  preserving direct route access. The shared header always links to Discovery
+  through its `Start diagnosis` CTA, independently of this flag.
 - Discovery is one calm diagnostic canvas, not a dashboard or cockpit.
 - The discovery workspace is canonical ink `#111111` with paper text
   `#f5f5f5`, including the on-screen report. Paper pages appear only in print.
