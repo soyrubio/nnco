@@ -26,14 +26,32 @@ Copy `.env.example` to `.env` and keep:
 ```dotenv
 PUBLIC_APP_URL=http://localhost:4321
 LEAD_HANDOFF_MODE=local
+DISCOVERY_RATE_LIMIT_MODE=local
 DISCOVERY_ENABLED=false
 OPENAI_API_KEY=
 OPENAI_DISCOVERY_MODEL=gpt-5.6-luna
 OPENAI_API_BASE_URL=https://api.openai.com
 ```
 
-Local mode stores idempotent lead requests in process memory. It requires no
-secret and is disabled when `NODE_ENV=production`.
+Start the app with `pnpm dev`. This command selects `CLOUDFLARE_ENV=local`,
+the development-only profile in `wrangler.jsonc`. It supplies
+`NODE_ENV=development`, a localhost origin, local lead storage and local rate
+limiting. Restart an already running dev server after switching to this command.
+Plain `astro dev` does not select the local profile and will inherit the
+production defaults, which require Supabase and protection secrets.
+
+Local mode stores idempotent lead requests and rate-limit counters in process
+memory. These local services require no secrets and reset when the dev server
+restarts. Website research and report generation still require the server-only
+`OPENAI_API_KEY` from `.env`. Do not create `.dev.vars` alongside `.env`, because
+Cloudflare would stop loading `.env`. Environment-specific overrides, when
+needed, go in an ignored `.env.local` file.
+
+The `local` profile is for development only; do not deploy it. Production and
+stage builds continue to select their existing profiles and require durable
+Supabase storage, shared rate limiting and independent signing secrets. Local
+storage remains disabled when `NODE_ENV=production`. Profile selection follows
+the [Cloudflare Vite environment contract](https://developers.cloudflare.com/workers/vite-plugin/reference/cloudflare-environments/).
 
 Local development uses the Cloudflare adapter's `workerd` runtime so server
 routes behave like their deployed Worker equivalents. The Vite configuration

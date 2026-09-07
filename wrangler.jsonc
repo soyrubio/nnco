@@ -20,6 +20,18 @@
     "enabled": true
   },
   "env": {
+    "local": {
+      "name": "nnco-local",
+      "vars": {
+        "NODE_ENV": "development",
+        "PUBLIC_APP_URL": "http://localhost:4321",
+        "LEAD_HANDOFF_MODE": "local",
+        "DISCOVERY_RATE_LIMIT_MODE": "local",
+        "OPENAI_DISCOVERY_MODEL": "gpt-5.6-luna",
+        "OPENAI_TRANSCRIPTION_MODEL": "gpt-transcribe",
+        "OPENAI_API_BASE_URL": "https://api.openai.com"
+      }
+    },
     "stage": {
       "name": "nnco-stage",
       "main": "./src/server/stage-worker.js",

@@ -8,7 +8,7 @@
     "node": ">=22.13.0"
   },
   "scripts": {
-    "dev": "astro dev",
+    "dev": "CLOUDFLARE_ENV=local astro dev",
     "build": "astro check && astro build",
     "build:stage": "astro check && CLOUDFLARE_ENV=stage astro build",
     "check": "astro check",
