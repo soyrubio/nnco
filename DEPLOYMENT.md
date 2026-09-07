@@ -11,8 +11,8 @@ asset bindings.
 
 The release discovery flow calls two same-origin routes:
 
-- `POST /api/discovery-enrichment` reads a bounded set of public company pages
-  and returns conservative company context.
+- `POST /api/discovery-enrichment` researches the public company website with
+  AI web search and returns editable questionnaire suggestions.
 - `POST /api/discovery-analysis` stores the consented lead and returns the
   structured two-page report.
 
@@ -224,14 +224,15 @@ The endpoints preserve:
 
 - same-origin validation;
 - bounded request bodies and upstream timeouts;
-- SSRF protection and same-company redirects for website fetching;
-- no more than three public HTML pages and 512 KiB per page;
+- public DNS/IP validation before research, domain-restricted search and
+  same-host citation validation (the Worker does not crawl company HTML);
+- at most three search tool calls and three retained public source URLs;
 - ten website checks per IP per ten minutes;
 - five reports per IP per hour, 20 per IP per day and three per email per day;
 - project-wide circuit breakers of 300 website reads and 100 reports per day;
 - versioned consent;
 - strict schema validation and idempotent lead storage;
-- a 2,500-token report output ceiling;
+- 2,500-token output ceilings for research and reports;
 - an eight-second Supabase timeout;
 - generic retry-safe error responses.
 
@@ -243,7 +244,8 @@ the underlying events are deleted after no more than two days.
 
 ## Discovery analysis
 
-Production requires these server-only values:
+Research and report generation require these server-only values, including
+when testing with the local lead repository:
 
 ```dotenv
 OPENAI_API_KEY=server-only-value
@@ -253,19 +255,48 @@ OPENAI_API_BASE_URL=https://api.openai.com
 
 The OpenAI requests use Structured Outputs, disable response storage with
 `store: false`, and apply bounded timeouts and output-token ceilings. Public
-web search is enabled only when the user requests the optional competitor view.
-Production fails closed when the analysis key is absent or the analysis call
-fails. Local development returns a visibly labelled deterministic rules
-preview when no key is configured.
+web search is mandatory for company research, scoped to the submitted domain.
+The final report can search more broadly only when the user requests the
+optional competitor view. Research has a 45-second upstream timeout; report
+generation has 48 seconds. Both fail when the key is absent, the call fails or
+the structured result is incomplete. There is no runtime rules fallback.
+Failed research offers retry or manual questionnaire entry.
 
-Website enrichment keeps its public-page corpus in process memory for no more
+Website enrichment keeps normalized AI research in process memory for no more
 than 24 hours, caps the cache at 100 companies and does not create a lead.
-Each hostname is checked against public DNS before fetching, including after
-redirects, while Cloudflare's outbound proxy rejects private destinations.
-Enriched company context is signed before it is returned to the browser and
-verified again before analysis. The submitted
-diagnostic stores only the normalized inputs, contact handoff and completed
-report response; fetched HTML is not stored in `lead_requests`. The completed
+The submitted hostname is checked against public DNS before research or cache
+reuse. Workers may return CNAME aliases alongside A/AAAA answers; validation
+requires at least one IP address and rejects the hostname if any returned IP is
+private or reserved. Alias names are not treated as IP addresses.
+AI suggestions must cite URLs present in returned search metadata;
+uncertain internal systems, controls, friction and frequency are not guessed.
+The AI receives the questionnaire catalogue and reuses option IDs where they
+fit, with at most three company-specific workflow options.
+
+The public contracts are:
+
+- Enrichment request: `{ website }`.
+- Enrichment success: `{ ok, company: { name, sector }, workflowOptions,
+  prefill: { workflow, systems, controls }, sources, contextToken }`.
+- Analysis request: `{ requestId, contextToken, sector, answers, workEmail,
+  includeCompetitors, consent }`. Manual submissions use `contextToken: null`.
+  `answers.context` optionally holds up to 1,000 characters for each multi-select
+  answer (`workflow`, `friction`, `systems`, `controls`); it can supplement or
+  replace selections. All six answers still require review in the interface.
+- Analysis success: `{ ok: true, report }`. Storage mode, handoff identifiers
+  and generation metadata are not browser-facing response fields.
+- Failures retain `{ ok: false, error: { code, message, retryable } }`.
+
+Full company context and the valid workflow catalogue are carried in the
+24-hour signed token; this is integrity protection, not encryption. The server
+verifies it and reconstructs the internal snapshot rather than accepting a
+second client-authored company object. User sector corrections resolve against
+the canonical catalogue. A completed, identical request can replay after token
+expiry, but fresh analysis requires an unexpired token. The snapshot retains
+reviewed selections and written context as user-reported evidence, separately
+from researched facts. The request hash includes written answers so changed
+content cannot replay under the same request ID. HTML is never stored.
+The completed
 response is retained with the lead only to replay the same request ID without
 paying for or returning a different analysis.
 

@@ -5,30 +5,38 @@ import {
   useState,
   type CSSProperties,
   type KeyboardEvent,
+  type ReactNode,
   type SyntheticEvent,
 } from "react";
 import { DiscoveryBlockArrow as BlockArrow } from "./discovery/DiscoveryBlockArrow";
 import { DiscoveryBlockLoader as BlockLoader } from "./discovery/DiscoveryBlockLoader";
-import { DiscoveryBrandLogo as BrandLogo } from "./discovery/DiscoveryBrandLogo";
+import { AutoExpandingTextarea } from "./discovery/AutoExpandingTextarea";
+import { PRIMARY_LOGO } from "@/lib/brand-assets";
+import { prepareReportPrint } from "@/lib/prepare-report-print";
+import { discoveryIntro, discoveryCopy, discoveryReportCopy } from "@/data/discovery";
+import { emptyDiscoveryAnswers, prefillDiscoveryAnswers, discoveryWorkflowOptions, answersAfterSectorChange } from "@/lib/discovery-questionnaire";
+import { discoveryProgress, type DiscoveryScreen } from "@/lib/discovery-progress";
 import {
   DISCOVERY_RELEASE_CONSENT_VERSION,
   DISCOVERY_RELEASE_LIMITS,
+  DISCOVERY_REPORT_LIMITS as reportLimits,
+  limitReportText,
   RELEASE_CONTROL_CHOICES,
   RELEASE_SCALE_CHOICES,
   RELEASE_SYSTEM_CHOICES,
-  buildManualCompanyContext,
   frictionChoicesFor,
-  labelForReleaseSector,
-  reclassifyCompanyContext,
-  workflowChoicesFor,
-  type CompanyContext,
+  hasMultiAnswer,
+  normalizeWebsiteInput,
+  type DiscoveryResearch,
+  type DiscoverySubmission,
+  type MultiAnswerId,
   type DiscoveryEnrichmentResponse,
-  type DiscoveryReleasePayload,
   type DiscoveryReleaseReport,
   type DiscoveryReleaseResponse,
   type ReleaseAnswers,
   type ReleaseChoice,
   type ReleaseSector,
+  type ReleaseSource,
 } from "@/lib/discovery-release";
 import {
   CONTACT_EMAIL_PATTERN_SOURCE,
@@ -39,21 +47,10 @@ import {
   type RequestIdentity,
 } from "@/lib/request-identity";
 
-type Screen =
-  | "entry"
-  | "enriching"
-  | "context"
-  | "sector"
-  | "questions"
-  | "competitor"
-  | "contact"
-  | "analyzing"
-  | "report";
-
 type QuestionKind = "single" | "multi";
 
 interface ReleaseQuestion {
-  id: keyof ReleaseAnswers;
+  id: Exclude<keyof ReleaseAnswers, "context">;
   label: string;
   prompt: string;
   help: string;
@@ -61,14 +58,6 @@ interface ReleaseQuestion {
   maximum?: number;
   choices: ReleaseChoice[];
 }
-
-const INITIAL_ANSWERS: ReleaseAnswers = {
-  workflow: [],
-  friction: [],
-  scale: "",
-  systems: [],
-  controls: [],
-};
 
 const WEBSITE_STEPS = ["Website", "Workflow", "Friction", "Frequency", "Systems", "Controls"] as const;
 const MANUAL_STEPS = ["Sector", "Workflow", "Friction", "Frequency", "Systems", "Controls"] as const;
@@ -90,22 +79,24 @@ function rovingTabIndex(
   return index === 0 ? 0 : -1;
 }
 
-export function DiscoveryRelease() {
-  const [screen, setScreen] = useState<Screen>("entry");
+export function DiscoveryRelease({ introGlyph }: { introGlyph: ReactNode }) {
+  const [screen, setScreen] = useState<DiscoveryScreen>("intro");
   const [website, setWebsite] = useState("");
   const [intakeMode, setIntakeMode] = useState<"website" | "manual">("website");
   const [manualSector, setManualSector] = useState<ReleaseSector | "">("");
-  const [company, setCompany] = useState<CompanyContext | null>(null);
-  const [companyContextToken, setCompanyContextToken] = useState<string | null>(null);
+  const [research, setResearch] = useState<DiscoveryResearch | null>(null);
   const [questionIndex, setQuestionIndex] = useState(0);
-  const [answers, setAnswers] = useState<ReleaseAnswers>(INITIAL_ANSWERS);
+  const [answers, setAnswers] = useState<ReleaseAnswers>(emptyDiscoveryAnswers);
   const [entryError, setEntryError] = useState("");
   const [contact, setContact] = useState({ workEmail: "" });
   const [competitorChoice, setCompetitorChoice] = useState<"include" | "skip" | "">("");
   const [direction, setDirection] = useState<"forward" | "back">("forward");
   const [analysisError, setAnalysisError] = useState("");
   const [report, setReport] = useState<DiscoveryReleaseReport | null>(null);
-  const [analysisMode, setAnalysisMode] = useState<"ai" | "rules">("ai");
+  const reviewedAnswersRef = useRef(new Set<keyof ReleaseAnswers>());
+  const researchedWebsiteRef = useRef("");
+  const confirmedSectorRef = useRef<ReleaseSector | "">("");
+  const companyName = research?.company.name ?? "Your organisation";
   const requestIdentityRef = useRef<RequestIdentity | null>(null);
   const submittingRef = useRef(false);
   const headingRef = useRef<HTMLHeadingElement>(null);
@@ -115,65 +106,66 @@ export function DiscoveryRelease() {
     if (screen === "report") return;
     const frame = window.requestAnimationFrame(() => {
       if (screen === "enriching" || screen === "analyzing") {
-        transitionRef.current?.focus();
+        transitionRef.current?.focus({ preventScroll: true });
       } else {
-        headingRef.current?.focus();
+        headingRef.current?.focus({ preventScroll: true });
       }
+      window.scrollTo({ top: 0, behavior: "instant" });
     });
     return () => window.cancelAnimationFrame(frame);
   }, [screen, questionIndex]);
 
   const questions = useMemo<ReleaseQuestion[]>(() => {
-    if (!company) return [];
+    if (!manualSector) return [];
     return [
       {
         id: "workflow",
         label: "Workflow",
-        prompt: "Which workflows should we examine?",
-        help: "Choose up to two related processes. We will assess them together.",
+        prompt: discoveryCopy.questions.workflow.title,
+        help: discoveryCopy.questions.workflow.help,
         kind: "multi",
         maximum: 2,
-        choices: workflowChoicesFor(company),
+        choices: discoveryWorkflowOptions(research, manualSector),
       },
       {
         id: "friction",
         label: "Friction",
-        prompt: "Where does it lose the most attention?",
-        help: "Choose up to two repeated sources of work, waiting or exceptions.",
+        prompt: discoveryCopy.questions.friction.title,
+        help: discoveryCopy.questions.friction.help,
         kind: "multi",
         maximum: 2,
-        choices: frictionChoicesFor(company.sector),
+        choices: frictionChoicesFor(manualSector),
       },
       {
         id: "scale",
         label: "Frequency",
-        prompt: "How often does this workflow run?",
-        help: "An approximate frequency is enough for the first diagnostic.",
+        prompt: discoveryCopy.questions.scale.title,
+        help: discoveryCopy.questions.scale.help,
         kind: "single",
         choices: RELEASE_SCALE_CHOICES,
       },
       {
         id: "systems",
         label: "Systems",
-        prompt: "What does the work touch today?",
-        help: "Choose categories only. Do not enter credentials or case data.",
+        prompt: discoveryCopy.questions.systems.title,
+        help: discoveryCopy.questions.systems.help,
         kind: "multi",
         choices: RELEASE_SYSTEM_CHOICES,
       },
       {
         id: "controls",
         label: "Controls",
-        prompt: "What must remain under control?",
-        help: "Select every boundary that a useful intervention must respect.",
+        prompt: discoveryCopy.questions.controls.title,
+        help: discoveryCopy.questions.controls.help,
         kind: "multi",
         choices: RELEASE_CONTROL_CHOICES,
       },
     ];
-  }, [company]);
+  }, [research, manualSector]);
 
   const activeQuestion = questions[questionIndex];
   const questionComplete = activeQuestion
-    ? answerHasValue(answers[activeQuestion.id])
+    ? activeQuestion.kind === "multi" ? hasMultiAnswer(answers, activeQuestion.id as MultiAnswerId) : Boolean(answers.scale)
     : false;
 
   const enrichWebsite = async (event: SyntheticEvent<HTMLFormElement>) => {
@@ -189,7 +181,7 @@ export function DiscoveryRelease() {
       const response = await fetch("/api/discovery-enrichment", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ website, situation: "" }),
+        body: JSON.stringify({ website }),
       });
       const result = (await response.json()) as DiscoveryEnrichmentResponse;
       if (!response.ok || !result.ok) {
@@ -197,11 +189,17 @@ export function DiscoveryRelease() {
         setScreen("entry");
         return;
       }
-      setCompany(result.company);
-      setCompanyContextToken(result.contextToken);
-      setWebsite(result.company.website ?? "");
+      const origin = normalizeWebsiteInput(website)?.origin.replace("://www.", "://") ?? website;
+      const sameWebsite = origin === researchedWebsiteRef.current;
+      if (!sameWebsite) reviewedAnswersRef.current.clear();
+      const sector = sameWebsite && confirmedSectorRef.current ? confirmedSectorRef.current : result.company.sector;
+      const reviewed = new Set(reviewedAnswersRef.current);
+      setResearch(result);
+      setManualSector(sector);
+      confirmedSectorRef.current = sector;
+      researchedWebsiteRef.current = origin;
       setIntakeMode("website");
-      setAnswers(INITIAL_ANSWERS);
+      setAnswers(current => prefillDiscoveryAnswers(result, sameWebsite ? current : emptyDiscoveryAnswers(), reviewed, sector));
       setCompetitorChoice("");
       setQuestionIndex(0);
       setDirection("forward");
@@ -214,12 +212,19 @@ export function DiscoveryRelease() {
 
   const skipWebsite = () => {
     setEntryError("");
-    setCompany(null);
-    setCompanyContextToken(null);
+    if (intakeMode === "manual") {
+      setDirection("forward");
+      setScreen("sector");
+      return;
+    }
+    setResearch(null);
+    reviewedAnswersRef.current.clear();
+    researchedWebsiteRef.current = "";
+    confirmedSectorRef.current = "";
     setIntakeMode("manual");
     setManualSector("");
     setCompetitorChoice("");
-    setAnswers(INITIAL_ANSWERS);
+    setAnswers(emptyDiscoveryAnswers());
     setQuestionIndex(0);
     setDirection("forward");
     setScreen("sector");
@@ -227,21 +232,17 @@ export function DiscoveryRelease() {
 
   const confirmManualSector = () => {
     if (!manualSector) return;
-    if (intakeMode === "website" && company) {
-      setCompany(reclassifyCompanyContext(company, manualSector));
-      setAnswers(INITIAL_ANSWERS);
-      setCompetitorChoice("");
-      setDirection("back");
-      setScreen("context");
-      return;
+    if (confirmedSectorRef.current && confirmedSectorRef.current !== manualSector) {
+      setAnswers(current => answersAfterSectorChange(current, manualSector));
     }
-    setCompany(buildManualCompanyContext(manualSector));
+    confirmedSectorRef.current = manualSector;
     setQuestionIndex(0);
     setDirection("forward");
     setScreen("questions");
   };
 
   const selectChoice = (question: ReleaseQuestion, value: string) => {
+    reviewedAnswersRef.current.add(question.id);
     if (question.kind === "single") {
       setAnswers((current) => ({ ...current, [question.id]: value }));
       return;
@@ -259,9 +260,10 @@ export function DiscoveryRelease() {
 
   const nextQuestion = () => {
     if (!questionComplete) return;
+    if (activeQuestion) reviewedAnswersRef.current.add(activeQuestion.id);
     if (questionIndex >= questions.length - 1) {
       setDirection("forward");
-      setScreen(company?.website ? "competitor" : "contact");
+      setScreen(research ? "competitor" : "contact");
       return;
     }
     setDirection("forward");
@@ -271,7 +273,7 @@ export function DiscoveryRelease() {
   const previousQuestion = () => {
     setDirection("back");
     if (questionIndex === 0) {
-      setScreen(intakeMode === "manual" ? "sector" : "context");
+      setScreen("sector");
       return;
     }
     setQuestionIndex((current) => Math.max(0, current - 1));
@@ -279,27 +281,17 @@ export function DiscoveryRelease() {
 
   const submitDiagnostic = async (event: SyntheticEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!company || submittingRef.current) return;
+    if (!manualSector || submittingRef.current) return;
     if (!isValidContactEmail(contact.workEmail)) {
       setAnalysisError("Enter a valid work email before continuing.");
       return;
     }
-    const organisation = organisationForCompany(company);
-    const unsignedPayload: Omit<DiscoveryReleasePayload, "requestId"> = {
-      schemaVersion: 1,
-      website: company.website,
-      situation: "",
-      company,
-      companyContextToken,
+    const unsignedPayload: Omit<DiscoverySubmission, "requestId"> = {
+      contextToken: research?.contextToken ?? null,
+      sector: manualSector,
       answers,
-      contact: {
-        workEmail: contact.workEmail.trim(),
-        organisation,
-      },
-      competitorView: {
-        enabled: company.website ? competitorChoice === "include" : false,
-        names: [],
-      },
+      workEmail: contact.workEmail.trim(),
+      includeCompetitors: Boolean(research && competitorChoice === "include"),
       consent: {
         accepted: true,
         version: DISCOVERY_RELEASE_CONSENT_VERSION,
@@ -312,7 +304,7 @@ export function DiscoveryRelease() {
       () => window.crypto.randomUUID(),
     );
     requestIdentityRef.current = identity;
-    const payload: DiscoveryReleasePayload = {
+    const payload: DiscoverySubmission = {
       ...unsignedPayload,
       requestId: identity.requestId,
     };
@@ -333,7 +325,6 @@ export function DiscoveryRelease() {
         return;
       }
       setReport(result.report);
-      setAnalysisMode(result.analysisMode);
       setScreen("report");
     } catch {
       setAnalysisError("The report could not be completed. Your answers remain on this page.");
@@ -343,329 +334,373 @@ export function DiscoveryRelease() {
     }
   };
 
-  if (screen === "enriching") {
-    return (
-      <main ref={transitionRef} tabIndex={-1} className="discovery-app discovery-analysis" role="status" aria-live="polite">
-        <BlockLoader size="large" />
-        <p>Reading the public company context.</p>
-      </main>
-    );
-  }
+  const started = screen !== "intro";
+  const progress = discoveryProgress(screen, questionIndex, WEBSITE_STEPS.length);
+  const complete = progress === 100;
 
-  if (screen === "analyzing") {
-    return (
-      <main ref={transitionRef} tabIndex={-1} className="discovery-app discovery-analysis" role="status" aria-live="polite">
-        <BlockLoader size="large" />
-        <p>Building the two-page diagnostic.</p>
-      </main>
-    );
-  }
+  const renderScreen = () => {
+    if (screen === "enriching") {
+      return (
+        <main ref={transitionRef} tabIndex={-1} className="discovery-app discovery-analysis" role="status" aria-live="polite">
+          <BlockLoader size="large" />
+          <p>Researching your company.</p>
+        </main>
+      );
+    }
 
-  if (screen === "report" && report && company) {
-    return (
-      <DiscoveryReleaseReportView
-        company={company}
-        mode={analysisMode}
-        report={report}
-      />
-    );
-  }
+    if (screen === "analyzing") {
+      return (
+        <main ref={transitionRef} tabIndex={-1} className="discovery-app discovery-analysis" role="status" aria-live="polite">
+          <BlockLoader size="large" />
+          <p>{discoveryCopy.buildingReport}</p>
+        </main>
+      );
+    }
 
-  if (screen === "entry") {
-    return (
-      <DiscoveryIntakeFrame
-        activeStep={0}
-        progress={Math.round(100 / WEBSITE_STEPS.length)}
-        steps={WEBSITE_STEPS}
-      >
-        <form className={`discovery-question discovery-release-website discovery-step-motion is-${direction}`} onSubmit={enrichWebsite}>
-          <h1 ref={headingRef} tabIndex={-1} id="release-website-title">Which company should we read?</h1>
-          <p>We will use its public pages to ask only what the website cannot tell us.</p>
-          <label className="discovery-release-field">
-            <span>Company website</span>
-            <input
-              type="text"
-              inputMode="url"
-              autoComplete="url"
-              maxLength={DISCOVERY_RELEASE_LIMITS.website}
-              value={website}
-              onChange={(event) => setWebsite(event.target.value)}
-              placeholder="company.com"
-              required
-            />
-          </label>
-          <p className="discovery-privacy">
-            We may send up to three public company pages to OpenAI to identify company context and cache that page text for no more than 24 hours. No lead is created yet. Do not enter customer, patient or confidential information. <a href="/privacy" target="_blank" rel="noreferrer">Privacy details</a>
-          </p>
-          {entryError ? <p className="discovery-notice" role="alert">{entryError}</p> : null}
-          <div className="discovery-actions">
-            <button type="button" onClick={skipWebsite}>Continue without a website</button>
-            <div>
-              <button className="discovery-primary" type="submit">
-                Read website <BlockArrow />
-              </button>
-            </div>
-          </div>
-        </form>
-      </DiscoveryIntakeFrame>
-    );
-  }
+    if (screen === "report" && report) {
+      return (
+        <DiscoveryReleaseReportView
+          companyName={companyName}
+          report={report}
+          sources={research?.sources}
+        />
+      );
+    }
 
-  if (screen === "context" && company) {
-    return (
-      <DiscoveryIntakeFrame
-        activeStep={0}
-        progress={Math.round(100 / WEBSITE_STEPS.length)}
-        steps={WEBSITE_STEPS}
-      >
-        <article className={`discovery-question discovery-release-context-review discovery-step-motion is-${direction}`}>
-          <h1 ref={headingRef} tabIndex={-1}>We found {company.name}.</h1>
-          <p>{company.summary}</p>
-          <dl>
-            <div>
-              <dt>Sector</dt>
-              <dd>{labelForReleaseSector(company.sector)}</dd>
-            </div>
-            <div>
-              <dt>Public context</dt>
-              <dd>{company.offerings.slice(0, 4).join(", ")}</dd>
-            </div>
-            <div>
-              <dt>Pages read</dt>
-              <dd>
-                {company.sources.map((source, index) => (
-                  <span key={source.url}>
-                    {index ? ", " : ""}<a href={source.url} target="_blank" rel="noreferrer">{source.label}</a>
-                  </span>
-                ))}
-              </dd>
-            </div>
-          </dl>
-          <div className="discovery-actions">
-            <div className="discovery-release-context-actions">
-              <button type="button" onClick={() => { setDirection("back"); setScreen("entry"); }}>Use another website</button>
-              <button type="button" onClick={() => { setManualSector(company.sector); setDirection("forward"); setScreen("sector"); }}>Change sector</button>
-            </div>
-            <div>
-              <button className="discovery-primary" type="button" onClick={() => { setDirection("forward"); setScreen("questions"); }}>
-                Looks right <BlockArrow />
-              </button>
-            </div>
-          </div>
-        </article>
-      </DiscoveryIntakeFrame>
-    );
-  }
-
-  if (screen === "sector") {
-    return (
-      <DiscoveryIntakeFrame
-        activeStep={0}
-        progress={Math.round(100 / MANUAL_STEPS.length)}
-        steps={MANUAL_STEPS}
-      >
-        <article className={`discovery-question discovery-step-motion is-${direction}`}>
-          <h1 ref={headingRef} tabIndex={-1} id="release-sector-title">
-            {intakeMode === "website" ? "Which sector fits better?" : "Which sector should we use?"}
-          </h1>
-          <p>{intakeMode === "website" ? "We will keep the public company context and reroute the remaining questions." : "This replaces the context we would normally read from a public website."}</p>
-          <div className="discovery-options" role="radiogroup" aria-labelledby="release-sector-title">
-            {SECTOR_CHOICES.map((choice, index) => (
-              <button
-                type="button"
-                className={manualSector === choice.value ? "is-selected" : ""}
-                role="radio"
-                aria-checked={manualSector === choice.value}
-                tabIndex={rovingTabIndex(
-                  manualSector === choice.value,
-                  Boolean(manualSector),
-                  index,
-                )}
-                onKeyDown={(event) => handleRadioKeyDown(event, index, SECTOR_CHOICES, (value) => setManualSector(value as ReleaseSector))}
-                onClick={() => setManualSector(choice.value as ReleaseSector)}
-                key={choice.value}
-              >
-                <span><strong>{choice.label}</strong></span>
-              </button>
-            ))}
-          </div>
-          <div className="discovery-actions">
-            <button type="button" onClick={() => { setDirection("back"); setScreen(intakeMode === "website" ? "context" : "entry"); }}>Back</button>
-            <div>
-              <button className="discovery-primary" type="button" onClick={confirmManualSector} disabled={!manualSector}>
-                Next <BlockArrow />
-              </button>
-            </div>
-          </div>
-        </article>
-      </DiscoveryIntakeFrame>
-    );
-  }
-
-  if (screen === "questions" && company && activeQuestion) {
-    const selected = answers[activeQuestion.id];
-    const step = questionIndex + 1;
-    const steps = intakeMode === "manual" ? MANUAL_STEPS : WEBSITE_STEPS;
-    const progress = Math.round(((step + 1) / steps.length) * 100);
-    const headingId = `release-${activeQuestion.id}-title`;
-    return (
-      <DiscoveryIntakeFrame
-        activeStep={step}
-        progress={progress}
-        steps={steps}
-      >
-        <article className={`discovery-question discovery-step-motion is-${direction}`} key={activeQuestion.id}>
-          <h1 ref={headingRef} tabIndex={-1} id={headingId}>{activeQuestion.prompt}</h1>
-          <p>{activeQuestion.help}</p>
-          <div
-            className={`discovery-options${activeQuestion.kind === "multi" ? " discovery-options--multi" : ""}`}
-            role={activeQuestion.kind === "single" ? "radiogroup" : "group"}
-            aria-labelledby={headingId}
-          >
-            {activeQuestion.choices.map((choice, index) => {
-              const isSelected = Array.isArray(selected)
-                ? selected.includes(choice.value)
-                : selected === choice.value;
-              const maximumReached =
-                activeQuestion.kind === "multi" &&
-                Array.isArray(selected) &&
-                Boolean(activeQuestion.maximum) &&
-                selected.length >= (activeQuestion.maximum ?? 0);
-              return (
-                <button
-                  type="button"
-                  className={isSelected ? "is-selected" : ""}
-                  aria-pressed={activeQuestion.kind === "multi" ? isSelected : undefined}
-                  role={activeQuestion.kind === "single" ? "radio" : undefined}
-                  aria-checked={activeQuestion.kind === "single" ? isSelected : undefined}
-                  tabIndex={
-                    activeQuestion.kind === "single"
-                      ? rovingTabIndex(isSelected, Boolean(selected), index)
-                      : undefined
-                  }
-                  onKeyDown={activeQuestion.kind === "single" ? (event) => handleRadioKeyDown(event, index, activeQuestion.choices, (value) => selectChoice(activeQuestion, value)) : undefined}
-                  disabled={maximumReached && !isSelected}
-                  onClick={() => selectChoice(activeQuestion, choice.value)}
-                  key={choice.value}
-                >
-                  <span>
-                    <strong>{choice.label}</strong>
-                    {choice.description ? <small>{choice.description}</small> : null}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-          {activeQuestion.maximum && Array.isArray(selected) && selected.length >= activeQuestion.maximum ? (
-            <p className="discovery-release-selection-limit" role="status">Maximum selected. Deselect one to choose another.</p>
-          ) : null}
-          <div className="discovery-actions">
-            <button type="button" onClick={previousQuestion}>Back</button>
-            <div>
+    if (screen === "intro") {
+      return (
+        <DiscoveryIntakeFrame
+          activeStep={null}
+          progress={progress}
+          steps={WEBSITE_STEPS}
+          showSteps={false}
+        >
+          <article className={`discovery-question discovery-step-motion is-${direction}`} key="intro">
+            <div className="discovery-intro-glyph" aria-hidden="true">{introGlyph}</div>
+            <h1 ref={headingRef} tabIndex={-1}>
+              {discoveryIntro.brand}<br />{discoveryIntro.title}
+            </h1>
+            <p>{discoveryIntro.introduction}</p>
+            <p>{discoveryIntro.outcome}</p>
+            <div className="discovery-actions">
               <button
                 className="discovery-primary"
                 type="button"
-                onClick={nextQuestion}
-                disabled={!questionComplete}
+                onClick={() => { setDirection("forward"); setScreen("entry"); }}
               >
-                Next <BlockArrow />
+                {discoveryIntro.action} <BlockArrow />
               </button>
             </div>
-          </div>
-        </article>
-      </DiscoveryIntakeFrame>
-    );
-  }
+          </article>
+        </DiscoveryIntakeFrame>
+      );
+    }
 
-  if (screen === "competitor" && company?.website) {
-    const choices: ReleaseChoice[] = [
-      { value: "include", label: "Include a public market comparison" },
-      { value: "skip", label: "No comparison" },
-    ];
-    return (
-      <DiscoveryIntakeFrame
-        activeStep={null}
-        progress={100}
-        steps={WEBSITE_STEPS}
-        progressLabel="Diagnostic complete"
-      >
-        <article className={`discovery-question discovery-step-motion is-${direction}`}>
-          <h1 ref={headingRef} tabIndex={-1} id="release-competitor-title">Add a public market view?</h1>
-          <p>This optional search uses public sources. It does not change your diagnostic answers.</p>
-          <div className="discovery-options" role="radiogroup" aria-labelledby="release-competitor-title">
-            {choices.map((choice, index) => (
-              <button
-                type="button"
-                className={competitorChoice === choice.value ? "is-selected" : ""}
-                role="radio"
-                aria-checked={competitorChoice === choice.value}
-                tabIndex={rovingTabIndex(
-                  competitorChoice === choice.value,
-                  Boolean(competitorChoice),
-                  index,
-                )}
-                onKeyDown={(event) => handleRadioKeyDown(event, index, choices, (value) => setCompetitorChoice(value as "include" | "skip"))}
-                onClick={() => setCompetitorChoice(choice.value as "include" | "skip")}
-                key={choice.value}
-              >
-                <span><strong>{choice.label}</strong></span>
-              </button>
-            ))}
-          </div>
-          <div className="discovery-actions">
-            <button type="button" onClick={() => { setDirection("back"); setQuestionIndex(questions.length - 1); setScreen("questions"); }}>Back</button>
-            <div>
-              <button className="discovery-primary" type="button" disabled={!competitorChoice} onClick={() => { setDirection("forward"); setScreen("contact"); }}>
-                Next <BlockArrow />
-              </button>
+    if (screen === "entry") {
+      return (
+        <DiscoveryIntakeFrame
+          activeStep={0}
+          progress={progress}
+          steps={WEBSITE_STEPS}
+        >
+          <form className={`discovery-question discovery-release-website discovery-step-motion is-${direction}`} onSubmit={enrichWebsite} key="entry">
+            <h1 ref={headingRef} tabIndex={-1} id="release-website-title">{discoveryCopy.website.title}</h1>
+            <p>{discoveryCopy.website.help}</p>
+            <label className="discovery-release-field">
+              <span className="sr-only">Company website</span>
+              <input
+                type="text"
+                inputMode="url"
+                autoComplete="url"
+                maxLength={DISCOVERY_RELEASE_LIMITS.website}
+                value={website}
+                onChange={(event) => setWebsite(event.target.value)}
+                placeholder={discoveryCopy.website.placeholder}
+                required
+              />
+            </label>
+            {entryError ? <p className="discovery-notice" role="alert">{entryError}</p> : null}
+            <div className="discovery-actions">
+              <button type="button" onClick={() => { setDirection("back"); setScreen("intro"); }}>Back</button>
+              <div>
+                <button type="button" onClick={skipWebsite}>{discoveryCopy.website.skip}</button>
+                <button className="discovery-primary" type="submit">
+                  {discoveryCopy.website.action} <BlockArrow />
+                </button>
+              </div>
             </div>
-          </div>
-        </article>
-      </DiscoveryIntakeFrame>
-    );
-  }
+          </form>
+        </DiscoveryIntakeFrame>
+      );
+    }
 
-  if (screen === "contact" && company) {
-    return (
-      <DiscoveryIntakeFrame
-        activeStep={null}
-        progress={100}
-        steps={intakeMode === "manual" ? MANUAL_STEPS : WEBSITE_STEPS}
-        progressLabel="Diagnostic complete"
-      >
-        <form className={`discovery-question discovery-release-email discovery-step-motion is-${direction}`} onSubmit={submitDiagnostic}>
-          <h1 ref={headingRef} tabIndex={-1}>Generate the two-page result.</h1>
-          <p>Enter a work email to unlock the report. NNCo. may follow up once about this diagnostic.</p>
-          <label className="discovery-release-field">
-            <span>Work email</span>
-            <input
-              type="email"
-              autoComplete="email"
-              maxLength={DISCOVERY_RELEASE_LIMITS.workEmail}
-              pattern={CONTACT_EMAIL_PATTERN_SOURCE}
-              value={contact.workEmail}
-              onChange={(event) => setContact({ workEmail: event.target.value })}
-              required
-            />
-          </label>
-          <p className="discovery-privacy">
-            By selecting Generate report, you ask NNCo. to use your email and diagnostic to prepare this result and contact you once about it. The submitted record is normally deleted after 90 days. Answers are processed by OpenAI. Do not include personal, patient, customer or confidential case data. <a href="/privacy" target="_blank" rel="noreferrer">Privacy details</a>
-          </p>
-          {analysisError ? <p className="discovery-notice" role="alert">{analysisError}</p> : null}
-          <div className="discovery-actions">
-            <button type="button" onClick={() => { setDirection("back"); if (company.website) setScreen("competitor"); else { setQuestionIndex(questions.length - 1); setScreen("questions"); } }}>Back</button>
-            <div>
-              <button className="discovery-primary" type="submit">
-                Generate report <BlockArrow />
-              </button>
+    if (screen === "context" && research) {
+      return (
+        <DiscoveryIntakeFrame
+          activeStep={0}
+          progress={progress}
+          steps={WEBSITE_STEPS}
+        >
+          <article className={`discovery-question discovery-release-context-review discovery-step-motion is-${direction}`}>
+            <h1 ref={headingRef} tabIndex={-1}>{discoveryCopy.research.title}</h1>
+            <p>{discoveryCopy.research.message(companyName)}</p>
+            <div className="discovery-research-sources" aria-label={discoveryCopy.sources}>
+              {research.sources.map(source => <a key={source.url} href={source.url} target="_blank" rel="noreferrer">{source.label}</a>)}
             </div>
-          </div>
-        </form>
-      </DiscoveryIntakeFrame>
-    );
-  }
+            <div className="discovery-actions">
+              <button type="button" onClick={() => { setDirection("back"); setScreen("entry"); }}>Back</button>
+              <div>
+                <button className="discovery-primary" type="button" onClick={() => { setDirection("forward"); setScreen("sector"); }}>
+                  Continue <BlockArrow />
+                </button>
+              </div>
+            </div>
+          </article>
+        </DiscoveryIntakeFrame>
+      );
+    }
 
-  return null;
+    if (screen === "sector") {
+      return (
+        <DiscoveryIntakeFrame
+          activeStep={0}
+          progress={progress}
+          steps={MANUAL_STEPS}
+        >
+          <article className={`discovery-question discovery-step-motion is-${direction}`}>
+            <h1 ref={headingRef} tabIndex={-1} id="release-sector-title">
+              {discoveryCopy.sector.title}
+            </h1>
+            {research ? <p>{discoveryCopy.prefill}</p> : null}
+            <div className="discovery-options" role="radiogroup" aria-labelledby="release-sector-title">
+              {SECTOR_CHOICES.map((choice, index) => (
+                <button
+                  type="button"
+                  className={manualSector === choice.value ? "is-selected" : ""}
+                  role="radio"
+                  aria-checked={manualSector === choice.value}
+                  tabIndex={rovingTabIndex(
+                    manualSector === choice.value,
+                    Boolean(manualSector),
+                    index,
+                  )}
+                  onKeyDown={(event) => handleRadioKeyDown(event, index, SECTOR_CHOICES, (value) => setManualSector(value as ReleaseSector))}
+                  onClick={() => setManualSector(choice.value as ReleaseSector)}
+                  key={choice.value}
+                >
+                  <span><strong>{choice.label}</strong></span>
+                </button>
+              ))}
+            </div>
+            <div className="discovery-actions">
+              <button type="button" onClick={() => { setDirection("back"); setScreen(intakeMode === "website" ? "context" : "entry"); }}>Back</button>
+              <div>
+                <button className="discovery-primary" type="button" onClick={confirmManualSector} disabled={!manualSector}>
+                  Continue <BlockArrow />
+                </button>
+              </div>
+            </div>
+          </article>
+        </DiscoveryIntakeFrame>
+      );
+    }
+
+    if (screen === "questions" && activeQuestion) {
+      const selected = answers[activeQuestion.id];
+      const step = questionIndex + 1;
+      const steps = MANUAL_STEPS;
+      const wasPrefilled = research?.company.sector === manualSector &&
+        ["workflow", "systems", "controls"].includes(activeQuestion.id) &&
+        Boolean(research.prefill[activeQuestion.id as keyof DiscoveryResearch["prefill"]]?.length);
+      const headingId = `release-${activeQuestion.id}-title`;
+      return (
+        <DiscoveryIntakeFrame
+          activeStep={step}
+          progress={progress}
+          steps={steps}
+        >
+          <article className={`discovery-question discovery-step-motion is-${direction}`} key={activeQuestion.id}>
+            <h1 ref={headingRef} tabIndex={-1} id={headingId}>{activeQuestion.prompt}</h1>
+            <p>{activeQuestion.help}{wasPrefilled ? ` ${discoveryCopy.prefill}` : ""}</p>
+            <div
+              className={`discovery-options${activeQuestion.kind === "multi" ? " discovery-options--multi" : ""}`}
+              role={activeQuestion.kind === "single" ? "radiogroup" : "group"}
+              aria-labelledby={headingId}
+            >
+              {activeQuestion.choices.map((choice, index) => {
+                const isSelected = Array.isArray(selected)
+                  ? selected.includes(choice.value)
+                  : selected === choice.value;
+                const maximumReached =
+                  activeQuestion.kind === "multi" &&
+                  Array.isArray(selected) &&
+                  Boolean(activeQuestion.maximum) &&
+                  selected.length >= (activeQuestion.maximum ?? 0);
+                return (
+                  <button
+                    type="button"
+                    className={isSelected ? "is-selected" : ""}
+                    aria-pressed={activeQuestion.kind === "multi" ? isSelected : undefined}
+                    role={activeQuestion.kind === "single" ? "radio" : undefined}
+                    aria-checked={activeQuestion.kind === "single" ? isSelected : undefined}
+                    tabIndex={
+                      activeQuestion.kind === "single"
+                        ? rovingTabIndex(isSelected, Boolean(selected), index)
+                        : undefined
+                    }
+                    onKeyDown={activeQuestion.kind === "single" ? (event) => handleRadioKeyDown(event, index, activeQuestion.choices, (value) => selectChoice(activeQuestion, value)) : undefined}
+                    disabled={maximumReached && !isSelected}
+                    onClick={() => selectChoice(activeQuestion, choice.value)}
+                    key={choice.value}
+                  >
+                    <span>
+                      <strong>{choice.label}</strong>
+                      {choice.description ? <small>{choice.description}</small> : null}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+            {activeQuestion.maximum && Array.isArray(selected) && selected.length >= activeQuestion.maximum ? (
+              <span className="sr-only" role="status">Maximum selected. Deselect one to choose another.</span>
+            ) : null}
+            {activeQuestion.kind === "multi" ? (
+              <div className="discovery-answer-context">
+                <div className="discovery-answer-divider" aria-hidden="true">
+                  <span>{discoveryCopy.additionalContext.divider}</span>
+                </div>
+                <label className="discovery-release-field">
+                  <span className="sr-only">{activeQuestion.label}: your own answer or additional context</span>
+                  <AutoExpandingTextarea
+                    maxLength={DISCOVERY_RELEASE_LIMITS.context}
+                    value={answers.context?.[activeQuestion.id as MultiAnswerId] ?? ""}
+                    placeholder={discoveryCopy.additionalContext.placeholder}
+                    onChange={event => {
+                      const value = event.target.value;
+                      reviewedAnswersRef.current.add(activeQuestion.id);
+                      setAnswers(current => ({ ...current, context: { ...current.context, [activeQuestion.id]: value } }));
+                    }}
+                  />
+                </label>
+              </div>
+            ) : null}
+            <div className="discovery-actions">
+              <button type="button" onClick={previousQuestion}>Back</button>
+              <div>
+                <button
+                  className="discovery-primary"
+                  type="button"
+                  onClick={nextQuestion}
+                  disabled={!questionComplete}
+                >
+                  Continue <BlockArrow />
+                </button>
+              </div>
+            </div>
+          </article>
+        </DiscoveryIntakeFrame>
+      );
+    }
+
+    if (screen === "competitor" && research) {
+      const choices: ReleaseChoice[] = [
+        { value: "include", label: "Include a public market comparison" },
+        { value: "skip", label: "No comparison" },
+      ];
+      return (
+        <DiscoveryIntakeFrame
+          activeStep={null}
+          progress={progress}
+          steps={MANUAL_STEPS}
+          progressLabel="Diagnostic complete"
+        >
+          <article className={`discovery-question discovery-step-motion is-${direction}`}>
+            <h1 ref={headingRef} tabIndex={-1} id="release-competitor-title">{discoveryCopy.competitor.title}</h1>
+            <p>{discoveryCopy.competitor.help}</p>
+            <div className="discovery-options" role="radiogroup" aria-labelledby="release-competitor-title">
+              {choices.map((choice, index) => (
+                <button
+                  type="button"
+                  className={competitorChoice === choice.value ? "is-selected" : ""}
+                  role="radio"
+                  aria-checked={competitorChoice === choice.value}
+                  tabIndex={rovingTabIndex(
+                    competitorChoice === choice.value,
+                    Boolean(competitorChoice),
+                    index,
+                  )}
+                  onKeyDown={(event) => handleRadioKeyDown(event, index, choices, (value) => setCompetitorChoice(value as "include" | "skip"))}
+                  onClick={() => setCompetitorChoice(choice.value as "include" | "skip")}
+                  key={choice.value}
+                >
+                  <span><strong>{choice.label}</strong></span>
+                </button>
+              ))}
+            </div>
+            <div className="discovery-actions">
+              <button type="button" onClick={() => { setDirection("back"); setQuestionIndex(questions.length - 1); setScreen("questions"); }}>Back</button>
+              <div>
+                <button className="discovery-primary" type="button" disabled={!competitorChoice} onClick={() => { setDirection("forward"); setScreen("contact"); }}>
+                  Continue <BlockArrow />
+                </button>
+              </div>
+            </div>
+          </article>
+        </DiscoveryIntakeFrame>
+      );
+    }
+
+    if (screen === "contact" && manualSector) {
+      return (
+        <DiscoveryIntakeFrame
+          activeStep={null}
+          progress={progress}
+          steps={MANUAL_STEPS}
+          progressLabel="Diagnostic complete"
+        >
+          <form className={`discovery-question discovery-release-email discovery-step-motion is-${direction}`} onSubmit={submitDiagnostic}>
+            <h1 ref={headingRef} tabIndex={-1}>{discoveryCopy.contact.title}</h1>
+            <p>{discoveryCopy.contact.help}</p>
+            <label className="discovery-release-field">
+              <span className="sr-only">Work email</span>
+              <input
+                type="email"
+                autoComplete="email"
+                maxLength={DISCOVERY_RELEASE_LIMITS.workEmail}
+                pattern={CONTACT_EMAIL_PATTERN_SOURCE}
+                value={contact.workEmail}
+                onChange={(event) => setContact({ workEmail: event.target.value })}
+                placeholder={discoveryCopy.contact.placeholder}
+                required
+              />
+            </label>
+            {analysisError ? <p className="discovery-notice" role="alert">{analysisError}</p> : null}
+            <div className="discovery-actions">
+              <button type="button" onClick={() => { setDirection("back"); if (research) setScreen("competitor"); else { setQuestionIndex(questions.length - 1); setScreen("questions"); } }}>Back</button>
+              <div>
+                <button className="discovery-primary" type="submit">
+                  Generate report <BlockArrow />
+                </button>
+              </div>
+            </div>
+          </form>
+        </DiscoveryIntakeFrame>
+      );
+    }
+
+    return null;
+  };
+
+  return (
+    <div className="discovery-app discovery-shell">
+      {renderScreen()}
+      <DiscoveryProgress
+        progress={progress}
+        label={complete ? "Diagnostic complete" : `Progress ${progress}%`}
+        started={started}
+      />
+    </div>
+  );
 }
 
 function DiscoveryIntakeFrame({
@@ -673,19 +708,21 @@ function DiscoveryIntakeFrame({
   children,
   progress,
   progressLabel,
+  showSteps = true,
   steps,
 }: {
   activeStep: number | null;
   children: React.ReactNode;
   progress: number;
   progressLabel?: string;
+  showSteps?: boolean;
   steps: readonly string[];
 }) {
   return (
-    <main className="discovery-app discovery-intake discovery-release-intake">
+    <main className="discovery-app discovery-intake discovery-release-intake" data-intro={!showSteps || undefined}>
       <section className="discovery-canvas">
         <div className="discovery-interaction">
-          <aside className="discovery-section-index" aria-label="Diagnostic steps">
+          {showSteps ? <aside className="discovery-section-index" aria-label="Diagnostic steps">
             <ol>
               {steps.map((step, index) => (
                 <li
@@ -702,46 +739,88 @@ function DiscoveryIntakeFrame({
                 ? progressLabel ?? "Diagnostic complete"
                 : `${steps[activeStep]} step, ${progress}% complete`}
             </p>
-          </aside>
+          </aside> : null}
           <div className="discovery-form-column">{children}</div>
-        </div>
-        <div
-          className="discovery-progress"
-          style={{ "--discovery-progress": `${progress}%` } as CSSProperties}
-        >
-          <div
-            className="discovery-progress-track"
-            role="progressbar"
-            aria-labelledby="discovery-release-progress-label"
-            aria-valuemin={0}
-            aria-valuemax={100}
-            aria-valuenow={progress}
-          >
-            <span aria-hidden="true" />
-          </div>
-          <div className="discovery-progress-labels">
-            <span id="discovery-release-progress-label">
-              {progressLabel ?? `Progress ${progress}%`}
-            </span>
-          </div>
         </div>
       </section>
     </main>
   );
 }
 
-function DiscoveryReleaseReportView({
-  company,
-  mode,
-  report,
+function DiscoveryProgress({
+  progress,
+  label,
+  started,
 }: {
-  company: CompanyContext;
-  mode: "ai" | "rules";
+  progress: number;
+  label: string;
+  started: boolean;
+}) {
+  return (
+    <footer className="discovery-bottom-bar">
+      <div
+        className="discovery-progress"
+        style={{ "--discovery-progress": `${started ? progress : 100}%` } as CSSProperties}
+      >
+        <div
+          className="discovery-progress-track"
+          role={started ? "progressbar" : undefined}
+          aria-labelledby={started ? "discovery-release-progress-label" : undefined}
+          aria-valuemin={started ? 0 : undefined}
+          aria-valuemax={started ? 100 : undefined}
+          aria-valuenow={started ? progress : undefined}
+        >
+          <span aria-hidden="true" />
+        </div>
+        <div className="discovery-progress-labels">
+          <span
+            id="discovery-release-progress-label"
+            className="discovery-progress-text"
+            data-hidden={!started || undefined}
+            aria-hidden={!started}
+          >
+            {label}
+          </span>
+          <a className="discovery-privacy-link" href="/privacy" target="_blank" rel="noreferrer">
+            Privacy policy
+          </a>
+        </div>
+      </div>
+    </footer>
+  );
+}
+
+function DiscoveryReleaseReportView({
+  companyName,
+  report,
+  sources = [],
+}: {
+  companyName: string;
   report: DiscoveryReleaseReport;
+  sources?: ReleaseSource[];
 }) {
   const reportHeadingRef = useRef<HTMLHeadingElement>(null);
+  const reportPagesRef = useRef<HTMLDivElement>(null);
+  const [preparingPrint, setPreparingPrint] = useState(false);
+  const [printError, setPrintError] = useState("");
+  const printReport = async () => {
+    if (!reportPagesRef.current || preparingPrint) return;
+    setPreparingPrint(true);
+    setPrintError("");
+    try {
+      await prepareReportPrint(reportPagesRef.current);
+      window.print();
+    } catch {
+      setPrintError(discoveryReportCopy.pdfError);
+    } finally {
+      setPreparingPrint(false);
+    }
+  };
   useEffect(() => {
-    const frame = window.requestAnimationFrame(() => reportHeadingRef.current?.focus());
+    const frame = window.requestAnimationFrame(() => {
+      reportHeadingRef.current?.focus({ preventScroll: true });
+      window.scrollTo({ top: 0, behavior: "instant" });
+    });
     return () => window.cancelAnimationFrame(frame);
   }, []);
   const preparedDate = new Intl.DateTimeFormat("en", {
@@ -751,117 +830,117 @@ function DiscoveryReleaseReportView({
   }).format(new Date(report.generatedAt));
   return (
     <main className="discovery-app discovery-preview discovery-release-report">
-      <header className="discovery-preview-toolbar">
-        <BrandLogo priority />
-        <div>
-          <button type="button" onClick={() => window.print()}>
-            Download PDF <BlockArrow direction="down" />
-          </button>
-          <a className="discovery-release-review-link" href="/contact">Review with NNCo.</a>
-          {mode === "rules" ? <span className="discovery-release-local-note">Local rules preview</span> : null}
-        </div>
-      </header>
-      <div className="discovery-report-pages">
-        <article className="discovery-report-page" aria-label="Report page 1">
-          <header><span>NNCo.</span><span>Workflow diagnostic</span></header>
-          <div className="discovery-report-title">
-            <span>What we understood</span>
-            <h1 ref={reportHeadingRef} tabIndex={-1}>{report.title}</h1>
-            <p>{report.executiveSummary}</p>
-            <small>Prepared for {company.name}, {preparedDate}</small>
-          </div>
-          <section className="discovery-report-scope">
-            <span>Scope</span>
-            <dl>
-              <div><dt>Workflows</dt><dd>{report.pageOne.workflow}</dd></div>
-              <div><dt>Frequency</dt><dd>{report.pageOne.baseline}</dd></div>
-            </dl>
-          </section>
-          <section className="discovery-delivery-block">
-            <span>Systems and inputs</span>
-            <p>{report.pageOne.systems}</p>
-          </section>
-          <ol className="discovery-priorities">
-            {report.pageOne.findings.map((finding, index) => (
-              <li key={`${finding.title}-${index}`}>
-                <span>{index + 1}</span>
-                <div>
-                  <h3>{finding.title}</h3>
-                  <p>{finding.explanation}</p>
-                  <dl>
-                    <div><dt>Basis</dt><dd>{finding.basis}</dd></div>
-                    <div><dt>Evidence</dt><dd>{finding.evidence}</dd></div>
-                  </dl>
-                </div>
-              </li>
-            ))}
-          </ol>
-          <footer><span>Prepared by NNCo. Not a formal assessment.</span><span>1 / 2</span></footer>
-        </article>
+      <div className="discovery-canvas">
+        <div className="discovery-interaction discovery-report-layout">
+          <div className="discovery-form-column discovery-report-reading">
+            <div className="discovery-report-pages" ref={reportPagesRef}>
+              <article className="discovery-report-page" aria-label={discoveryReportCopy.title}>
+                <DiscoveryReportHeader label={discoveryReportCopy.title} reportHeadingRef={reportHeadingRef} />
+                <p className="discovery-report-prepared">Prepared for {limitReportText(companyName, reportLimits.company)}, {preparedDate}</p>
+                <section className="discovery-report-summary" aria-labelledby="discovery-summary-heading">
+                  <h2 id="discovery-summary-heading">{discoveryReportCopy.summary}</h2>
+                  <p>{discoveryReportCopy.purpose}</p>
+                </section>
+                <section className="discovery-report-summary" aria-labelledby="discovery-context-heading">
+                  <h2 id="discovery-context-heading">{discoveryReportCopy.context} {limitReportText(companyName, reportLimits.company)}</h2>
+                  <p>{limitReportText(report.executiveSummary, reportLimits.summary)}</p>
+                  {sources.length > 0 && <p className="discovery-report-sources">
+                    {discoveryReportCopy.sources}:{" "}
+                    {sources.slice(0, 3).map((source, index) => <span key={source.url}>
+                      {index > 0 && "; "}<a href={source.url}>{limitReportText(source.label, reportLimits.sourceLabel)}</a>
+                    </span>)}.
+                  </p>}
+                {report.pageTwo.competitorNotes.length > 0 && (
+                  <div className="discovery-release-market" aria-label={discoveryReportCopy.publicContext}>
+                    {report.pageTwo.competitorNotes.slice(0, reportLimits.points).map((note, index) => (
+                      <p key={index}>
+                        {limitReportText(note.company, reportLimits.competitorName)}: {limitReportText(note.finding, reportLimits.competitorFinding)}{" "}
+                        <a href={note.sourceUrl}>{limitReportText(new URL(note.sourceUrl).hostname, reportLimits.sourceLabel)}</a>
+                      </p>
+                    ))}
+                  </div>
+                )}
+                {report.pageTwo.competitorStatus === "not-found" && (
+                  <p className="discovery-report-note">No reliable public comparison was found in the available sources.</p>
+                )}
+                </section>
+                <DiscoveryReportFooter page={1} />
+              </article>
+              <article className="discovery-report-page discovery-report-page--final" aria-label={discoveryReportCopy.suitabilityTitle}>
+                <DiscoveryReportHeader label={discoveryReportCopy.suitabilityTitle} />
+                <section className="discovery-report-findings" aria-labelledby="discovery-opportunities-heading">
+                  <h2 id="discovery-opportunities-heading">{discoveryReportCopy.opportunities}</h2>
+                  {report.pageTwo.opportunities.length > 0 ? <ol className="discovery-priorities">
+                    {report.pageTwo.opportunities.slice(0, reportLimits.points).map((opportunity, index) => (
+                      <li key={index}>
+                        <p><strong>{limitReportText(opportunity.title, reportLimits.heading).replace(/[.!?:;]+$/, "")}.</strong>{" "}
+                          {limitReportText(opportunity.action, reportLimits.action)}</p>
+                      </li>
+                    ))}
+                  </ol> : <p>{discoveryReportCopy.noOpportunity}</p>}
+                </section>
+                <section className="discovery-report-summary" aria-labelledby="discovery-suitability-heading">
+                  <h2 id="discovery-suitability-heading">{report.pageTwo.opportunities.length > 0 ? discoveryReportCopy.closerLook : discoveryReportCopy.suitability}</h2>
+                  <ol className="discovery-priorities">
+                  {report.pageOne.findings.slice(0, reportLimits.points).map((finding, index) => (
+                    <li key={index}>
+                      <p><strong>{limitReportText(finding.title, reportLimits.heading).replace(/[.!?:;]+$/, "")}.</strong>{" "}
+                        {limitReportText(finding.explanation, reportLimits.explanation)}</p>
+                    </li>
+                  ))}
+                  </ol>
+                  <p className="discovery-report-conclusion">{limitReportText(report.pageTwo.constraints, reportLimits.constraints)} {limitReportText(report.pageTwo.firstMove, reportLimits.firstMove)}</p>
 
-        <article className="discovery-report-page discovery-report-page--final" aria-label="Report page 2">
-          <header><span>NNCo.</span><span>Where to act</span></header>
-          <div className="discovery-report-title discovery-report-title--compact">
-            <span>Where to act</span>
-            <h2>Start with one bounded intervention.</h2>
-            <p>{report.pageTwo.firstMove}</p>
+                </section>
+                <p className="discovery-report-assessment">
+                  {discoveryReportCopy.assessment}{" "}
+                  <a href={`mailto:${discoveryReportCopy.assessmentEmail}`}>{discoveryReportCopy.assessmentEmail}</a>.
+                </p>
+                <DiscoveryReportFooter page={2} />
+              </article>
+            </div>
+            <div className="discovery-report-end">
+              <p className="discovery-report-disclaimer">{discoveryReportCopy.disclaimer}</p>
+              {printError && <p className="discovery-report-error" role="alert">{printError}</p>}
+            </div>
           </div>
-          <ol className="discovery-priorities discovery-release-opportunities">
-            {report.pageTwo.opportunities.map((opportunity, index) => (
-              <li key={`${opportunity.title}-${index}`}>
-                <span>{index + 1}</span>
-                <div>
-                  <h3>{opportunity.title}</h3>
-                  <p>{opportunity.action}</p>
-                  <dl>
-                    <div><dt>Stays with a person</dt><dd>{opportunity.humanBoundary}</dd></div>
-                    <div><dt>Requires</dt><dd>{opportunity.requires}</dd></div>
-                  </dl>
-                </div>
-              </li>
-            ))}
-          </ol>
-          <section className="discovery-delivery-block">
-            <span>Control boundary</span><p>{report.pageTwo.constraints}</p>
-          </section>
-          <section className="discovery-delivery-block discovery-release-validation">
-            <span>Validate next</span>
-            <ul>{report.pageTwo.validationQuestions.map((question) => <li key={question}>{question}</li>)}</ul>
-          </section>
-          {report.pageTwo.competitorNotes.length ? (
-            <section className="discovery-delivery-block discovery-release-market">
-              <span>Public market view</span>
-              <ul>
-                {report.pageTwo.competitorNotes.map((note) => (
-                  <li key={`${note.company}-${note.sourceUrl}`}>
-                    <strong>{note.company}</strong>
-                    <p>{note.finding}</p>
-                    <a href={note.sourceUrl}>{new URL(note.sourceUrl).hostname}</a>
-                  </li>
-                ))}
-              </ul>
-            </section>
-          ) : report.pageTwo.competitorStatus === "not-found" ? (
-            <section className="discovery-delivery-block discovery-release-market-empty">
-              <span>Public market view</span>
-              <p>No defensible public comparison was found in the available sources.</p>
-            </section>
-          ) : null}
-          <footer><span>Review this diagnostic with NNCo. at nnco.ai/contact</span><span>2 / 2</span></footer>
-        </article>
+          <aside className="discovery-report-sidebar" aria-label="Report actions">
+            <DiscoveryReportActions onPrint={printReport} preparingPrint={preparingPrint} />
+          </aside>
+        </div>
       </div>
     </main>
   );
 }
 
-function answerHasValue(value: string | string[]): boolean {
-  return Array.isArray(value) ? value.length > 0 : value.trim().length > 0;
+function DiscoveryReportActions({ onPrint, preparingPrint }: {
+  onPrint: () => void;
+  preparingPrint: boolean;
+}) {
+  return (
+    <div className="discovery-report-actions">
+      <button className="discovery-primary" type="button" onClick={onPrint} disabled={preparingPrint}>
+        {preparingPrint ? discoveryReportCopy.preparingPdf : discoveryReportCopy.savePdf}
+      </button>
+      <a className="discovery-release-review-link" href="/contact">{discoveryReportCopy.contact}</a>
+    </div>
+  );
 }
 
-function organisationForCompany(company: CompanyContext): string {
-  if (!company.website) return "Not provided";
-  const name = company.name.trim();
-  return name.length >= 2 ? name : company.domain || "Not provided";
+function DiscoveryReportHeader({ label, reportHeadingRef }: {
+  label: string;
+  reportHeadingRef?: React.RefObject<HTMLHeadingElement | null>;
+}) {
+  return (
+    <header className="discovery-report-title">
+      {reportHeadingRef ? <h1 ref={reportHeadingRef} tabIndex={-1}>{label}</h1> : <h2>{label}</h2>}
+      <img src={PRIMARY_LOGO.src} width={PRIMARY_LOGO.width} height={PRIMARY_LOGO.height} alt="NNCo." />
+    </header>
+  );
+}
+
+function DiscoveryReportFooter({ page }: { page: 1 | 2 }) {
+  return <footer><span>{discoveryReportCopy.disclaimer}</span><span>{page} / 2</span></footer>;
 }
 
 function handleRadioKeyDown(

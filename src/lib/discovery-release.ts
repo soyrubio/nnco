@@ -5,11 +5,27 @@ export const DISCOVERY_RELEASE_LIMITS = {
   situation: 500,
   answer: 240,
   answerList: 8,
+  context: 1_000,
   competitorNames: 3,
   name: 120,
   organisation: 160,
   workEmail: 254,
 } as const;
+
+// Shared limits keep new analysis and previously saved reports within the A4 layout.
+export const DISCOVERY_REPORT_LIMITS = {
+  points: 2, company: 80, heading: 56, summary: 900,
+  explanation: 220, evidence: 80, action: 220, humanBoundary: 120,
+  requires: 120, constraints: 240, firstMove: 100, validationQuestion: 100,
+  competitorName: 40, competitorFinding: 60, sourceLabel: 40,
+} as const;
+
+export function limitReportText(value: string, maximum: number): string {
+  const text = value.replace(/[—–]/g, "-").replace(/\s+/g, " ").trim();
+  if (text.length <= maximum) return text;
+  const prefix = text.slice(0, maximum - 3);
+  return `${prefix.replace(/\s+\S*$/, "").trimEnd()}...`;
+}
 
 export type ReleaseSector =
   | "banking"
@@ -31,12 +47,21 @@ export interface CompanyContext {
   summary: string;
   offerings: string[];
   suggestedWorkflows: string[];
+  workflowOptions?: ReleaseChoice[];
   sources: ReleaseSource[];
   analysisMode: "ai" | "rules";
 }
 
+export interface DiscoveryResearch {
+  company: { name: string; sector: ReleaseSector };
+  workflowOptions: ReleaseChoice[];
+  prefill: { workflow: string[]; systems: string[]; controls: string[] };
+  sources: ReleaseSource[];
+  contextToken: string;
+}
+
 export type DiscoveryEnrichmentResponse =
-  | { ok: true; company: CompanyContext; contextToken: string }
+  | ({ ok: true } & DiscoveryResearch)
   | {
       ok: false;
       error: {
@@ -52,6 +77,19 @@ export interface ReleaseAnswers {
   scale: string;
   systems: string[];
   controls: string[];
+  context?: Partial<Record<MultiAnswerId, string>>;
+}
+
+export type MultiAnswerId = "workflow" | "friction" | "systems" | "controls";
+
+export interface DiscoverySubmission {
+  requestId: string;
+  contextToken: string | null;
+  sector: ReleaseSector;
+  answers: ReleaseAnswers;
+  workEmail: string;
+  includeCompetitors: boolean;
+  consent: { accepted: true; version: typeof DISCOVERY_RELEASE_CONSENT_VERSION };
 }
 
 export interface DiscoveryReleasePayload {
@@ -125,11 +163,6 @@ export interface DiscoveryReleaseReport {
 
 export interface DiscoveryReleaseSuccessResponse {
   ok: true;
-  requestId: string;
-  handoffId: string;
-  confirmedAt: string;
-  persistence: "ephemeral" | "supabase";
-  analysisMode: "ai" | "rules";
   report: DiscoveryReleaseReport;
 }
 
@@ -158,7 +191,7 @@ export interface ReleaseChoice {
   description?: string;
 }
 
-const WORKFLOW_CHOICES: Record<ReleaseSector, ReleaseChoice[]> = {
+export const WORKFLOW_CHOICES: Record<ReleaseSector, ReleaseChoice[]> = {
   banking: [
     { value: "customer-onboarding", label: "Customer onboarding and KYC" },
     { value: "credit-lending", label: "Credit and lending" },
@@ -263,11 +296,12 @@ export const RELEASE_CONTROL_CHOICES: ReleaseChoice[] = [
 ];
 
 export function workflowChoicesFor(company: CompanyContext): ReleaseChoice[] {
+  if (company.workflowOptions) return company.workflowOptions;
   const base = WORKFLOW_CHOICES[company.sector];
   const generated = company.suggestedWorkflows
     .filter((value) => value.trim().length > 2)
     .slice(0, 3)
-    .map((label) => ({ value: slugify(label), label: boundText(label, 72) }));
+    .map((label) => base.find(choice => choice.label === label) ?? { value: slugify(label), label: boundText(label, 72) });
   return uniqueChoices([...generated, ...base]).slice(0, 6);
 }
 
@@ -361,12 +395,11 @@ export function buildManualCompanyContext(sector: ReleaseSector): CompanyContext
     domain: null,
     name: "Your organisation",
     sector,
-    summary: "No public company website was provided. This diagnostic is based only on the selected operating context.",
-    offerings: fallbackOfferings(sector),
-    suggestedWorkflows: WORKFLOW_CHOICES[sector]
-      .slice(0, 3)
-      .map((choice) => choice.label),
+    summary: "No public company website was provided. This diagnostic is based only on the user's answers.",
+    offerings: [],
+    suggestedWorkflows: [],
     sources: [],
+    workflowOptions: WORKFLOW_CHOICES[sector],
     analysisMode: "rules",
   };
 }
@@ -375,9 +408,11 @@ export function reclassifyCompanyContext(
   company: CompanyContext,
   sector: ReleaseSector,
 ): CompanyContext {
+  if (company.sector === sector) return company;
   return {
     ...company,
     sector,
+    workflowOptions: WORKFLOW_CHOICES[sector],
     suggestedWorkflows: WORKFLOW_CHOICES[sector]
       .slice(0, 3)
       .map((choice) => choice.label),
@@ -528,16 +563,15 @@ export function isDiscoveryReleaseReport(
     boundedReportText(value.generatedAt, 64) &&
     Number.isFinite(Date.parse(value.generatedAt)) &&
     boundedReportText(value.title, 80) &&
-    boundedReportText(value.executiveSummary, 320) &&
+    boundedReportText(value.executiveSummary, DISCOVERY_REPORT_LIMITS.summary) &&
     boundedReportText(pageOne.workflow, 100) &&
     boundedReportText(pageOne.baseline, 80) &&
     boundedReportText(pageOne.systems, 180) &&
     Array.isArray(pageOne.findings) &&
-    pageOne.findings.length >= 2 &&
+    pageOne.findings.length >= 1 &&
     pageOne.findings.length <= 3 &&
     pageOne.findings.every(isReleaseFinding) &&
     Array.isArray(pageTwo.opportunities) &&
-    pageTwo.opportunities.length >= 2 &&
     pageTwo.opportunities.length <= 3 &&
     pageTwo.opportunities.every(isReleaseOpportunity) &&
     boundedReportText(pageTwo.constraints, 240) &&
@@ -562,7 +596,7 @@ function isReleaseFinding(value: unknown): boolean {
   if (!isRecord(value)) return false;
   return (
     boundedReportText(value.title, 80) &&
-    boundedReportText(value.explanation, 220) &&
+    boundedReportText(value.explanation, 320) &&
     boundedReportText(value.evidence, 120) &&
     (value.basis === "Reported" ||
       value.basis === "Public source" ||
@@ -574,7 +608,7 @@ function isReleaseOpportunity(value: unknown): boolean {
   if (!isRecord(value)) return false;
   return (
     boundedReportText(value.title, 80) &&
-    boundedReportText(value.action, 200) &&
+    boundedReportText(value.action, 260) &&
     boundedReportText(value.humanBoundary, 160) &&
     boundedReportText(value.requires, 140)
   );
@@ -610,6 +644,13 @@ export function isCompanyContext(value: unknown): value is CompanyContext {
     value.summary.length <= 500 &&
     stringList(value.offerings, 8) &&
     stringList(value.suggestedWorkflows, 8) &&
+    (value.workflowOptions === undefined || (
+      Array.isArray(value.workflowOptions) && value.workflowOptions.length <= 9 &&
+      value.workflowOptions.every((option) => isRecord(option) &&
+        typeof option.value === "string" && /^[a-z0-9-]{1,80}$/.test(option.value) &&
+        typeof option.label === "string" && option.label.trim().length > 0 && option.label.length <= 72) &&
+      new Set(value.workflowOptions.map((option) => option.value)).size === value.workflowOptions.length
+    )) &&
     Array.isArray(value.sources) &&
     value.sources.length <= 3 &&
     value.sources.every(
@@ -645,13 +686,38 @@ export function isReleaseSector(value: unknown): value is ReleaseSector {
 
 function isReleaseAnswers(value: unknown): value is ReleaseAnswers {
   if (!isRecord(value)) return false;
+  if (Object.keys(value).some(key => !["workflow", "friction", "scale", "systems", "controls", "context"].includes(key))) return false;
+  if (value.context !== undefined && (!isRecord(value.context) ||
+    !Object.entries(value.context).every(([key, text]) =>
+      ["workflow", "friction", "systems", "controls"].includes(key) &&
+      typeof text === "string" && text.length <= DISCOVERY_RELEASE_LIMITS.context))) return false;
+  const context = value.context as ReleaseAnswers["context"];
   return (
-    nonEmptyStringList(value.workflow, 2) &&
-    nonEmptyStringList(value.friction, 2) &&
+    validMultiAnswer(value.workflow, context?.workflow, 2) &&
+    validMultiAnswer(value.friction, context?.friction, 2) &&
     boundedAnswer(value.scale) &&
-    nonEmptyStringList(value.systems, DISCOVERY_RELEASE_LIMITS.answerList) &&
-    nonEmptyStringList(value.controls, DISCOVERY_RELEASE_LIMITS.answerList)
+    validMultiAnswer(value.systems, context?.systems, DISCOVERY_RELEASE_LIMITS.answerList) &&
+    validMultiAnswer(value.controls, context?.controls, DISCOVERY_RELEASE_LIMITS.answerList)
   );
+}
+
+function validMultiAnswer(value: unknown, context: string | undefined, maximum: number): boolean {
+  return stringList(value, maximum) && (value.length > 0 || Boolean(context?.trim()));
+}
+
+export function hasMultiAnswer(answers: ReleaseAnswers, id: MultiAnswerId): boolean {
+  return answers[id].length > 0 || Boolean(answers.context?.[id]?.trim());
+}
+
+export function isDiscoverySubmission(value: unknown): value is DiscoverySubmission {
+  if (!isRecord(value)) return false;
+  const keys = ["requestId", "contextToken", "sector", "answers", "workEmail", "includeCompetitors", "consent"];
+  return Object.keys(value).every(key => keys.includes(key)) &&
+    typeof value.requestId === "string" && isReleaseSector(value.sector) &&
+    (value.contextToken === null || (typeof value.contextToken === "string" && value.contextToken.length >= 32 && value.contextToken.length <= 16_384)) &&
+    isReleaseAnswers(value.answers) && typeof value.workEmail === "string" && value.workEmail.length <= DISCOVERY_RELEASE_LIMITS.workEmail &&
+    typeof value.includeCompetitors === "boolean" && !(value.contextToken === null && value.includeCompetitors) &&
+    isRecord(value.consent) && value.consent.accepted === true && value.consent.version === DISCOVERY_RELEASE_CONSENT_VERSION;
 }
 
 export function isReleaseAnswersForCompany(
@@ -688,10 +754,6 @@ function stringList(value: unknown, maximum: number): value is string[] {
         entry.length <= DISCOVERY_RELEASE_LIMITS.answer,
     )
   );
-}
-
-function nonEmptyStringList(value: unknown, maximum: number): value is string[] {
-  return Array.isArray(value) && value.length > 0 && stringList(value, maximum);
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -739,7 +801,7 @@ function hasValidContextTokenShape(
   return (
     typeof payload.companyContextToken === "string" &&
     payload.companyContextToken.length >= 32 &&
-    payload.companyContextToken.length <= 8_192
+    payload.companyContextToken.length <= 16_384
   );
 }
 

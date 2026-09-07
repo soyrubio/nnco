@@ -81,7 +81,7 @@ test("all stylesheet font weights map to the three available font faces", async 
 test("Discovery has a scoped readable UI scale and separate screen report scale", () => {
   assert.match(
     discoveryStyles,
-    /\.discovery-app\s*\{[^}]*--discovery-type-size-small:\s*var\(--type-size-small\);[^}]*--discovery-type-size-body:\s*var\(--type-size-control\);[^}]*--discovery-type-size-report-label:\s*0\.8125rem;[^}]*--discovery-type-size-report-meta:\s*0\.875rem;[^}]*--discovery-type-size-report-body:\s*0\.9375rem;/s,
+    /\.discovery-app\s*\{[^}]*--discovery-type-size-small:\s*var\(--type-size-small\);[^}]*--discovery-type-size-body:\s*var\(--type-size-control\);[^}]*--discovery-type-size-report-label:\s*0\.8125rem;[^}]*--discovery-type-size-report-meta:\s*0\.875rem;[^}]*--discovery-type-size-report-body:\s*var\(--type-size-body-large\);/s,
   );
   assert.match(
     discoveryStyles,
@@ -98,23 +98,21 @@ test("Discovery print report keeps its fixed A4 typography geometry", () => {
 
   assert.match(
     printStyles,
-    /\.discovery-report-page\s*\{[^}]*width:\s*210mm !important;[^}]*height:\s*297mm !important;[^}]*min-height:\s*297mm !important;[^}]*padding:\s*14mm !important;[^}]*line-height:\s*1\.5;/s,
+    /\.discovery-report-page\s*\{[^}]*width:\s*210mm !important;[^}]*height:\s*297mm !important;[^}]*min-height:\s*297mm !important;[^}]*padding:\s*20mm !important;[^}]*line-height:\s*1\.5;/s,
   );
   assert.match(
     printStyles,
-    /\.discovery-release-report \.discovery-report-title h1,\s*\.discovery-release-report \.discovery-report-title h2\s*\{\s*font-size:\s*12mm;/s,
+    /\.discovery-release-report \.discovery-report-title h1,\s*\.discovery-release-report \.discovery-report-title h2\s*\{[^}]*font-size:\s*9mm;/s,
   );
   assert.match(
-    printStyles,
-    /\.discovery-release-report \.discovery-report-title p\s*\{[^}]*font-size:\s*3\.6mm;/s,
+    discoveryStyles,
+    /\.discovery-priorities strong\s*\{[^}]*font-size:\s*inherit;[^}]*font-weight:\s*var\(--type-weight-bold\);/s,
   );
+  assert.doesNotMatch(discoveryStyles, /\.discovery-priorities h3/);
+  assert.match(printStyles, /\.discovery-priorities\s*\{[^}]*font-size:\s*9pt;/s);
   assert.match(
     printStyles,
-    /\.discovery-release-report \.discovery-priorities h3\s*\{[^}]*font-size:\s*5mm;/s,
-  );
-  assert.match(
-    printStyles,
-    /\.discovery-release-report \.discovery-priorities p\s*\{[^}]*font-size:\s*3mm;/s,
+    /\.discovery-release-report \.discovery-priorities p\s*\{[^}]*font-size:\s*9pt;/s,
   );
   assert.doesNotMatch(printStyles, /var\(--discovery-type-size-report-/);
 });

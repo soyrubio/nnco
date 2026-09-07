@@ -14,6 +14,9 @@ export interface StructuredOutputRequest {
   maxOutputTokens: number;
   safetyIdentifier?: string;
   webSearch?: boolean;
+  searchDomains?: string[];
+  requireSearch?: boolean;
+  maxToolCalls?: number;
 }
 
 export async function requestStructuredOutput<T>(
@@ -69,7 +72,12 @@ export async function requestStructuredOutputWithMetadata<T>(
       ...(request.safetyIdentifier
         ? { safety_identifier: request.safetyIdentifier }
         : {}),
-      ...(request.webSearch ? { tools: [{ type: "web_search" }] } : {}),
+      ...(request.webSearch ? {
+        tools: [{ type: "web_search", ...(request.searchDomains ? { filters: { allowed_domains: request.searchDomains } } : {}) }],
+        include: ["web_search_call.action.sources"],
+        ...(request.requireSearch ? { tool_choice: "required" } : {}),
+        max_tool_calls: request.maxToolCalls ?? 3,
+      } : {}),
       input: [
         { role: "system", content: request.system },
         { role: "user", content: request.user },
@@ -90,6 +98,12 @@ export async function requestStructuredOutputWithMetadata<T>(
     throw new Error(`OpenAI request failed with status ${response.status}`);
   }
   const body = (await response.json()) as OpenAiResponse;
+  if (body.status === "incomplete" || body.status === "failed") {
+    throw new Error("OpenAI response was not completed");
+  }
+  if (request.requireSearch && !body.output?.some(item => item.type === "web_search_call")) {
+    throw new Error("OpenAI did not perform the required website research");
+  }
   const outputText = extractOutputText(body);
   if (!outputText) throw new Error("OpenAI response did not contain structured output");
   return {
@@ -99,6 +113,7 @@ export async function requestStructuredOutputWithMetadata<T>(
 }
 
 interface OpenAiResponse {
+  status?: string;
   output_text?: string;
   output?: Array<{
     type?: string;

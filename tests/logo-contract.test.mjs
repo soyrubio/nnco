@@ -221,7 +221,7 @@ test("compact placements preserve their old footprint without distorting Group 9
     /\.brand-logo img\s*\{[^}]*width:\s*100%;[^}]*height:\s*100%;[^}]*object-fit:\s*contain;/s,
   );
   assert.match(sources.globalStyles, /\.site-header--over-hero \.brand-logo img\s*\{[^}]*filter:\s*brightness\(0\) invert\(1\);/s);
-  assert.match(sources.discoveryStyles, /\.discovery-preview-toolbar \.wordmark-logo\s*\{[^}]*object-fit:\s*contain;[^}]*filter:\s*invert\(1\);/s);
+  assert.match(sources.discoveryStyles, /\.discovery-report-page > header > img\s*\{[^}]*object-fit:\s*contain;/s);
   assert.doesNotMatch(sources.globalStyles, /\.brand-logo__frame|\.brand-logo\.is-animating/);
   assert.doesNotMatch(sources.discoveryStyles, /wordmark-logo--frame|wordmark\.is-animating/);
 });

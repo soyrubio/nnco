@@ -2,17 +2,22 @@
 import BaseLayout from "@/layouts/BaseLayout.astro";
 import { DiscoveryLauncher } from "@/components/DiscoveryLauncher";
 import Header from "@/components/Header.astro";
+import ModularGlyph from "@/components/ModularGlyph.astro";
+import { discoveryIntro } from "@/data/discovery";
+import { discoveryIntroGlyph } from "@/data/glyphs";
 import "@/styles/discovery.css";
 
 export const prerender = false;
 ---
 
 <BaseLayout
-  title="AI workflow diagnostic | NNCo."
-  description="Use a company website or select a sector, answer five focused questions, and get a two-page AI workflow diagnostic. About one minute, no call required."
+  title={`${discoveryIntro.brand} ${discoveryIntro.title}`}
+  description={discoveryIntro.introduction}
   canonicalPath="/discovery"
   themeColor="#111111"
 >
   <Header variant="discovery" />
-  <DiscoveryLauncher client:load />
+  <DiscoveryLauncher client:load>
+    <ModularGlyph {...discoveryIntroGlyph} />
+  </DiscoveryLauncher>
 </BaseLayout>

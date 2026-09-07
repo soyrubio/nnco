@@ -34,6 +34,7 @@ export function verifyDiscoveryContextToken(
   token: string,
   env: DiscoveryContextTokenEnvironment = process.env,
   now = Date.now(),
+  options: { allowExpiredForReplay?: boolean } = {},
 ): CompanyContext | null {
   const [encodedClaims, suppliedSignature, extra] = token.split(".");
   if (!encodedClaims || !suppliedSignature || extra) return null;
@@ -52,7 +53,7 @@ export function verifyDiscoveryContextToken(
     if (
       claims.version !== TOKEN_VERSION ||
       !Number.isFinite(claims.expiresAt) ||
-      claims.expiresAt <= now ||
+      (!options.allowExpiredForReplay && claims.expiresAt <= now) ||
       !claims.company
     ) {
       return null;

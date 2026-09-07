@@ -9,9 +9,10 @@
   --discovery-type-size-small: var(--type-size-small);
   --discovery-type-size-body: var(--type-size-control);
   --discovery-type-size-body-large: var(--type-size-body);
+  --discovery-type-size-question-help: 1.1875rem;
   --discovery-type-size-report-label: 0.8125rem;
   --discovery-type-size-report-meta: 0.875rem;
-  --discovery-type-size-report-body: 0.9375rem;
+  --discovery-type-size-report-body: var(--type-size-body-large);
   min-height: calc(
     100svh - var(--header-height) - var(--header-rule-height)
   );
@@ -31,7 +32,8 @@
 }
 
 .discovery-app button,
-.discovery-app input {
+.discovery-app input,
+.discovery-app textarea {
   font: inherit;
 }
 
@@ -57,34 +59,10 @@
 }
 
 .discovery-canvas,
-.discovery-preview-toolbar,
-.discovery-report-pages {
+.discovery-bottom-bar .discovery-progress {
   width: min(100%, var(--content-max));
   margin-inline: auto;
   padding-inline: var(--gutter);
-}
-
-.discovery-preview-toolbar .wordmark {
-  display: block;
-  position: relative;
-  width: 4.8rem;
-  height: 3.5rem;
-  flex: 0 0 auto;
-}
-
-.discovery-preview-toolbar .wordmark__stage {
-  position: absolute;
-  inset: 0;
-  display: block;
-}
-
-.discovery-preview-toolbar .wordmark-logo {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  filter: invert(1);
 }
 
 .discovery-canvas {
@@ -164,6 +142,10 @@
   min-width: 0;
 }
 
+.discovery-release-intake[data-intro] .discovery-form-column {
+  grid-column: -2 / -1;
+}
+
 .discovery-question:focus {
   outline: 0;
 }
@@ -180,6 +162,19 @@
 
 .discovery-step-motion.is-back {
   animation-name: discovery-step-back;
+}
+
+.discovery-section-index {
+  animation: discovery-progress-entry 300ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes discovery-progress-entry {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 @keyframes discovery-step-forward {
@@ -201,8 +196,9 @@
 }
 
 .discovery-question h1 {
-  max-width: 21ch;
+  max-width: none;
   margin: 0;
+  text-align: start;
   font-size: clamp(2.35rem, 4.6vw, 4.8rem);
   font-weight: var(--type-weight-medium);
   letter-spacing: -0.052em;
@@ -210,18 +206,32 @@
 }
 
 .discovery-question > p {
-  max-width: 43rem;
+  max-width: none;
   margin: 1.3rem 0 0;
   color: var(--discovery-grey);
   font-size: var(--discovery-type-size-body-large);
   line-height: var(--type-leading-body);
 }
 
+.discovery-question > h1 + p {
+  margin-top: 2rem;
+}
+
+.discovery-intro-glyph {
+  margin-bottom: 2rem;
+}
+
+.discovery-release-intake .discovery-question > h1 + p,
+.discovery-release-intake[data-intro] .discovery-question > p {
+  font-size: var(--discovery-type-size-question-help);
+  font-weight: var(--type-weight-medium);
+}
+
 .discovery-options {
   display: flex;
   flex-direction: column;
   gap: 0;
-  margin-top: 2.5rem;
+  margin-top: 3rem;
   border: 1px solid var(--discovery-option-border);
 }
 
@@ -320,21 +330,55 @@
 }
 
 .discovery-progress {
-  width: 100%;
-  justify-self: stretch;
-  padding-top: 1.5rem;
+  padding-top: 0;
+}
+
+.discovery-shell {
+  --discovery-footer-height: calc(4.75rem + env(safe-area-inset-bottom, 0px));
+  padding-bottom: var(--discovery-footer-height);
+}
+
+.discovery-shell > .discovery-app,
+.discovery-shell .discovery-canvas {
+  min-height: calc(100dvh - var(--header-height) - var(--header-rule-height) - var(--discovery-footer-height));
+}
+
+.discovery-bottom-bar {
+  position: fixed;
+  inset: auto 0 0;
+  z-index: 20;
+  height: var(--discovery-footer-height);
+  padding-top: 1rem;
+  padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
+  background: var(--discovery-black);
 }
 
 .discovery-progress-labels {
   display: flex;
   align-items: baseline;
-  justify-content: flex-start;
+  justify-content: space-between;
   margin-bottom: 0.7rem;
   color: var(--discovery-white);
   font-size: var(--discovery-type-size-body);
   font-weight: var(--type-weight-medium);
   line-height: var(--type-leading-item);
   opacity: 1;
+}
+
+.discovery-progress-text {
+  opacity: 1;
+  transition: opacity 300ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.discovery-progress-text[data-hidden] {
+  opacity: 0;
+  visibility: hidden;
+}
+
+.discovery-privacy-link {
+  margin-left: auto;
+  color: var(--discovery-grey);
+  text-underline-offset: 0.2em;
 }
 
 .discovery-progress-track {
@@ -346,14 +390,13 @@
 
 .discovery-progress-track > span {
   display: block;
-  width: var(--discovery-progress);
+  width: max(2rem, var(--discovery-progress));
   height: 100%;
   background: var(--discovery-white);
-  transition: width 300ms cubic-bezier(0.22, 1, 0.36, 1);
+  transition: width 300ms ease-in-out;
 }
 
-.discovery-actions button,
-.discovery-preview-toolbar button {
+.discovery-actions button {
   min-height: 2.6rem;
   padding: 0.55rem 1rem;
   border: 1px solid var(--discovery-white);
@@ -419,6 +462,11 @@
   background: var(--discovery-soft);
 }
 
+.discovery-question > .discovery-notice {
+  width: 100%;
+  max-width: none;
+}
+
 .discovery-privacy {
   max-width: 38rem;
   margin: 2rem 0 0;
@@ -452,25 +500,27 @@
   color: var(--discovery-white);
 }
 
-.discovery-preview-toolbar {
-  min-height: 7.25rem;
+.discovery-report-actions {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 2rem;
+  flex-wrap: wrap;
+  gap: 0.75rem;
 }
 
-.discovery-preview-toolbar > div {
-  display: flex;
-  gap: 0.6rem;
+.discovery-report-error,
+.discovery-report-disclaimer {
+  margin: 1.25rem 0 0;
+  color: var(--discovery-grey);
+  font-size: var(--discovery-type-size-small);
+  line-height: var(--type-leading-body);
 }
 
-.discovery-preview-toolbar button:first-child {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.65rem;
-  background: var(--discovery-white);
-  color: var(--discovery-black);
+.discovery-report-end {
+  margin-top: 3rem;
+}
+
+.discovery-report-end .discovery-report-disclaimer {
+  margin: 0;
 }
 
 .discovery-report-pages {
@@ -480,7 +530,9 @@
 }
 
 .discovery-report-page {
-  --discovery-grey: #595959;
+  --discovery-black: var(--ink);
+  --discovery-white: var(--paper);
+  --discovery-grey: var(--muted);
   width: min(100%, 1060px);
   min-height: 780px;
   margin-inline: auto;
@@ -490,7 +542,6 @@
   background: var(--discovery-white);
   color: var(--discovery-black);
   overflow-wrap: anywhere;
-  box-shadow: none;
 }
 
 .discovery-report-page > header,
@@ -498,175 +549,121 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 1rem;
-  font-size: 0.66rem;
-  font-weight: var(--type-weight-bold);
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
+  gap: 1.5rem;
 }
 
 .discovery-report-page > header {
-  padding-top: 0.8rem;
-  border-top: var(--structural-rule-thickness) solid var(--discovery-black);
+  padding-bottom: 1.25rem;
+  border-bottom: var(--structural-rule-thickness) solid var(--discovery-black);
+}
+
+.discovery-report-page > header > img {
+  display: block;
+  width: 3.5rem;
+  height: 3.5rem;
+  flex: 0 0 auto;
+  object-fit: contain;
+}
+
+.discovery-report-title h1,
+.discovery-report-title h2 {
+  min-width: 0;
+  max-width: none;
+  margin: 0;
+  font-size: clamp(2rem, 4vw, 3.5rem);
+  font-weight: var(--type-weight-bold);
+  letter-spacing: var(--type-tracking-display);
+  line-height: var(--type-leading-heading);
+}
+
+.discovery-report-title h1:focus {
+  outline: none;
+}
+
+.discovery-report-prepared,
+.discovery-report-note {
+  margin: 1.5rem 0 2rem;
+  color: var(--discovery-grey);
+}
+
+.discovery-report-page > header + section,
+.discovery-report-page > section + section {
+  margin-top: 2.5rem;
+}
+
+.discovery-report-summary > h2,
+.discovery-report-findings > h2 {
+  margin: 0 0 1.25rem;
+  text-align: left;
+  font-size: 1.375rem;
+  font-weight: var(--type-weight-medium);
+  line-height: var(--type-leading-heading);
+}
+
+.discovery-priorities {
+  margin: 0;
+  padding-left: 1.5rem;
+}
+
+.discovery-priorities > li {
+  padding-left: 0.35rem;
+  margin-bottom: 1.75rem;
+}
+
+.discovery-priorities > li:last-child {
+  margin-bottom: 0;
+}
+
+.discovery-priorities > li::marker {
+  font-size: 1em;
+  font-weight: var(--type-weight-medium);
+}
+
+.discovery-priorities strong {
+  font-size: inherit;
+  font-weight: var(--type-weight-bold);
+}
+
+.discovery-report-summary p,
+.discovery-priorities p,
+.discovery-release-market p {
+  margin: 0;
+}
+
+.discovery-release-market {
+  margin-top: 1.75rem;
+}
+
+.discovery-release-market p + p {
+  margin-top: 1.75rem;
+}
+
+.discovery-report-summary > p + p,
+.discovery-report-summary > .discovery-report-conclusion {
+  margin-top: 1.5em;
+}
+
+.discovery-report-sources a,
+.discovery-release-market a,
+.discovery-report-assessment a {
+  color: inherit;
+  text-underline-offset: 0.15em;
+}
+
+.discovery-report-assessment {
+  margin: 2rem 0;
 }
 
 .discovery-report-page > footer {
   margin-top: auto;
   padding-top: 1rem;
   border-top: 1px solid var(--discovery-black);
+  line-height: var(--type-leading-small);
 }
 
-.discovery-report-title {
-  padding: clamp(2.5rem, 6vw, 5.5rem) 0 clamp(2rem, 4vw, 3.5rem);
-}
-
-.discovery-report-title > span {
-  display: block;
-  margin-bottom: 0.8rem;
-  color: var(--discovery-grey);
-  font-size: 0.72rem;
-}
-
-.discovery-report-title h1,
-.discovery-report-title h2 {
-  max-width: 15ch;
-  margin: 0;
-  font-size: clamp(2.5rem, 5vw, 5rem);
-  font-weight: var(--type-weight-medium);
-  letter-spacing: -0.055em;
-  line-height: 0.95;
-}
-
-.discovery-report-title p {
-  max-width: 49rem;
-  margin: 1.5rem 0 0;
-  font-size: clamp(1rem, 1.7vw, 1.3rem);
-  line-height: 1.4;
-}
-
-.discovery-report-title small {
-  display: block;
-  margin-top: 1rem;
-  color: var(--discovery-grey);
-  font-size: 0.72rem;
-}
-
-.discovery-report-scope {
-  display: grid;
-  grid-template-columns: 9rem minmax(0, 1fr);
-  gap: 1.5rem;
-  padding: 1.4rem 0;
-  border-top: 1px solid var(--discovery-line);
-}
-
-.discovery-report-scope > span {
-  font-size: 0.72rem;
-  font-weight: var(--type-weight-bold);
-}
-
-.discovery-report-scope dl {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 1rem;
-  margin: 0;
-}
-
-.discovery-report-scope dt,
-.discovery-priorities dt {
-  margin-bottom: 0.25rem;
-  color: var(--discovery-grey);
-  font-size: 0.68rem;
-  font-weight: var(--type-weight-medium);
-}
-
-.discovery-report-scope dd,
-.discovery-priorities dd {
-  margin: 0;
-  font-size: 0.85rem;
-  font-weight: var(--type-weight-regular);
-}
-
-.discovery-priorities {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.discovery-priorities > li {
-  display: grid;
-  grid-template-columns: 3rem minmax(0, 1fr);
-  gap: 1.5rem;
-  padding: 1.5rem 0;
-  border-top: 1px solid var(--discovery-line);
-}
-
-.discovery-priorities > li > span {
-  font-size: 0.8rem;
-  font-weight: var(--type-weight-bold);
-}
-
-.discovery-priorities h3 {
-  margin: 0 0 1rem;
-  font-size: clamp(1.3rem, 2vw, 1.8rem);
-  font-weight: var(--type-weight-medium);
-}
-
-.discovery-priorities small {
-  color: var(--discovery-grey);
-  font-size: 0.68rem;
-}
-
-.discovery-priorities p {
-  max-width: 48rem;
-  margin: 0.35rem 0 1.2rem;
-  font-size: 0.88rem;
-  line-height: 1.45;
-}
-
-.discovery-priorities dl {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 1rem;
-  margin: 0;
-}
-
-.discovery-report-title--compact {
-  padding-top: clamp(2.25rem, 4vw, 3.5rem);
-  padding-bottom: clamp(1.5rem, 3vw, 2.25rem);
-}
-
-.discovery-report-title--compact h2 {
-  max-width: 18ch;
-  font-size: clamp(2.25rem, 4vw, 4rem);
-}
-
-.discovery-delivery-block {
-  display: grid;
-  grid-template-columns: 9rem minmax(0, 1fr);
-  gap: 1.5rem;
-  padding: 1.35rem 0;
-  border-top: 1px solid var(--discovery-line);
-  break-inside: avoid;
-  page-break-inside: avoid;
-}
-
-.discovery-delivery-block > span {
-  font-size: 0.7rem;
-  font-weight: var(--type-weight-bold);
-}
-
-.discovery-delivery-block p {
-  max-width: 46rem;
-  margin: 0;
-  font-size: 0.9rem;
-  line-height: 1.45;
-}
-
-.discovery-delivery-block small {
-  display: block;
-  margin-top: 0.65rem;
-  color: var(--discovery-grey);
-  font-size: 0.68rem;
+.discovery-report-page > footer > span:last-child {
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .sr-only {
@@ -692,7 +689,8 @@
   line-height: var(--type-leading-small);
 }
 
-.discovery-release-field input {
+.discovery-release-field input,
+.discovery-release-field textarea {
   width: 100%;
   min-height: 4.2rem;
   padding: 0.8rem 0;
@@ -704,13 +702,61 @@
   font-size: var(--type-size-item-heading);
 }
 
-.discovery-release-field input::placeholder {
+.discovery-release-field input::placeholder,
+.discovery-release-field textarea::placeholder {
   color: var(--discovery-grey);
 }
 
-.discovery-release-field input:focus-visible {
+.discovery-release-field input:focus-visible,
+.discovery-release-field textarea:focus-visible {
   outline: 0;
   box-shadow: inset 0 -1px 0 var(--discovery-white);
+}
+
+.discovery-question > .discovery-actions {
+  margin-top: 3rem;
+}
+
+.discovery-answer-context {
+  margin-top: 3rem;
+}
+
+.discovery-answer-divider {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  color: var(--discovery-grey);
+  font-size: var(--discovery-type-size-small);
+  font-weight: var(--type-weight-medium);
+  line-height: var(--type-leading-small);
+  text-align: center;
+}
+
+.discovery-answer-divider::before,
+.discovery-answer-divider::after {
+  content: "";
+  height: 1px;
+  flex: 1;
+  background: var(--discovery-option-border);
+}
+
+.discovery-answer-context .discovery-release-field {
+  margin-top: 1.5rem;
+}
+
+.discovery-release-field textarea {
+  display: block;
+  resize: none;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+}
+
+.discovery-research-sources {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1.25rem;
+  margin-top: 1.5rem;
+  font-size: var(--discovery-type-size-small);
 }
 
 .discovery-release-context-review > dl {
@@ -753,14 +799,6 @@
   align-items: center;
 }
 
-.discovery-release-selection-limit {
-  margin: 0.8rem 0 0;
-  color: var(--discovery-grey);
-  font-size: var(--discovery-type-size-small);
-  font-weight: var(--type-weight-medium);
-  line-height: var(--type-leading-small);
-}
-
 .discovery-question > h1:focus {
   outline: none;
 }
@@ -770,25 +808,16 @@
   outline: none;
 }
 
-.discovery-privacy a {
-  color: inherit;
-  text-underline-offset: 0.2em;
-}
-
-.discovery-release-intake .discovery-progress-labels {
+.discovery-bottom-bar .discovery-progress-labels {
   margin-top: 0.7rem;
   margin-bottom: 0;
-}
-
-.discovery-release-report .discovery-preview-toolbar > div {
-  align-items: center;
-  flex-wrap: wrap;
 }
 
 .discovery-release-review-link {
   min-height: 2.6rem;
   display: inline-flex;
   align-items: center;
+  gap: 0.7rem;
   padding: 0.55rem 1rem;
   border: 1px solid var(--discovery-white);
   border-radius: 999px;
@@ -799,92 +828,79 @@
   text-decoration: none;
 }
 
-.discovery-release-local-note {
-  color: var(--discovery-grey);
-  font-size: var(--discovery-type-size-small);
-  font-weight: var(--type-weight-medium);
-  line-height: var(--type-leading-small);
-}
-
-.discovery-release-opportunities dl {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-
-.discovery-release-validation ul {
-  margin: 0;
-  padding-left: 1rem;
-  font-size: 0.8rem;
-  line-height: 1.45;
-}
-
-.discovery-release-market > ul {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 1rem;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.discovery-release-market strong,
-.discovery-release-market p,
-.discovery-release-market a {
-  font-size: 0.7rem;
-  line-height: 1.35;
-}
-
-.discovery-release-market strong {
-  font-weight: var(--type-weight-medium);
-}
-
-.discovery-release-market p {
-  margin: 0.35rem 0;
-}
-
-.discovery-release-market a {
-  color: var(--discovery-grey);
-}
-
-.discovery-release-market-empty p {
-  color: var(--discovery-grey);
-}
-
 @media screen {
-  .discovery-report-page > header,
-  .discovery-report-page > footer,
-  .discovery-report-title > span,
-  .discovery-report-title small,
-  .discovery-report-scope > span,
-  .discovery-report-scope dt,
-  .discovery-priorities dt,
-  .discovery-priorities small,
-  .discovery-delivery-block > span,
-  .discovery-delivery-block small {
-    font-size: var(--discovery-type-size-report-label);
+  .discovery-report-page {
+    --discovery-black: inherit;
+    --discovery-white: inherit;
+    --discovery-grey: inherit;
+    width: 100%;
+    min-height: 0;
+    margin: 0;
+    padding: 0;
+    background: transparent;
+    color: inherit;
   }
 
-  .discovery-report-scope dd,
-  .discovery-priorities dd,
-  .discovery-priorities > li > span {
+  .discovery-report-pages {
+    gap: 3rem;
+  }
+
+  .discovery-report-page > header {
+    padding: 0;
+    border: 0;
+  }
+
+  .discovery-report-page > header > img,
+  .discovery-report-page > footer {
+    display: none;
+  }
+
+  .discovery-report-title h1 {
+    font-size: clamp(2.35rem, 4.6vw, 4.8rem);
+    font-weight: var(--type-weight-medium);
+    letter-spacing: -0.052em;
+    line-height: 0.98;
+  }
+
+  .discovery-report-title h2 {
+    font-size: var(--type-size-section-title);
+    font-weight: var(--type-weight-medium);
+  }
+
+  .discovery-report-findings .discovery-priorities {
+    margin-bottom: 0;
+  }
+
+  .discovery-report-note,
+  .discovery-report-prepared {
     font-size: var(--discovery-type-size-report-meta);
   }
 
+  .discovery-priorities,
   .discovery-priorities p,
-  .discovery-delivery-block p,
-  .discovery-release-validation ul {
+  .discovery-report-summary p,
+  .discovery-report-assessment,
+  .discovery-release-market p {
     font-size: var(--discovery-type-size-report-body);
     line-height: var(--type-leading-body);
   }
+}
 
-  .discovery-release-market strong,
-  .discovery-release-market p,
-  .discovery-release-market a {
-    font-size: var(--discovery-type-size-report-meta);
-    line-height: var(--type-leading-small);
+@media screen and (min-width: 901px) {
+  .discovery-report-sidebar {
+    position: sticky;
+    top: calc(var(--header-height) + 1.5rem);
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .discovery-report-reading {
+    grid-column: 2;
+    grid-row: 1;
   }
 }
 
-@media (max-width: 900px) {
+@media screen and (max-width: 900px) {
   .discovery-interaction {
     grid-template-columns: minmax(0, 1fr);
     row-gap: 2rem;
@@ -907,24 +923,10 @@
   }
 }
 
-@media (max-width: 767px) {
-  .discovery-release-opportunities dl,
-  .discovery-release-market > ul {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
+@media screen and (max-width: 767px) {
   .discovery-release-context-review > dl > div {
     grid-template-columns: minmax(0, 1fr);
     gap: 0.4rem;
-  }
-
-  .discovery-release-report .discovery-preview-toolbar > div {
-    align-items: flex-end;
-  }
-
-  .discovery-preview-toolbar .wordmark {
-    width: 4rem;
-    height: 3rem;
   }
 
   .discovery-canvas {
@@ -938,10 +940,6 @@
   .discovery-interaction {
     padding-top: clamp(2rem, 7vw, 3rem);
     padding-bottom: 2rem;
-  }
-
-  .discovery-progress {
-    padding-top: 1rem;
   }
 
   .discovery-question h1 {
@@ -959,9 +957,12 @@
     flex-direction: column-reverse;
   }
 
-  .discovery-release-website .discovery-actions,
-  .discovery-release-context-review .discovery-actions {
+  .discovery-release-website .discovery-actions {
     flex-direction: column-reverse;
+  }
+
+  .discovery-release-website .discovery-actions > div {
+    align-items: flex-start;
   }
 
   .discovery-release-context-actions {
@@ -969,34 +970,10 @@
     flex-direction: column !important;
   }
 
-  .discovery-preview-toolbar {
-    min-height: auto;
-    padding-top: 1rem;
-    padding-bottom: 1rem;
+  .discovery-report-title h1 {
+    font-size: clamp(2.25rem, 11vw, 3.75rem);
   }
 
-  .discovery-preview-toolbar > div {
-    flex-direction: column;
-    align-items: flex-end;
-  }
-
-  .discovery-report-page {
-    min-height: 690px;
-  }
-
-  .discovery-report-scope {
-    grid-template-columns: 1fr;
-    gap: 0.8rem;
-  }
-
-  .discovery-priorities dl {
-    grid-template-columns: 1fr;
-  }
-
-  .discovery-delivery-block {
-    grid-template-columns: 1fr;
-    gap: 0.65rem;
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1011,46 +988,60 @@
 }
 
 @media print {
-  @page {
+  @page discovery-report {
     size: A4 portrait;
     margin: 0;
   }
 
-  body:has(.discovery-preview) {
-    background: #f5f5f5 !important;
+  body:has(.discovery-release-report) {
+    margin: 0 !important;
+    background: var(--paper) !important;
   }
 
-  body:has(.discovery-preview) .page-loader,
-  .site-header--discovery,
-  .discovery-preview-toolbar {
+  body:has(.discovery-release-report) .page-loader,
+  body:has(.discovery-release-report) .site-header,
+  .discovery-report-sidebar,
+  .discovery-report-end,
+  .discovery-bottom-bar {
     display: none !important;
   }
 
-  .discovery-preview {
+  .discovery-shell:has(.discovery-release-report),
+  .discovery-release-report {
+    min-height: 0 !important;
     padding: 0 !important;
-    background: #f5f5f5 !important;
-    -webkit-print-color-adjust: exact;
-    print-color-adjust: exact;
+    background: var(--paper) !important;
+  }
+
+  .discovery-release-report .discovery-canvas,
+  .discovery-report-layout,
+  .discovery-report-reading {
+    display: block;
+    width: 100%;
+    min-height: 0;
+    margin: 0;
+    padding: 0;
   }
 
   .discovery-report-pages {
+    display: block;
     width: 100% !important;
     margin: 0 !important;
     padding: 0 !important;
-    gap: 0 !important;
   }
 
   .discovery-report-page {
+    page: discovery-report;
     width: 210mm !important;
     height: 297mm !important;
     min-height: 297mm !important;
     margin: 0 !important;
-    padding: 14mm !important;
+    padding: 20mm !important;
     box-shadow: none !important;
-    background: #f5f5f5 !important;
-    color: #111111 !important;
+    background: var(--paper) !important;
+    color: var(--ink) !important;
+    font-size: 9pt;
     line-height: 1.5;
-    overflow: hidden !important;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
     break-after: page;
@@ -1058,75 +1049,84 @@
     page-break-inside: avoid;
   }
 
-  .discovery-release-report .discovery-report-title {
-    padding-top: 12mm;
-    padding-bottom: 7mm;
+  .discovery-report-page > * {
+    flex-shrink: 0;
+  }
+
+  .discovery-report-page > header {
+    padding-bottom: 5mm;
+  }
+
+  .discovery-report-page > header > img {
+    width: 12mm;
+    height: 12mm;
+  }
+
+  .discovery-report-page > footer,
+  .discovery-report-prepared,
+  .discovery-report-note {
+    font-size: 8pt;
+    line-height: 1.4;
+  }
+
+  .discovery-report-page > footer {
+    padding-top: 3mm;
+  }
+
+  .discovery-report-prepared,
+  .discovery-report-note {
+    margin: 5mm 0 8mm;
+  }
+
+  .discovery-report-page > header + section,
+  .discovery-report-page > section + section {
+    margin-top: 10mm;
   }
 
   .discovery-release-report .discovery-report-title h1,
   .discovery-release-report .discovery-report-title h2 {
-    font-size: 12mm;
+    font-size: 9mm;
   }
 
-  .discovery-release-report .discovery-report-title h1,
-  .discovery-release-report .discovery-report-title h2,
-  .discovery-release-report .discovery-report-title p,
-  .discovery-release-report .discovery-priorities h3,
-  .discovery-release-report .discovery-priorities p,
-  .discovery-release-report .discovery-priorities dd,
-  .discovery-release-report .discovery-delivery-block p,
-  .discovery-release-report .discovery-release-validation li,
-  .discovery-release-report .discovery-release-market li p {
-    display: -webkit-box;
-    overflow: hidden;
-    -webkit-box-orient: vertical;
+  .discovery-report-summary > h2,
+  .discovery-report-findings > h2 {
+    margin: 0 0 5mm;
+    font-size: 13pt;
   }
 
-  .discovery-release-report .discovery-report-title h1,
-  .discovery-release-report .discovery-report-title h2 {
-    -webkit-line-clamp: 2;
+  .discovery-priorities {
+    padding-left: 5mm;
+    font-size: 9pt;
   }
 
-  .discovery-release-report .discovery-report-title p,
-  .discovery-release-report .discovery-priorities p {
-    -webkit-line-clamp: 3;
-  }
-
-  .discovery-release-report .discovery-priorities h3,
-  .discovery-release-report .discovery-release-validation li {
-    -webkit-line-clamp: 2;
-  }
-
-  .discovery-release-report .discovery-priorities dd,
-  .discovery-release-report .discovery-delivery-block p,
-  .discovery-release-report .discovery-release-market li p {
-    -webkit-line-clamp: 2;
-  }
-
-  .discovery-release-report .discovery-report-title p {
-    margin-top: 4mm;
-    font-size: 3.6mm;
-  }
-
-  .discovery-release-report .discovery-report-scope,
-  .discovery-release-report .discovery-delivery-block,
-  .discovery-release-report .discovery-priorities > li {
-    padding-top: 4mm;
-    padding-bottom: 4mm;
-  }
-
-  .discovery-release-report .discovery-priorities h3 {
-    margin-bottom: 2mm;
-    font-size: 5mm;
+  .discovery-priorities > li {
+    padding-left: 1mm;
+    margin-bottom: 6mm;
   }
 
   .discovery-release-report .discovery-priorities p {
-    margin-bottom: 3mm;
-    font-size: 3mm;
+    font-size: 9pt;
+    line-height: 1.5;
+  }
+
+  .discovery-release-market {
+    margin-top: 6mm;
+  }
+
+  .discovery-release-market p {
+    font-size: 9pt;
+    line-height: 1.5;
+  }
+
+  .discovery-release-market p + p {
+    margin-top: 6mm;
+  }
+
+  .discovery-report-assessment {
+    margin: 8mm 0;
   }
 
   .discovery-report-page--final {
     break-after: auto;
   }
-
 }

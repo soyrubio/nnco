@@ -69,8 +69,9 @@ responsive sizes, but they inherit the shared weight, tracking and leading
 roles.
 
 Discovery owns a compact scoped scale: 14px medium for small interface text,
-16px regular for body text and 17px for emphasized body copy. Its on-screen
-report uses 13px labels, 14px metadata and 15px body copy. The print report is
+16px regular for body text and 19px medium for introduction copy and
+question subtext. Its on-screen report uses 14px metadata and the shared
+17–19px large-body scale. The print report is
 the deliberate exception: its fixed A4 measurements and pagination geometry
 remain explicit and must not inherit screen-size changes. Its typeface still
 inherits the shared `--font-sans` token.
@@ -220,8 +221,8 @@ The structure is deliberately blocky:
 - `BrandLogo`: the canonical primary identity is the static 700×700 Group 97
   SVG. Compact placements retain the previous 720×700 outer footprint without
   stretching the square artwork: 60px high in the desktop header, 40px in the
-  mobile header and 48px in the footer. The discovery report toolbar keeps its
-  existing fixed box. Dark placements invert the same black source mark.
+  mobile header and 48px in the footer. Each discovery report page uses the same mark above its structural rule;
+  the on-screen report has no repeated logo or navigation header. Dark placements invert the same black source mark.
 - Header, footer, discovery and Organization metadata use that one versioned
   primary asset. Favicons keep the same geometry as a paper mark on an ink
   tile, with a small safe area so the mark remains legible at tab size and
@@ -467,24 +468,70 @@ The structure is deliberately blocky:
   its CTA in either state and falls back to `Book a call` at `/contact`.
 - Discovery is one calm diagnostic canvas, not a dashboard or cockpit.
 - The discovery workspace is canonical ink `#111111` with paper text
-  `#f5f5f5`. Report pages remain paper artifacts on the dark workspace.
+  `#f5f5f5`, including the on-screen report. Paper pages appear only in print.
+- Discovery opens with a short introduction in the existing right-hand content
+  column, explaining what Opportunity Discovery is and what information it uses.
+  It introduces the report before describing possible uses of AI, in plain language.
+  Its heading places `NNCo.` on its own line above `Opportunity Discovery`.
+  A static, symmetric Core perimeter glyph from the shared modular library sits
+  above the heading at the standard card-glyph size. It is decorative, uses paper on ink
+  and appears only on the introduction. It moves with the intro's existing
+  transition, without a separate animation.
+  The step index and progress text are absent on this screen. The bottom rule
+  starts at full width, with a grey Privacy policy link aligned to its right
+  below the rule. The link matches the progress text's size and weight.
+  `Start Discovery` opens the website step with the same 300ms forward entry
+  as the questionnaire.
+  The step index and progress text fade in over the same 300ms while the rule
+  contracts to the current progress with a 300ms ease-in-out width transition.
+  Progress starts at 0% and counts completed
+  steps, reaching 100% only after Controls. The rule keeps a 2rem minimum width
+  at zero without changing the displayed or accessible percentage.
+  The website step includes
+  `Back` to return to the explainer with the standard backward entry, preserving
+  any entered website.
+  On smaller screens the introduction uses the shared single-column layout.
 - The public company website is the preferred first input, not a requirement.
-  The server reads no more than three public same-host pages and then shows the
-  interpreted company name, sector, public context and pages read on a calm
-  confirmation screen before the questionnaire begins.
+  The server uses sourced AI research to suggest questionnaire answers. A short
+  intermediary notice names the company and asks the user to review the
+  prefilled information in the following questions. Source links remain
+  available here. Continuing from this notice does not confirm any answers.
 - A user who does not provide a website selects a sector instead. The manual
-  path contains Sector, Workflow, Friction, Frequency, Systems and Controls;
-  the website path contains Website followed by the same five diagnostic
-  questions. Both paths therefore stay within six steps.
-- Sector is inferred from public context or selected on the manual path and
+  and researched paths both review Sector, Workflow, Friction, Frequency,
+  Systems and Controls. Website entry and the intermediary notice precede
+  these six review steps; prefilled questions are never silently skipped.
+- Sector is suggested from public context or selected on the manual path and
   routes Banking, Insurance, Healthcare, Capital Markets and general workflows
-  into their relevant options.
-- One dominant question and exactly one choice surface are visible at a time.
+  into their relevant options. A sector correction removes incompatible
+  selected options while preserving the user's written context.
+- One dominant question is visible at a time. Titles are simple, professional
+  questions addressed to the user, without "we". Helpful subtext uses the
+  larger medium-weight paragraph style; omit subtext that only explains
+  implementation. Website and email fields
+  keep screen-reader labels, but visually use clear placeholders. Extra helper
+  paragraphs are omitted; validation errors appear only when needed. Error
+  notices span the full form column, without the prose paragraph width cap.
+  Discovery placeholders give instructions, such as "Provide your company URL",
+  rather than example values. Across the introduction and questionnaire,
+  titles and supporting paragraphs use the full form width. Titles retain
+  natural word spacing. All introduction and question text is start-aligned,
+  without justification. Leave 2rem between each title and its supporting
+  paragraph; subsequent introduction paragraphs retain their 1.3rem gap.
 - Workflow accepts one or two related processes and assesses them together as
-  one operating scope.
-- Required free text is deliberately absent from the diagnostic. The website
-  is the only text entry before the contact gate; the remaining five answers
-  use single-select or multi-select options.
+  one operating scope. Research reuses canonical options when possible and may
+  add up to three short company-specific process labels. Suggested selections
+  remain editable and become reported answers only after the user reviews them.
+- Every multi-select question includes an optional text area below its choices,
+  separated by a quiet rule labelled "Or add your own answer". Users can select
+  options, write an answer, or do both. Nonblank text can satisfy the question
+  without a selection, with a 1,000-character limit. Frequency stays single-select.
+  These fields start at one line, matching the website and email fields' type
+  size, weight and minimum height. They grow as text wraps or adds line breaks,
+  and shrink when text is removed. Recalculate their height when returning to
+  an answer, resizing the viewport or loading the font. Do not show an internal
+  scrollbar or a manual resize handle.
+  Leave 3rem before choices, before the additional-answer block and before
+  navigation, with 1.5rem between the separator and text area.
 - Single-select choice sets are one connected ruled stack: no gaps, no radio
   dots and no doubled borders. Multi-select choice sets wrap as compact,
   content-width pills so their selection model is visually distinct.
@@ -496,21 +543,95 @@ The structure is deliberately blocky:
   rail: a stable six-step progress view on the left and the single active input
   or choice set on the right. Left-side step labels never carry subtitles. The
   5px bottom rule follows the active step, with progress text below the rule.
+  This bottom area stays fixed and visible throughout Discovery, including
+  loading and the on-screen report. Content reserves space above it on desktop
+  and mobile. Its one Privacy policy link replaces repeated links and detailed
+  processing notices in questions. Returning
+  to the explainer expands the rule to full width and hides progress text.
+  The bottom area is excluded from the printed report.
 - Work email is required only after all six diagnostic steps. Organisation is
   taken from enriched context when available and recorded as not provided on
   the manual path. A public competitor comparison is an optional selection-only
   screen on the website path after the diagnostic; there is no competitor-name
   text field. The following contact screen contains only the work-email input.
-  Its submit acknowledgement states the processing purpose, one-result
-  follow-up, 90-day retention and the role of OpenAI before submission.
+  Its subtext acknowledges the processing purpose and one-result follow-up.
+  The persistent Privacy policy link provides retention and processor details.
 - Analysis is a full black transition with the hard-cut block loader and the
   approved activity statement. Do not use simulated timers or invented stages.
-- The result is exactly two useful pages: what NNCo. understood and where to act.
-  Report claims distinguish reported answers, public facts and inference.
-  Competitor notes appear only when requested and include direct public sources.
-- Browser print is the only PDF exporter. Print CSS produces exactly two A4
-  pages and excludes intake, toolbar and contact controls. Displayed copy is
-  bounded for A4 without changing the stored diagnostic.
+- The on-screen result retains the questionnaire's left/right grid and shared
+  content rail. A sticky left column contains only the Save PDF and Contact NNCo.
+  buttons, without arrows, a heading or helper text; report
+  text flows down the right column with normal document scrolling, without
+  paper panels, page numbers, repeated logos or a nested scroll container.
+  There is one action group, never a repeated set. At the questionnaire's 900px
+  breakpoint, it moves into normal flow below the report. One on-screen
+  disclaimer follows the report text at every size. PDF preparation errors
+  appear there only when needed, outside the action column.
+- The report explains its purpose and evidence before discussing possible AI
+  improvements. It has four sections across two pages. Page one starts with
+  About this report, a fixed plain-language explanation. What we understand
+  about [company] combines the important inputs and their meaning in one
+  AI-written paragraph. Always name the company in the heading and summary
+  when supplied; do not invent a name on the manual path. Include systems,
+  frequency and requirements when they help explain the work. Up to three
+  public research links follow.
+  Page two presents Where AI might help, with zero, one or two opportunities,
+  then One area in more detail. Choose the area most closely tied to the
+  reported problem and use a clear, concrete example. Two numbered
+  paragraphs explain a concrete example, then its possible benefit and limit;
+  they are not implementation steps or additional opportunities. Unanswered
+  questions and a brief conclusion finish this section. If no opportunity is
+  supported, use What we still need to know and explain what is missing.
+  Use relevant supplied detail when available. With sparse answers, choose a
+  focus from those answers, the company website and a clearly labelled sector
+  example. Do not add broader research to fill gaps or present a sector example
+  as the company's actual problem. Acknowledge existing AI use instead of
+  proposing it as a new capability. Claims distinguish reported answers,
+  public facts and inference; public-information examples state that no company
+  answers were supplied. AI cannot recover absent facts, and a repetitive task
+  or simple lookup alone does not establish value. Reports do not recommend
+  named tools, vendors, new workflows, pilots or implementation plans, or promise
+  savings, accuracy or compliance. Requested, sourced competitor comparisons
+  follow the company summary on page one.
+- Browser print is the only PDF exporter. Users select Save as PDF in the print
+  dialog. Save PDF waits for the site fonts and report logos,
+  then opens the print dialog. A named print page produces two A4 sheets with
+  20mm insets and excludes the site header, loader, action group, on-screen disclaimer and progress
+  footer. Responsive screen breakpoints do not affect the paper layout.
+- Each report page has a large bold title on the left and the official mark on
+  the right. The only horizontal rules are below the header and above the
+  footer. Each numbered item is one paragraph with an inline bold lead-in and
+  full stop, never an internal heading. Numbers and prose share the same type
+  size. Print leaves 6mm between numbered paragraphs, 5mm below section titles
+  and 10mm between sections. The footer reads: Prepared by NNCo.
+  automated Opportunity Discovery process. Not a formal assessment.
+- Report writing follows Simplified Technical English principles: familiar
+  words, active voice, one topic per paragraph, consistent terms and sentences
+  of at most 25 words. Remove filler and repetition without losing evidence or
+  uncertainty. Explain the work for a reader with no AI knowledge. Prefer
+  concrete examples and ordinary verbs to terms such as retrieval, traceable
+  outputs, target fields or AI suitability. These are writing guidelines, not a claim of STE certification.
+  Add depth through relevant distinctions and the significance of the supplied
+  facts, not repeated caveats or stock sector paragraphs. When input is sparse,
+  a sector example may illustrate a relevant possibility if clearly labelled. Page two ends with
+  a short invitation to a formal assessment and a linked NNCo. contact address.
+- New reports have two closer-look paragraphs; older reports may contain one.
+  Shared backend and display limits allow zero to two opportunities. The combined company summary is capped at 900
+  characters, bold lead-ins at 56, each finding at 220 plus 80 evidence characters,
+  and each opportunity overview at 220 characters. The supporting 120-character
+  human-check and 120-character requirement fields, and finding evidence fields,
+  remain in stored reports but are not printed; the closer look explains the
+  relevant benefit and limit in complete paragraphs. Public notes are capped at two, with
+  40-character names, 60-character descriptions and 40-character source labels.
+  The final section has a 240-character account of the unknowns and a
+  100-character conclusion chosen from complete sentences for potential value,
+  a weak case or insufficient information. The response schema carries the text caps. If generation ends a field
+  mid-sentence at its limit, keep only its complete sentences. Storage
+  validation continues to accept older, longer reports;
+  display uses the current limits. These are ceilings,
+  not targets: do not fill space when the supplied evidence is thin. Full
+  submitted answers remain unchanged. Print uses
+  fixed A4 sizes and never clips content with hidden overflow or line clamps.
 - Discovery and its print report consume the same Geist-backed `--font-sans`
   token as the marketing site.
 - Structural panels stay square. Interactive action buttons and multi-select
@@ -532,8 +653,9 @@ The structure is deliberately blocky:
   viewport and replays when it reaches the threshold again.
 - Outside those text reveals, fades and crossfades are not used except for the
   shared navigation header's 560ms background-colour transition, its mega-menu
-  content reveal, and the homepage Private AI scene's boundary handoff. Every
-  other surface change remains instant.
+  content reveal, the homepage Private AI scene's boundary handoff, and the
+  Discovery step index and progress text's 300ms entry. Every other surface
+  change remains instant.
 - Discovery questions use a keyed 300ms horizontal entry only: forward
   arrives from the right and Back arrives from the left. There is no opacity,
   scale, bounce, stagger or option-selection motion.
@@ -571,7 +693,8 @@ The structure is deliberately blocky:
   animation and reinitialises after Astro page swaps. Page-load sequences and
   interaction state transitions keep their own lifecycle.
 - Respect `prefers-reduced-motion`.
-- Keep persistent labels above fields.
-- Never use placeholder text as the only label.
+- Keep persistent labels above marketing fields. Discovery uses visually hidden
+  labels and clear placeholders within its title, subtext and input composition.
+- Never use placeholder text as the only accessible label.
 - Text, borders, focus styles and form states must meet WCAG AA contrast.
 - The form and chat must feed one canonical state. Neither is a second funnel.

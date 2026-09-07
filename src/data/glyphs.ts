@@ -140,3 +140,14 @@ export const cardGlyphSets = {
     allocateLibraryGlyph("aperture", "protected-core"), // Say when not to build
   ],
 } as const satisfies Record<string, readonly ModularGlyphDefinition[]>;
+
+// Reuse this exact symmetric pattern rather than allocating a different variant.
+const discoveryFocus = libraryById.get("core-perimeter");
+if (!discoveryFocus) throw new Error("Missing core-perimeter glyph.");
+
+export const discoveryIntroGlyph = {
+  libraryId: discoveryFocus.id,
+  gridSize: discoveryFocus.gridSize,
+  cells: discoveryFocus.cells,
+  symmetry: "rotational",
+} as const satisfies ModularGlyphDefinition;
