@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { DISCOVERY_MESSAGE_MAX_LENGTH } from "../src/lib/discovery.ts";
+import { DISCOVERY_MESSAGE_MAX_LENGTH } from "../src/lib/discovery-domain.ts";
 import { handleTranscriptionRequest } from "../src/server/transcription-handler.ts";
 
 const API_URL = "http://localhost:4321/api/transcriptions";

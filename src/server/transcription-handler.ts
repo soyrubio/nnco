@@ -3,7 +3,7 @@ import {
   isSameOrigin,
   readBoundedBody,
 } from "./request-guards.ts";
-import { DISCOVERY_MESSAGE_MAX_LENGTH } from "../lib/discovery.ts";
+import { DISCOVERY_MESSAGE_MAX_LENGTH } from "../lib/discovery-domain.ts";
 
 const MAX_AUDIO_BYTES = 4 * 1024 * 1024;
 const MAX_REQUEST_BYTES = MAX_AUDIO_BYTES + 64 * 1024;

@@ -5,7 +5,7 @@ import {
   createInitialSnapshot,
   discoveryReducer,
   getQuestions,
-} from "../src/lib/discovery.ts";
+} from "../src/lib/discovery-domain.ts";
 import { LEAD_CONSENT_VERSION } from "../src/lib/lead-contract.ts";
 import {
   handleLeadRequest,
