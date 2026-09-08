@@ -439,7 +439,10 @@ The structure is deliberately blocky:
   and an All posts button with a backward arrow on the left, and only
   Markdown on the right. At 767px and below metadata moves above the full-width
   body. The shared Start here terminal section and footer follow the article.
-- `Meet the team`: one vertical stack of wide editorial profile cards. Each desktop card
+- `Meet the team`: a shared introduction about direct access to the people who
+  build, followed by one vertical stack of wide editorial profile cards.
+  Public role labels use CEO, AI Product, AI Engineering, Operations and
+  Technology & Security, without interim or advisory qualifiers. Each desktop card
   divides evenly into a square monochrome portrait on the left and the name,
   role and biography on the right. The card stack occupies the full available
   content column. The complete name, role and biography group aligns to the

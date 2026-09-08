@@ -13,7 +13,7 @@ import SectionAnatomy from "@/components/SectionAnatomy.astro";
 import SectionFrame from "@/components/SectionFrame.astro";
 import { faqByPage } from "@/data/faq";
 import { cardGlyphSets } from "@/data/glyphs";
-import { team, waysOfWorking } from "@/data/site";
+import { team, teamIntro, waysOfWorking } from "@/data/site";
 import { buildFaqSchema } from "@/lib/schema";
 
 export const prerender = true;
@@ -76,6 +76,7 @@ const faqSchema = buildFaqSchema(faq, "/company");
 
     <SectionFrame id="team" labelledBy="team-title" class="team-section">
       <SectionAnatomy title="Meet the team" titleId="team-title">
+        <p class="editorial-section__body">{teamIntro}</p>
         <div class="team-grid team-grid--detailed">
           {
             team.map((person) => (
