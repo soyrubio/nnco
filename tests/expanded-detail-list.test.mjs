@@ -309,7 +309,7 @@ test("linked cards share the outlined arrow and complete inversion state", () =>
 test("Company How we work renders canonical data as homepage-style grey cards", () => {
   assert.match(
     sources.company,
-    /import EditorialCard[\s\S]*?import EditorialCardLayer[\s\S]*?import \{ cardGlyphSets \} from "@\/data\/glyphs";[\s\S]*?import \{ team, waysOfWorking \}[\s\S]*?<SectionAnatomy title="How we work" titleId="work-title" contentWidth="50">\s*<EditorialCardLayer colSize=\{1\}>[\s\S]*?waysOfWorking\.map\(\(item, index\) => \([\s\S]*?<EditorialCard[\s\S]*?title=\{item\.title\}[\s\S]*?text=\{item\.description\}[\s\S]*?glyph=\{cardGlyphSets\.companyWaysOfWorking\[index\]\}[\s\S]*?<\/EditorialCardLayer>/,
+    /import EditorialCard[\s\S]*?import EditorialCardLayer[\s\S]*?import \{ cardGlyphSets \} from "@\/data\/glyphs";[\s\S]*?import \{ team, teamIntro, waysOfWorking \}[\s\S]*?<SectionAnatomy title="How we work" titleId="work-title" contentWidth="50">\s*<EditorialCardLayer colSize=\{1\}>[\s\S]*?waysOfWorking\.map\(\(item, index\) => \([\s\S]*?<EditorialCard[\s\S]*?title=\{item\.title\}[\s\S]*?text=\{item\.description\}[\s\S]*?glyph=\{cardGlyphSets\.companyWaysOfWorking\[index\]\}[\s\S]*?<\/EditorialCardLayer>/,
   );
   assert.doesNotMatch(sources.company, /ExpandedDetailList/);
   assert.doesNotMatch(sources.company, /CompanyAccordion/);
