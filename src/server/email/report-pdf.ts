@@ -44,7 +44,7 @@ export async function renderReportPdf(
   });
   const generatedAt = new Date(report.generatedAt);
   doc.setTitle(copy.title);
-  doc.setAuthor("NNCo.");
+  doc.setAuthor("NNCo");
   doc.setCreationDate(generatedAt);
   doc.setModificationDate(generatedAt);
   let page: PDFPage;
@@ -132,7 +132,7 @@ export async function renderReportPdf(
     });
     // The disclaimer is intentionally split to match its natural browser wrap.
     page.drawText(
-      "Prepared by NNCo. automated Opportunity Discovery process.",
+      "Prepared by NNCo automated Opportunity Discovery process.",
       {
         x: inset,
         y: height - footerTop - 3 * mm - 8,

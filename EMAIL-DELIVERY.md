@@ -3,7 +3,7 @@
 Cloudflare continues to serve the website, validate submissions, save leads and
 request the AI report. A Supabase Edge Function sends email through Resend.
 It also creates the PDF attachment with bundled Geist fonts and the official
-NNCo. logo. It does not call AI or research a company again.
+NNCo logo. It does not call AI or research a company again.
 
 The PDF renderer runs outside Cloudflare because the free Worker CPU allowance
 is too small for font embedding and PDF layout. Supabase includes Edge Function
@@ -17,13 +17,13 @@ Current allowances: [Supabase pricing](https://supabase.com/docs/guides/function
 - Each completed version-two report sends a PDF to the submitted work email.
 - Each new contact enquiry sends a notification to `marek@nnco.ai`.
 - New Discovery submissions request the report and a related personal email
-  discussing the findings and how NNCo. could help. The request wording version
+  discussing the findings and how NNCo could help. The request wording version
   is saved in the lead snapshot, with the submission timestamp on the lead.
   Notifications identify this request; it is not an ongoing marketing subscription.
   Older submissions retain their original optional follow-up choice.
 - Notifications use the visitor's address as Reply-To. Report emails use
   `marek@nnco.ai` as Reply-To. The default sender is
-  `NNCo. Discovery <discovery@nnco.ai>`.
+  `NNCo Discovery <discovery@nnco.ai>`.
 - Earlier records are not backfilled by these migrations. Previously completed
   version-one reports keep their browser export and are not automatically emailed.
 

@@ -190,7 +190,7 @@ async function buildMessage(
 ): Promise<EmailMessage> {
   const company = lead.snapshot.company?.name || lead.organisation;
   const base = {
-    from: env.EMAIL_FROM || "NNCo. Discovery <discovery@nnco.ai>",
+    from: env.EMAIL_FROM || "NNCo Discovery <discovery@nnco.ai>",
     reply_to: env.EMAIL_REPLY_TO || "marek@nnco.ai",
   };
   if (kind === "lead") {
@@ -208,7 +208,7 @@ async function buildMessage(
       lead.snapshot.message && `Message: ${lead.snapshot.message}`,
       lead.snapshot.kind === "discovery-release" &&
         (lead.snapshot.personalResponseRequest?.version === "discovery-report-and-response-v1"
-          ? "Personal response requested: Discuss the report findings and how NNCo. could help. This is not an ongoing marketing subscription."
+          ? "Personal response requested: Discuss the report findings and how NNCo could help. This is not an ongoing marketing subscription."
           : `Email follow-up permission: ${lead.snapshot.followUp?.accepted === true ? "Yes" : "No"}`),
       lead.snapshot.answers &&
         `Answers:\n${JSON.stringify(lead.snapshot.answers, null, 2)}`,
@@ -221,8 +221,8 @@ async function buildMessage(
       reply_to: lead.work_email,
       subject:
         lead.snapshot.kind === "contact-enquiry"
-          ? "NNCo. — new contact enquiry"
-          : "NNCo. — new Discovery lead",
+          ? "NNCo — new contact enquiry"
+          : "NNCo — new Discovery lead",
       text: details.join("\n\n"),
     };
   }
@@ -233,8 +233,8 @@ async function buildMessage(
   return {
     ...base,
     to: [lead.work_email],
-    subject: "Your NNCo. Opportunity Discovery report",
-    text: "Your Opportunity Discovery report is attached. It explains the supplied context and potential areas for improvement with AI.\n\nThis automated report is not a formal assessment. For a formal assessment, reply to this email to contact Marek at NNCo.",
+    subject: "Your NNCo Opportunity Discovery report",
+    text: "Your Opportunity Discovery report is attached. It explains the supplied context and potential areas for improvement with AI.\n\nThis automated report is not a formal assessment. For a formal assessment, reply to this email to contact Marek at NNCo",
     attachments: [
       {
         filename: "NNCo-Opportunity-Discovery.pdf",

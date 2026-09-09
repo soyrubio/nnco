@@ -6,9 +6,9 @@ export interface FaqItem {
 export const faqByPage = {
   home: [
     {
-      question: "What does NNCo. do?",
+      question: "What does NNCo do?",
       answer:
-        "NNCo. is an AI consulting and development company. We design, integrate and operate AI systems for large institutions, starting with an AI audit and ending with a system running in production and supported after launch.",
+        "NNCo is an AI consulting and development company. We design, integrate and operate AI systems for large institutions, starting with an AI audit and ending with a system running in production and supported after launch.",
     },
     {
       question: "How does an engagement start?",
@@ -16,7 +16,7 @@ export const faqByPage = {
         "Every engagement starts with an AI audit. We go through your operations and return a map of where AI is worth building, in what order, and what each use case is worth. The first use case goes into a pilot on real data.",
     },
     {
-      question: "Which industries does NNCo. work in?",
+      question: "Which industries does NNCo work in?",
       answer:
         "Banking, insurance, healthcare and capital markets. These are sectors where AI has to work inside strict data and supervisory constraints, which is the part most implementations get wrong.",
     },
@@ -31,9 +31,9 @@ export const faqByPage = {
         "No. Client names, logos and case studies are not published by default. A named reference exists only when a client decides to speak about the work themselves.",
     },
     {
-      question: "Where is NNCo. based?",
+      question: "Where is NNCo based?",
       answer:
-        "NNCo. is based in Prague and works with institutions across the European Union. Engagements run in Czech, Slovak and English.",
+        "NNCo is based in Prague and works with institutions across the European Union. Engagements run in Czech, Slovak and English.",
     },
   ],
   programme: [
@@ -195,7 +195,7 @@ export const faqByPage = {
   ],
   healthcare: [
     {
-      question: "Does NNCo. build clinical AI?",
+      question: "Does NNCo build clinical AI?",
       answer:
         "No. We build AI for administrative and operational healthcare workflows. Clinical diagnosis and treatment decisions stay with clinicians, and software that makes them is a regulated medical device under MDR. Where a workflow genuinely needs one, we integrate a certified third-party device rather than building our own.",
     },
@@ -244,22 +244,22 @@ export const faqByPage = {
   ],
   company: [
     {
-      question: "What kind of company is NNCo.?",
+      question: "What kind of company is NNCo?",
       answer:
-        "NNCo. is an AI consulting and development company. It designs, integrates and operates AI systems for large institutions, covering the whole arc from an initial AI audit to running the system in production.",
+        "NNCo is an AI consulting and development company. It designs, integrates and operates AI systems for large institutions, covering the whole arc from an initial AI audit to running the system in production.",
     },
     {
-      question: "Who founded NNCo.?",
+      question: "Who founded NNCo?",
       answer:
-        "NNCo. was founded by a team that previously built and ran software businesses and a regulated fintech: Marek Kříž, Dominik Veselý and Josef Gattermayer, with Josef Bazal and Lukáš Rajnoha as founding members.",
+        "NNCo was founded by a team that previously built and ran software businesses and a regulated fintech: Marek Kříž, Dominik Veselý and Josef Gattermayer, with Josef Bazal and Lukáš Rajnoha as founding members.",
     },
     {
-      question: "How big is NNCo.?",
+      question: "How big is NNCo?",
       answer:
         "Small and deliberately so. Engagements are run by the people listed on this page rather than staffed out to a bench.",
     },
     {
-      question: "Why does NNCo. not show client references?",
+      question: "Why does NNCo not show client references?",
       answer:
         "Because our clients are institutions where supplier relationships and internal projects are not discussed publicly. Client names, logos and case studies are not published by default, and a named reference exists only when a client decides to speak about the work themselves.",
     },

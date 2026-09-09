@@ -1,12 +1,12 @@
-# NNCo. Astro design system
+# NNCo Astro design system
 
-This is the canonical visual and interaction system for the NNCo. Astro site.
+This is the canonical visual and interaction system for the NNCo Astro site.
 It governs the marketing pages, editorial Blog surface, discovery canvas, and
 print report.
 
 ## Design read
 
-NNCo. is an AI implementation company for regulated institutions in Czech and
+NNCo is an AI implementation company for regulated institutions in Czech and
 Slovak markets. The visual language is restrained, editorial and institutional.
 BrainCo is a category reference for proportion, typography and calm, not a
 source to copy page by page.
@@ -165,7 +165,7 @@ The structure is deliberately blocky:
   non-animated swap.
   The initial page cover does not replay between routes, and client-side
   behaviors reinitialize after each swap.
-- `Header`: large official NNCo. mark, single-line navigation and one CTA.
+- `Header`: large official NNCo mark, single-line navigation and one CTA.
   It always links to Discovery as `Start diagnosis`. The action uses
   the shared bordered secondary-button treatment.
   Primary navigation labels use the 16px control size at regular weight; the
@@ -474,7 +474,7 @@ The structure is deliberately blocky:
 - Discovery opens with a short introduction in the existing right-hand content
   column, explaining what Opportunity Discovery is and what information it uses.
   It introduces the report before describing possible uses of AI, in plain language.
-  Its heading places `NNCo.` on its own line above `Opportunity Discovery`.
+  Its heading places `NNCo` on its own line above `Opportunity Discovery`.
   A static, symmetric Core perimeter glyph from the shared modular library sits
   above the heading at the standard card-glyph size. It is decorative, uses paper on ink
   and appears only on the introduction. It moves with the intro's existing
@@ -561,7 +561,7 @@ The structure is deliberately blocky:
 - Analysis is a full black transition with the hard-cut block loader and the
   approved activity statement. Do not use simulated timers or invented stages.
 - The on-screen result retains the questionnaire's left/right grid and shared
-  content rail. A sticky left column contains only the Save PDF and Contact NNCo.
+  content rail. A sticky left column contains only the Save PDF and Contact NNCo
   buttons, without arrows, a heading or helper text; report
   text flows down the right column with normal document scrolling, without
   paper panels, page numbers, repeated logos or a nested scroll container.
@@ -607,7 +607,7 @@ The structure is deliberately blocky:
   footer. Each numbered item is one paragraph with an inline bold lead-in and
   full stop, never an internal heading. Numbers and prose share the same type
   size. Print leaves 6mm between numbered paragraphs, 5mm below section titles
-  and 10mm between sections. The footer reads: Prepared by NNCo.
+  and 10mm between sections. The footer reads: Prepared by NNCo
   automated Opportunity Discovery process. Not a formal assessment.
 - Report writing follows Simplified Technical English principles: familiar
   words, active voice, one topic per paragraph, consistent terms and sentences
@@ -618,7 +618,7 @@ The structure is deliberately blocky:
   Add depth through relevant distinctions and the significance of the supplied
   facts, not repeated caveats or stock sector paragraphs. When input is sparse,
   a sector example may illustrate a relevant possibility if clearly labelled. Page two ends with
-  a short invitation to a formal assessment and a linked NNCo. contact address.
+  a short invitation to a formal assessment and a linked NNCo contact address.
 - New reports use the version-two content contract. Company and sector
   paragraphs are each capped at 900 characters, the areas introduction at 220,
   area names at 56, area explanations at 420, and each detail paragraph at 450.

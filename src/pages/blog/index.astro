@@ -15,8 +15,8 @@ const posts = (await getBlogEntries()).map(toBlogPostListItem);
 ---
 
 <BaseLayout
-  title="Blog: putting AI into production | NNCo."
-  description="How AI systems actually reach production inside large institutions. Field notes, system explanations and working principles from NNCo."
+  title="Blog: putting AI into production | NNCo"
+  description="How AI systems actually reach production inside large institutions. Field notes, system explanations and working principles from NNCo"
   canonicalPath="/blog"
 >
   <Header currentPath="/blog" />
@@ -27,7 +27,7 @@ const posts = (await getBlogEntries()).map(toBlogPostListItem);
     />
 
     <SectionFrame labelledBy="featured-blog-title" class="news-feed">
-      <SectionAnatomy title="Latest from NNCo." titleId="featured-blog-title">
+      <SectionAnatomy title="Latest from NNCo" titleId="featured-blog-title">
         <BlogPostList
           posts={posts}
           variant="load-more"
@@ -53,7 +53,7 @@ const posts = (await getBlogEntries()).map(toBlogPostListItem);
 
     <ClosingSection
       id="blog-closing"
-      description="If something here matches a problem you are working on, the fastest way to go further is a 30-minute call with NNCo."
+      description="If something here matches a problem you are working on, the fastest way to go further is a 30-minute call with NNCo"
       actions={[{ href: "/contact", label: "Book a 30-minute call" }]}
     />
   </main>

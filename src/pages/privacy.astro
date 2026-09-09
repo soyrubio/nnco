@@ -11,8 +11,8 @@ export const prerender = true;
 ---
 
 <BaseLayout
-  title="Privacy | NNCo."
-  description="How the NNCo. website handles contact enquiries and workflow diagnostic data."
+  title="Privacy | NNCo"
+  description="How the NNCo website handles contact enquiries and workflow diagnostic data."
   canonicalPath="/privacy"
   noindex
 >
@@ -20,13 +20,13 @@ export const prerender = true;
   <main class="editorial-page">
     <PageHero
       title="Privacy"
-      introduction="This page describes what NNCo. collects through this website, where diagnostic data goes and how long it is kept. Client engagement data is governed separately by the agreement and data processing terms signed with that client."
+      introduction="This page describes what NNCo collects through this website, where diagnostic data goes and how long it is kept. Client engagement data is governed separately by the agreement and data processing terms signed with that client."
     />
     <SectionFrame labelledBy="website-data-title" class="editorial-section">
       <SectionAnatomy title="What this website collects" titleId="website-data-title">
         <p class="editorial-section__body">
-          The contact form stores the details you submit so NNCo. can respond to
-          your enquiry. NNCo. is the controller for data collected on this
+          The contact form stores the details you submit so NNCo can respond to
+          your enquiry. NNCo is the controller for data collected on this
           website. You can ask about, correct or request deletion of that data
           at <a href="mailto:general@nnco.ai">general@nnco.ai</a>.
         </p>
@@ -50,7 +50,7 @@ export const prerender = true;
           We store your work email, organisation context when provided, the
           submission acknowledgement and diagnostic answers so we can produce and email the report.
           By submitting Opportunity Discovery, you request the AI opportunity report
-          and an email from NNCo. to discuss the findings and how we could help.
+          and an email from NNCo to discuss the findings and how we could help.
           We record this request and the version of the wording shown when you submit.
           This does not subscribe you to newsletters or ongoing marketing emails.
           You can ask us to stop the discussion at any time by replying to the email
@@ -61,7 +61,7 @@ export const prerender = true;
           same result without running the analysis again.
           Resend processes your email address and the report attachment to send
           your report. It also sends your submitted contact details and answers
-          to NNCo. so the team can respond. Email delivery jobs are stored in
+          to NNCo so the team can respond. Email delivery jobs are stored in
           Supabase and deleted with the associated lead record.
         </p>
       </SectionAnatomy>
@@ -69,7 +69,7 @@ export const prerender = true;
     <SectionFrame labelledBy="processor-title" class="editorial-section">
       <SectionAnatomy title="AI processing" titleId="processor-title">
         <p class="editorial-section__body">
-          NNCo. sends diagnostic content to OpenAI through its business API with
+          NNCo sends diagnostic content to OpenAI through its business API with
           response storage disabled. OpenAI states that API data is not used to
           train its models by default and that abuse-monitoring logs may be kept
           for up to 30 days. See OpenAI's <a
@@ -84,7 +84,7 @@ export const prerender = true;
     <SectionFrame labelledBy="abuse-prevention-title" class="editorial-section">
       <SectionAnatomy title="Abuse prevention" titleId="abuse-prevention-title">
         <p class="editorial-section__body">
-          To keep website reading and report generation available, NNCo. keeps
+          To keep website reading and report generation available, NNCo keeps
           keyed hashes derived from the requesting IP address and work email,
           together with request times, for no more than two days. The raw IP
           address and email are not stored in this limiter table. The final

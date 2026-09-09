@@ -900,7 +900,7 @@ function DiscoveryReportHeader({ label, reportHeadingRef }: {
   return (
     <header className="discovery-report-title">
       {reportHeadingRef ? <h1 ref={reportHeadingRef} tabIndex={-1}>{label}</h1> : <h2>{label}</h2>}
-      <img src={PRIMARY_LOGO.src} width={PRIMARY_LOGO.width} height={PRIMARY_LOGO.height} alt="NNCo." />
+      <img src={PRIMARY_LOGO.src} width={PRIMARY_LOGO.width} height={PRIMARY_LOGO.height} alt="NNCo" />
     </header>
   );
 }

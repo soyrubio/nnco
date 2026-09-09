@@ -106,7 +106,7 @@ export const programmePhases = [
 
 export const programmePage: MarketingPageData = {
   path: "/ai-first-enterprise",
-  metaTitle: "AI-First Enterprise: the programme | NNCo.",
+  metaTitle: "AI-First Enterprise: the programme | NNCo",
   metaDescription:
     "The cross-industry programme that takes a large organisation from an AI audit to systems running in production: what gets built, in what order, on what infrastructure, and who runs it after launch.",
   title: "AI-First Enterprise",
@@ -232,7 +232,7 @@ export const programmePage: MarketingPageData = {
 export const programmeSubpages = {
   "ai-audit": {
     path: "/ai-first-enterprise/ai-audit",
-    metaTitle: "AI audit for large institutions | NNCo.",
+    metaTitle: "AI audit for large institutions | NNCo",
     metaDescription:
       "An AI audit maps where AI is worth building in your operation, in what order, and where your data and your regulator allow it. Two to four weeks, ending in a pilot.",
     title: "AI audit",
@@ -378,7 +378,7 @@ export const programmeSubpages = {
   },
   "private-ai": {
     path: "/ai-first-enterprise/private-ai",
-    metaTitle: "On-premise and private AI deployment | NNCo.",
+    metaTitle: "On-premise and private AI deployment | NNCo",
     metaDescription:
       "Models, retrieval, access control and monitoring deployed inside the boundary you govern. On-premise or in your own tenancy, so sensitive data never leaves your network.",
     title: "Private AI",
@@ -493,7 +493,7 @@ export const programmeSubpages = {
   },
   operation: {
     path: "/ai-first-enterprise/operation",
-    metaTitle: "Running AI systems after launch | NNCo.",
+    metaTitle: "Running AI systems after launch | NNCo",
     metaDescription:
       "What happens to an AI system after it goes live: monitoring, quality checks, model replacement and changes when the process or the regulation changes.",
     title: "AI operations",

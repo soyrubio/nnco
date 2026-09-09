@@ -4,7 +4,7 @@ import { cardGlyphSets } from "./glyphs.ts";
 export const industries = {
   banking: {
     path: "/banking",
-    metaTitle: "AI for banks: KYC, monitoring, reporting | NNCo.",
+    metaTitle: "AI for banks: KYC, monitoring, reporting | NNCo",
     metaDescription:
       "AI systems for onboarding and KYC, periodic review, transaction monitoring triage, credit files and regulatory reporting. Built to run inside supervisory constraints and to be evidenced.",
     title: "Banking",
@@ -126,7 +126,7 @@ export const industries = {
   },
   insurance: {
     path: "/insurance",
-    metaTitle: "AI for insurers: claims and underwriting | NNCo.",
+    metaTitle: "AI for insurers: claims and underwriting | NNCo",
     metaDescription:
       "AI systems for claims intake and review, underwriting support, fraud investigation and policy correspondence. The file arrives prepared; the decision stays with your people.",
     title: "Insurance",
@@ -244,7 +244,7 @@ export const industries = {
   },
   healthcare: {
     path: "/healthcare",
-    metaTitle: "AI for healthcare operations and admin | NNCo.",
+    metaTitle: "AI for healthcare operations and admin | NNCo",
     metaDescription:
       "AI for administrative and operational healthcare workflows: intake and scheduling admin, documentation routing, billing preparation, capacity reporting and internal knowledge. Clinical decisions stay with clinicians.",
     title: "Healthcare",
@@ -368,7 +368,7 @@ export const industries = {
   },
   capitalMarkets: {
     path: "/capital-markets",
-    metaTitle: "AI for asset managers and funds | NNCo.",
+    metaTitle: "AI for asset managers and funds | NNCo",
     metaDescription:
       "AI for fund and investor reporting, due diligence document review, DDQ and RFP responses, compliance monitoring and portfolio data extraction. Every figure traceable to its source.",
     title: "Capital markets and asset management",

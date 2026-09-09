@@ -1,5 +1,5 @@
 export const discoveryIntro = {
-  brand: "NNCo.",
+  brand: "NNCo",
   title: "Opportunity Discovery",
   introduction:
     "Opportunity Discovery is a short review of your team's everyday work. It uses your answers and, if provided, public information from your company website.",
@@ -39,14 +39,14 @@ export const discoveryCopy = {
     title: "What is your work email?",
     placeholder: "Provide your work email",
     help: "We will send your report to this address.",
-    privacy: "By continuing, you request an AI opportunity report and an email from NNCo. to discuss the findings and how we could help.",
+    privacy: "By continuing, you request an AI opportunity report and an email from NNCo to discuss the findings and how we could help.",
   },
 };
 
 export const discoveryReportCopy = {
   savePdf: "Save PDF",
   preparingPdf: "Preparing PDF",
-  contact: "Contact NNCo.",
+  contact: "Contact NNCo",
   pdfError: "The report assets could not load. Please try again.",
   title: "Opportunity Discovery",
   summary: "About this report",
@@ -60,7 +60,7 @@ export const discoveryReportCopy = {
   suitability: "What we still need to know",
   noOpportunity: "There is not enough information to identify a useful role for AI yet. The questions below explain what is missing.",
   publicContext: "Public context",
-  assessment: "For a formal assessment of these areas, contact NNCo. at",
+  assessment: "For a formal assessment of these areas, contact NNCo at",
   assessmentEmail: "general@nnco.ai",
-  disclaimer: "Prepared by NNCo. automated Opportunity Discovery process. Not a formal assessment.",
+  disclaimer: "Prepared by NNCo automated Opportunity Discovery process. Not a formal assessment.",
 };

@@ -1,16 +1,16 @@
-# NNCo.
+# NNCo
 
-> NNCo. is an AI consulting and development company. It designs, integrates and
+> NNCo is an AI consulting and development company. It designs, integrates and
 > operates AI systems for large institutions, from an initial AI audit to a
 > system running in production. Based in Prague, working across the European
 > Union.
 
-NNCo. covers the whole arc of an AI implementation: finding where AI is worth
+NNCo covers the whole arc of an AI implementation: finding where AI is worth
 building, building it, deploying it inside the organisation's data and
 regulatory constraints, and operating it after launch. Every engagement starts
-with an AI audit. NNCo. does not publish client names or case studies.
+with an AI audit. NNCo does not publish client names or case studies.
 
-NNCo. does not build clinical decision-making software. In healthcare it works
+NNCo does not build clinical decision-making software. In healthcare it works
 on administrative and operational workflows only.
 
 ## Programme
@@ -26,6 +26,6 @@ on administrative and operational workflows only.
 - [Capital markets and asset management](https://nnco.ai/capital-markets): fund and investor reporting, due diligence document review, compliance monitoring.
 
 ## Company
-- [Company](https://nnco.ai/company): who NNCo. is and how it works.
+- [Company](https://nnco.ai/company): who NNCo is and how it works.
 - [Blog](https://nnco.ai/blog): field notes and system explanations on putting AI into production.
 - [Contact](https://nnco.ai/contact): book a 30-minute call.
