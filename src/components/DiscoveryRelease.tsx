@@ -89,6 +89,7 @@ export function DiscoveryRelease({ introGlyph }: { introGlyph: ReactNode }) {
   const [answers, setAnswers] = useState<ReleaseAnswers>(emptyDiscoveryAnswers);
   const [entryError, setEntryError] = useState("");
   const [contact, setContact] = useState({ workEmail: "" });
+  const [followUp, setFollowUp] = useState(false);
   const [direction, setDirection] = useState<"forward" | "back">("forward");
   const [analysisError, setAnalysisError] = useState("");
   const [report, setReport] = useState<DiscoveryReleaseReport | null>(null);
@@ -288,6 +289,7 @@ export function DiscoveryRelease({ introGlyph }: { introGlyph: ReactNode }) {
       sector: manualSector,
       answers,
       workEmail: contact.workEmail.trim(),
+      followUp,
       includeCompetitors: false,
       consent: {
         accepted: true,
@@ -623,6 +625,13 @@ export function DiscoveryRelease({ introGlyph }: { introGlyph: ReactNode }) {
                 required
               />
             </label>
+            <div className="discovery-contact-privacy">
+              <p>{discoveryCopy.contact.privacy} Read our <a href="/privacy" target="_blank" rel="noreferrer">Privacy Notice</a> for details.</p>
+              <label className="discovery-follow-up">
+                <input type="checkbox" checked={followUp} onChange={(event) => setFollowUp(event.target.checked)} />
+                <span>{discoveryCopy.contact.followUp} <span>(Optional)</span></span>
+              </label>
+            </div>
             {analysisError ? <p className="discovery-notice" role="alert">{analysisError}</p> : null}
             <div className="discovery-actions">
               <button type="button" onClick={() => { setDirection("back"); setQuestionIndex(questions.length - 1); setScreen("questions"); }}>Back</button>

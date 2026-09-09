@@ -91,6 +91,7 @@ export interface DiscoverySubmission {
   answers: ReleaseAnswers;
   workEmail: string;
   includeCompetitors: boolean;
+  followUp?: boolean;
   consent: { accepted: true; version: typeof DISCOVERY_RELEASE_CONSENT_VERSION };
 }
 
@@ -716,11 +717,12 @@ export function hasMultiAnswer(answers: ReleaseAnswers, id: MultiAnswerId): bool
 
 export function isDiscoverySubmission(value: unknown): value is DiscoverySubmission {
   if (!isRecord(value)) return false;
-  const keys = ["requestId", "contextToken", "sector", "answers", "workEmail", "includeCompetitors", "consent"];
+  const keys = ["requestId", "contextToken", "sector", "answers", "workEmail", "includeCompetitors", "followUp", "consent"];
   return Object.keys(value).every(key => keys.includes(key)) &&
     typeof value.requestId === "string" && isReleaseSector(value.sector) &&
     (value.contextToken === null || (typeof value.contextToken === "string" && value.contextToken.length >= 32 && value.contextToken.length <= 16_384)) &&
     isReleaseAnswers(value.answers) && typeof value.workEmail === "string" && value.workEmail.length <= DISCOVERY_RELEASE_LIMITS.workEmail &&
+    (value.followUp === undefined || typeof value.followUp === "boolean") &&
     typeof value.includeCompetitors === "boolean" && !(value.contextToken === null && value.includeCompetitors) &&
     isRecord(value.consent) && value.consent.accepted === true && value.consent.version === DISCOVERY_RELEASE_CONSENT_VERSION;
 }

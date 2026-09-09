@@ -46,6 +46,7 @@ interface EmailLead {
     area?: string;
     company?: { name?: string };
     answers?: Record<string, unknown>;
+    followUp?: { accepted: boolean; version: string };
   };
   analysis_result: { report: DiscoveryReleaseReport } | null;
 }
@@ -204,6 +205,8 @@ async function buildMessage(
       lead.snapshot.sector && `Sector: ${lead.snapshot.sector}`,
       lead.snapshot.area && `Area: ${lead.snapshot.area}`,
       lead.snapshot.message && `Message: ${lead.snapshot.message}`,
+      lead.snapshot.kind === "discovery-release" &&
+        `Email follow-up permission: ${lead.snapshot.followUp?.accepted === true ? "Yes" : "No"}`,
       lead.snapshot.answers &&
         `Answers:\n${JSON.stringify(lead.snapshot.answers, null, 2)}`,
       lead.snapshot.kind === "discovery-release" &&

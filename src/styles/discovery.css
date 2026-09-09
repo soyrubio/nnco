@@ -1130,3 +1130,32 @@
     break-after: auto;
   }
 }
+
+.discovery-contact-privacy {
+  margin-top: 1.25rem;
+  font-size: var(--discovery-type-size-small);
+  line-height: var(--type-leading-small);
+}
+
+.discovery-contact-privacy p {
+  margin: 0 0 1rem;
+}
+
+.discovery-contact-privacy a {
+  text-decoration: underline;
+}
+
+.discovery-follow-up {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+  cursor: pointer;
+}
+
+.discovery-follow-up input {
+  flex: 0 0 auto;
+  width: 1rem;
+  height: 1rem;
+  margin: 0.2em 0 0;
+  accent-color: var(--discovery-black);
+}

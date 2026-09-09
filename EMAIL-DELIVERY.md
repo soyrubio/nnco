@@ -16,6 +16,9 @@ Current allowances: [Supabase pricing](https://supabase.com/docs/guides/function
   This job is saved before AI generation, so a failed report does not lose the lead.
 - Each completed version-two report sends a PDF to the submitted work email.
 - Each new contact enquiry sends a notification to `marek@nnco.ai`.
+- Discovery notifications show whether the visitor selected the optional email
+  follow-up checkbox. Missing permission is shown as No. The choice and wording
+  version are stored in the lead snapshot, with the submission timestamp on the lead.
 - Notifications use the visitor's address as Reply-To. Report emails use
   `marek@nnco.ai` as Reply-To. The default sender is
   `NNCo. Discovery <discovery@nnco.ai>`.

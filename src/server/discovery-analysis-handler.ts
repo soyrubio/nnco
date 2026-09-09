@@ -183,6 +183,7 @@ export async function handleDiscoveryAnalysisRequest(
     company: payload.company,
     answers: payload.answers,
     competitorView: payload.competitorView,
+    ...(submission.followUp !== undefined ? { followUp: { accepted: submission.followUp, version: "discovery-report-follow-up-v1" } } : {}),
   };
   const record: LeadRecord = {
     requestId: payload.requestId,

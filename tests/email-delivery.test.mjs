@@ -40,6 +40,7 @@ function setup(kind = "lead", behavior = {}) {
       kind: "discovery-release",
       company: { name: "Example Insurance" },
       answers: { workflow: ["document-review"] },
+      followUp: behavior.followUp,
     },
     analysis_result: { report },
   };
@@ -185,4 +186,13 @@ test("failed acceptance recording retries with same provider key and stored mess
 test("backoff is bounded", () => {
   assert.equal(retryDelay(1), 60_000);
   assert.equal(retryDelay(8), 3_600_000);
+});
+
+test("lead email explicitly reports optional follow-up permission", async () => {
+  for (const accepted of [undefined, false, true]) {
+    const s = setup("lead", { followUp: accepted === undefined ? undefined : { accepted, version: "discovery-report-follow-up-v1" } });
+    await deliverEmail(request(), env, s.options);
+    const send = s.calls.find((c) => c.url === "https://api.resend.com/emails");
+    assert.ok(JSON.parse(send.init.body).text.includes(`Email follow-up permission: ${accepted === true ? "Yes" : "No"}`));
+  }
 });

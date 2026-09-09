@@ -8,6 +8,7 @@ import {
   workflowChoicesFor,
   buildManualCompanyContext,
   isDiscoveryReleaseReport,
+  isDiscoverySubmission,
 } from "../src/lib/discovery-release.ts";
 import { handleDiscoveryAnalysisRequest } from "../src/server/discovery-analysis-handler.ts";
 import { opportunityReportFixture } from "./fixtures/opportunity-report.mjs";
@@ -50,6 +51,7 @@ function analysisRequest(payload, origin = "http://localhost:4321") {
     workEmail: payload.contact.workEmail,
     includeCompetitors: payload.competitorView.enabled,
     consent: payload.consent,
+    ...(payload.followUp !== undefined ? { followUp: payload.followUp } : {}),
   } : payload;
   return new Request("http://localhost:4321/api/discovery-analysis", {
     method: "POST",
@@ -461,4 +463,26 @@ test("new analysis rejects expired context, unknown choices and redundant client
     assert.equal(response.status, 400, variant);
     assert.equal((await response.json()).error.code, "VALIDATION_ERROR", variant);
   }
+});
+
+test("follow-up permission is optional, boolean-only, and part of replay identity", async () => {
+  await withLocalRepository(async () => {
+    const payload = validPayload();
+    const submission = await analysisRequest(payload).json();
+    for (const value of [undefined, false, true]) {
+      assert.equal(isDiscoverySubmission({ ...submission, followUp: value }), true);
+    }
+    for (const value of ["true", 1, null, {}]) {
+      assert.equal(isDiscoverySubmission({ ...submission, followUp: value }), false);
+    }
+    payload.followUp = false;
+    const options = {
+      env: { NODE_ENV: "test", OPENAI_API_KEY: "test-key" },
+      fetchImpl: async () => Response.json({ output_text: JSON.stringify(opportunityReportFixture(payload.company.name)) }),
+    };
+    assert.equal((await handleDiscoveryAnalysisRequest(analysisRequest(payload), crypto.randomUUID(), options)).status, 201);
+    assert.equal((await handleDiscoveryAnalysisRequest(analysisRequest(payload), crypto.randomUUID(), options)).status, 200);
+    payload.followUp = true;
+    assert.equal((await handleDiscoveryAnalysisRequest(analysisRequest(payload), crypto.randomUUID(), options)).status, 409);
+  });
 });
