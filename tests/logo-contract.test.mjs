@@ -19,8 +19,8 @@ const sources = Object.fromEntries(
       discoveryStyles: "../src/styles/discovery.css",
       design: "../DESIGN.md",
       primaryAsset: "../public/assets/nnco-logo-group-97.svg",
-      faviconAsset: "../public/assets/nnco-favicon-group-97.svg",
-      maskableAsset: "../public/assets/nnco-icon-maskable-group-97.svg",
+      faviconAsset: "../public/assets/nnco-favicon-square-dot.svg",
+      maskableAsset: "../public/assets/nnco-favicon-square-dot.svg",
       manifest: "../public/site.webmanifest",
     }).map(async ([name, path]) => [
       name,
@@ -56,14 +56,14 @@ test("Group 97 is the safe versioned canonical primary identity", () => {
     width: 700,
     height: 700,
   });
-  assert.equal(FAVICON_ASSET, "/assets/nnco-favicon-group-97.svg?v=2");
+  assert.equal(FAVICON_ASSET, "/assets/nnco-favicon-square-dot.svg?v=3");
   assert.deepEqual(FAVICON_ASSETS, {
-    ico: "/favicon.ico",
-    png32: "/favicon-32x32.png",
-    svg: "/assets/nnco-favicon-group-97.svg?v=2",
-    appleTouch: "/apple-touch-icon.png",
-    safariMask: "/assets/nnco-logo-group-97.svg",
-    manifest: "/site.webmanifest",
+    ico: "/favicon.ico?v=3",
+    png32: "/favicon-32x32.png?v=3",
+    svg: "/assets/nnco-favicon-square-dot.svg?v=3",
+    appleTouch: "/apple-touch-icon.png?v=3",
+    safariMask: "/assets/nnco-favicon-mask.svg?v=3",
+    manifest: "/site.webmanifest?v=3",
   });
   assert.equal(
     createHash("sha256").update(sources.primaryAsset).digest("hex"),
@@ -81,25 +81,11 @@ test("Group 97 is the safe versioned canonical primary identity", () => {
   );
 });
 
-test("the versioned favicon keeps Group 97 visible on a black tile", () => {
-  assert.match(
-    sources.faviconAsset,
-    /^<svg width="700" height="700" viewBox="0 0 700 700" fill="none"/,
-  );
-  assert.match(
-    sources.faviconAsset,
-    /<rect width="700" height="700" fill="#111111"\/>/,
-  );
-  assert.match(
-    sources.faviconAsset,
-    /<g transform="translate\(56 56\) scale\(0\.84\)">/,
-  );
-  assert.equal(sources.faviconAsset.match(/<path\b/g)?.length, 4);
-  assert.equal(sources.faviconAsset.match(/fill="#F5F5F5"/g)?.length, 4);
-  assert.doesNotMatch(
-    sources.faviconAsset,
-    /<script|<foreignObject|<iframe|<image|<use|\son[a-z]+=|javascript:|data:|xlink:href|\shref=|@import|url\(/i,
-  );
+test("the favicon matches the approved square and dot identity", () => {
+  assert.match(sources.faviconAsset, /viewBox="0 0 184 184"/);
+  assert.match(sources.faviconAsset, /<rect x="46" y="46" width="92" height="92" fill="#ffffff"/);
+  assert.match(sources.faviconAsset, /<circle cx="92" cy="92" r="15.5" fill="#222222"/);
+  assert.doesNotMatch(sources.faviconAsset, /<script|<image|<foreignObject/);
 });
 
 test("favicon fallbacks cover browser tabs, Apple touch icons and install masks", () => {
@@ -134,10 +120,7 @@ test("favicon fallbacks cover browser tabs, Apple touch icons and install masks"
     width: 512,
     height: 512,
   });
-  assert.match(
-    sources.maskableAsset,
-    /<g transform="translate\(126 126\) scale\(0\.64\)">/,
-  );
+  assert.equal(sources.maskableAsset, sources.faviconAsset);
 
   const manifest = JSON.parse(sources.manifest);
   assert.deepEqual(
@@ -149,19 +132,19 @@ test("favicon fallbacks cover browser tabs, Apple touch icons and install masks"
     })),
     [
       {
-        src: "/assets/nnco-icon-192.png",
+        src: "/assets/nnco-icon-192.png?v=3",
         sizes: "192x192",
         type: "image/png",
         purpose: "any",
       },
       {
-        src: "/assets/nnco-icon-512.png",
+        src: "/assets/nnco-icon-512.png?v=3",
         sizes: "512x512",
         type: "image/png",
         purpose: "any",
       },
       {
-        src: "/assets/nnco-icon-maskable-512.png",
+        src: "/assets/nnco-icon-maskable-512.png?v=3",
         sizes: "512x512",
         type: "image/png",
         purpose: "maskable",

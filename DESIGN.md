@@ -223,9 +223,9 @@ The structure is deliberately blocky:
   mobile header and 48px in the footer. Each discovery report page uses the same mark above its structural rule;
   the on-screen report has no repeated logo or navigation header. Dark placements invert the same black source mark.
 - Header, footer, discovery and Organization metadata use that one versioned
-  primary asset. Favicons keep the same geometry as a paper mark on an ink
-  tile, with a small safe area so the mark remains legible at tab size and
-  survives platform masks. SVG is the primary browser asset, backed by a
+  primary asset. Favicons use the approved LinkedIn identity: a white square
+  with a centred dark circular cutout on a #222222 tile. The square occupies
+  half the tile width, retaining safe space for platform masks. SVG is the primary browser asset, backed by a
   multi-size ICO, 32px PNG, 180px Apple touch icon and manifest icons.
   Alternate legacy marks remain separate and are not primary fallbacks.
 - `BlockArrow`: official arrow asset used as a current-color CSS mask.
