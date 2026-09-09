@@ -51,6 +51,7 @@ function analysisRequest(payload, origin = "http://localhost:4321") {
     workEmail: payload.contact.workEmail,
     includeCompetitors: payload.competitorView.enabled,
     consent: payload.consent,
+    ...(payload.personalResponseRequested !== undefined ? { personalResponseRequested: payload.personalResponseRequested } : {}),
     ...(payload.followUp !== undefined ? { followUp: payload.followUp } : {}),
   } : payload;
   return new Request("http://localhost:4321/api/discovery-analysis", {
@@ -483,6 +484,27 @@ test("follow-up permission is optional, boolean-only, and part of replay identit
     assert.equal((await handleDiscoveryAnalysisRequest(analysisRequest(payload), crypto.randomUUID(), options)).status, 201);
     assert.equal((await handleDiscoveryAnalysisRequest(analysisRequest(payload), crypto.randomUUID(), options)).status, 200);
     payload.followUp = true;
+    assert.equal((await handleDiscoveryAnalysisRequest(analysisRequest(payload), crypto.randomUUID(), options)).status, 409);
+  });
+});
+
+test("personal response request is explicit and changes stored replay identity", async () => {
+  await withLocalRepository(async () => {
+    const payload = validPayload();
+    const submission = await analysisRequest(payload).json();
+    assert.equal(isDiscoverySubmission({ ...submission, personalResponseRequested: true }), true);
+    for (const value of [false, "true", 1, null]) {
+      assert.equal(isDiscoverySubmission({ ...submission, personalResponseRequested: value }), false);
+    }
+    assert.equal(isDiscoverySubmission({ ...submission, personalResponseRequested: true, followUp: false }), false);
+    payload.personalResponseRequested = true;
+    const options = {
+      env: { NODE_ENV: "test", OPENAI_API_KEY: "test-key" },
+      fetchImpl: async () => Response.json({ output_text: JSON.stringify(opportunityReportFixture(payload.company.name)) }),
+    };
+    assert.equal((await handleDiscoveryAnalysisRequest(analysisRequest(payload), crypto.randomUUID(), options)).status, 201);
+    assert.equal((await handleDiscoveryAnalysisRequest(analysisRequest(payload), crypto.randomUUID(), options)).status, 200);
+    delete payload.personalResponseRequested;
     assert.equal((await handleDiscoveryAnalysisRequest(analysisRequest(payload), crypto.randomUUID(), options)).status, 409);
   });
 });

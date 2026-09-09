@@ -39,8 +39,7 @@ export const discoveryCopy = {
     title: "What is your work email?",
     placeholder: "Provide your work email",
     help: "We will send your report to this address.",
-    privacy: "NNCo. uses your answers to generate your report with AI and send it to your email.",
-    followUp: "NNCo. may contact me by email to discuss the opportunities in my report.",
+    privacy: "By continuing, you request an AI opportunity report and an email from NNCo. to discuss the findings and how we could help.",
   },
 };
 

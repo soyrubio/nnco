@@ -41,6 +41,7 @@ function setup(kind = "lead", behavior = {}) {
       company: { name: "Example Insurance" },
       answers: { workflow: ["document-review"] },
       followUp: behavior.followUp,
+      personalResponseRequest: behavior.personalResponseRequest,
     },
     analysis_result: { report },
   };
@@ -195,4 +196,14 @@ test("lead email explicitly reports optional follow-up permission", async () => 
     const send = s.calls.find((c) => c.url === "https://api.resend.com/emails");
     assert.ok(JSON.parse(send.init.body).text.includes(`Email follow-up permission: ${accepted === true ? "Yes" : "No"}`));
   }
+});
+
+test("requested personal response is distinguished from legacy marketing permission", async () => {
+  const s = setup("lead", { personalResponseRequest: { version: "discovery-report-and-response-v1" } });
+  await deliverEmail(request(), env, s.options);
+  const send = s.calls.find((c) => c.url === "https://api.resend.com/emails");
+  const text = JSON.parse(send.init.body).text;
+  assert.match(text, /Personal response requested: Discuss the report findings/);
+  assert.match(text, /not an ongoing marketing subscription/);
+  assert.doesNotMatch(text, /Email follow-up permission/);
 });

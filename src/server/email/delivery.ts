@@ -47,6 +47,7 @@ interface EmailLead {
     company?: { name?: string };
     answers?: Record<string, unknown>;
     followUp?: { accepted: boolean; version: string };
+    personalResponseRequest?: { version: string };
   };
   analysis_result: { report: DiscoveryReleaseReport } | null;
 }
@@ -206,7 +207,9 @@ async function buildMessage(
       lead.snapshot.area && `Area: ${lead.snapshot.area}`,
       lead.snapshot.message && `Message: ${lead.snapshot.message}`,
       lead.snapshot.kind === "discovery-release" &&
-        `Email follow-up permission: ${lead.snapshot.followUp?.accepted === true ? "Yes" : "No"}`,
+        (lead.snapshot.personalResponseRequest?.version === "discovery-report-and-response-v1"
+          ? "Personal response requested: Discuss the report findings and how NNCo. could help. This is not an ongoing marketing subscription."
+          : `Email follow-up permission: ${lead.snapshot.followUp?.accepted === true ? "Yes" : "No"}`),
       lead.snapshot.answers &&
         `Answers:\n${JSON.stringify(lead.snapshot.answers, null, 2)}`,
       lead.snapshot.kind === "discovery-release" &&
