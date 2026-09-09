@@ -594,11 +594,14 @@ The structure is deliberately blocky:
   does not claim current adoption. Website enrichment remains a separate,
   earlier step. After Controls, both intake paths go directly to contact;
   the competitor-comparison question is no longer offered.
-- Browser print is the only PDF exporter. Users select Save as PDF in the print
+- Browser print is the interactive PDF exporter. Users select Save as PDF in the print
   dialog. Save PDF waits for the site fonts and report logos,
   then opens the print dialog. A named print page produces two A4 sheets with
   20mm insets and excludes the site header, loader, action group, on-screen disclaimer and progress
   footer. Responsive screen breakpoints do not affect the paper layout.
+- Emailed PDFs use the same content and two-page A4 design, with embedded Geist
+  fonts and the official logo. Their server renderer runs in Supabase. This does
+  not alter the website's report layout or browser print action.
 - Each report page has a large bold title on the left and the official mark on
   the right. The only horizontal rules are below the header and above the
   footer. Each numbered item is one paragraph with an inline bold lead-in and

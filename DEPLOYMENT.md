@@ -337,9 +337,23 @@ match an area. Invalid copy gets at most one rewrite within the existing
 retains the 2,500-token ceiling. A second invalid result fails with the existing
 retry-safe error; text is not silently truncated and no rules report is used.
 
-Browser print is the only PDF path. It exports exactly two A4 pages after the
-contact gate and excludes the report toolbar. No report-generation service or
-static sample PDF is deployed.
+Browser print exports exactly two A4 pages after the contact gate and excludes
+the report toolbar. Email attachments use the separate server-side PDF renderer
+in `src/server/email/report-pdf.ts`, with the same report content, Geist fonts,
+logo and A4 design. No static sample PDF is deployed.
+
+## Email delivery
+
+Resend delivery runs in the `deliver-emails` Supabase Edge Function, not in the
+Cloudflare Worker. Migrations `0005` and `0006` add a transactional email queue
+and a Vault-authenticated schedule. New leads and completed reports enqueue
+separate messages. No existing leads are backfilled. Delivery is disabled until
+the Supabase function secrets and schedule credentials are configured.
+
+Follow [EMAIL-DELIVERY.md](./EMAIL-DELIVERY.md) for deployment, Resend setup,
+activation, status checks and retries. A normal website deployment does not
+apply these migrations or deploy the Edge Function. `RESEND_API_KEY` belongs in
+Supabase's Edge Function secrets; Cloudflare needs no new email credential.
 
 ## Privacy launch gate
 
