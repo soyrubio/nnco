@@ -147,7 +147,7 @@ export const team = [
   {
     name: "Josef Bazal",
     role: "AI Product",
-    bio: "Turns complex business and operational problems into clear direction. Connects client needs, user workflows and delivery so that AI systems solve real problems and work in everyday practice.",
+    bio: "Managed technical audits of global fintech systems - the engagement side of proving that software holds up under outside scrutiny. Connects client needs, user workflows and delivery so that AI systems solve real problems and work in everyday practice.",
     image: "/assets/team/josef-bazal-reframed.png",
   },
   {
@@ -159,13 +159,13 @@ export const team = [
   {
     name: "Dominik Veselý",
     role: "Operations",
-    bio: "COO at the software house Ackee, which was sold to Expandia. Ran delivery for a company whose clients were banks, insurers and public institutions, where the deployment is the product.",
+    bio: "Founder, CTO and COO at the software house Ackee. Ran delivery for a company whose clients were banks, insurers, media houses and public institutions, where the deployment is the product.",
     image: "/assets/team/dominik-vesely-reframed.png",
   },
   {
     name: "Josef Gattermayer",
     role: "Technology & Security",
-    bio: "CTO at Ackee, then founder of Ackee Blockchain, a security audit firm. Audit work is the discipline of proving that a system does what it claims, which is the same discipline an AI system needs before a regulator looks at it.",
+    bio: "Co-Founder at Ackee and CEO of Ackee Blockchain, a security audit firm that audited global fintech companies. Audit work is the discipline of proving that a system does what it claims, which is the same discipline an AI system needs before a regulator looks at it.",
     image: "/assets/team/josef-gattermayer-reframed.png",
   },
 ] as const;
