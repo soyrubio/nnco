@@ -265,6 +265,15 @@ budget for the initial response and, if needed, one content-validation rewrite. 
 the structured result is incomplete. There is no runtime rules fallback.
 Failed research offers retry or manual questionnaire entry.
 
+Report-generation failures log `discovery_analysis_failed` in Cloudflare Workers
+Observability, alongside the submission request ID and a technical error code.
+Upstream failures include HTTP status and OpenAI request ID when available;
+incomplete responses include their reason, and rejected drafts include validation
+rules. Logs exclude prompts, answers, email addresses, generated text, upstream
+error messages and credentials. The browser still receives a generic retry-safe
+error. Response storage remains disabled, so use these Worker diagnostics rather
+than relying on stored responses in the OpenAI dashboard.
+
 Website enrichment keeps normalized AI research in process memory for no more
 than 24 hours, caps the cache at 100 companies and does not create a lead.
 The submitted hostname is checked against public DNS before research or cache

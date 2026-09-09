@@ -31,6 +31,7 @@ import {
   readBoundedBody,
 } from "./request-guards.ts";
 import {
+  StructuredOutputError,
   type OpenAiStructuredEnvironment,
 } from "./openai-structured.ts";
 import {
@@ -400,7 +401,12 @@ export async function handleDiscoveryAnalysisRequest(
         env,
         fetchImpl: options.fetchImpl ?? fetch,
       });
-    } catch {
+    } catch (error) {
+      console.error("discovery_analysis_failed", {
+        requestId: record.requestId,
+        code: error instanceof StructuredOutputError ? error.code : "UNEXPECTED_GENERATION_ERROR",
+        ...(error instanceof StructuredOutputError ? error.diagnostic : {}),
+      });
       await releaseLeadAnalysisClaim(
         record.requestId,
         record.requestHash,

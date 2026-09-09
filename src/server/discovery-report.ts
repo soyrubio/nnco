@@ -9,7 +9,7 @@ import {
   type OpportunityDiscoveryReport,
 } from "../lib/discovery-report.ts";
 import { normalizeContactEmail } from "../lib/contact-contract.ts";
-import { requestStructuredOutputWithMetadata, type OpenAiStructuredEnvironment } from "./openai-structured.ts";
+import { StructuredOutputError, requestStructuredOutputWithMetadata, type OpenAiStructuredEnvironment } from "./openai-structured.ts";
 import { DISCOVERY_REPORT_PROMPT } from "./discovery-report-prompt.ts";
 
 const text = (maximum: number) => ({ type: "string", minLength: 1, maxLength: maximum });
@@ -95,5 +95,5 @@ export async function generateDiscoveryReport(
       }
     }
   }
-  throw new Error("The report did not meet the content and length requirements.");
+  throw new StructuredOutputError("REPORT_VALIDATION_FAILED", { issues: revisionIssues });
 }

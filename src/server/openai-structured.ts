@@ -1,5 +1,23 @@
 type FetchLike = typeof fetch;
 
+type OutputDiagnostic = { httpStatus?: number; upstreamRequestId?: string; reason?: string; issues?: string[] };
+
+export class StructuredOutputError extends Error {
+  readonly code: string;
+  readonly diagnostic: OutputDiagnostic;
+
+  constructor(code: string, diagnostic: OutputDiagnostic = {}) {
+    super(code);
+    this.name = "StructuredOutputError";
+    this.code = code;
+    this.diagnostic = diagnostic;
+  }
+}
+
+function safeMetadata(value: unknown): string | undefined {
+  return typeof value === "string" && /^[a-zA-Z0-9_-]{1,128}$/.test(value) ? value : undefined;
+}
+
 export interface OpenAiStructuredEnvironment {
   OPENAI_API_KEY?: string;
   OPENAI_DISCOVERY_MODEL?: string;
@@ -52,13 +70,14 @@ export async function requestStructuredOutputWithMetadata<T>(
   } = {},
 ): Promise<{ value: T; sourceUrls: string[] }> {
   const apiKey = env.OPENAI_API_KEY?.trim();
-  if (!apiKey) throw new Error("OPENAI_API_KEY is not configured");
+  if (!apiKey) throw new StructuredOutputError("OPENAI_NOT_CONFIGURED");
 
   const baseUrl = (env.OPENAI_API_BASE_URL?.trim() || "https://api.openai.com").replace(
     /\/$/,
     "",
   );
   const model = env.OPENAI_DISCOVERY_MODEL?.trim() || "gpt-5.6-luna";
+  const signal = AbortSignal.timeout(timeoutMs);
   const response = await fetchImpl(`${baseUrl}/v1/responses`, {
     method: "POST",
     headers: {
@@ -91,29 +110,49 @@ export async function requestStructuredOutputWithMetadata<T>(
         },
       },
     }),
-    signal: AbortSignal.timeout(timeoutMs),
+    signal,
+  }).catch(() => {
+    throw new StructuredOutputError(signal.aborted ? "OPENAI_TIMEOUT" : "OPENAI_NETWORK_ERROR");
   });
 
+  const metadata = {
+    httpStatus: response.status,
+    upstreamRequestId: safeMetadata(response.headers.get("x-request-id")),
+  };
   if (!response.ok) {
-    throw new Error(`OpenAI request failed with status ${response.status}`);
+    throw new StructuredOutputError("OPENAI_HTTP_ERROR", metadata);
   }
-  const body = (await response.json()) as OpenAiResponse;
+  const body = (await response.json().catch(() => {
+    throw new StructuredOutputError(signal.aborted ? "OPENAI_TIMEOUT" : "OPENAI_INVALID_RESPONSE", metadata);
+  })) as OpenAiResponse;
+  if (!body || typeof body !== "object") throw new StructuredOutputError("OPENAI_INVALID_RESPONSE", metadata);
   if (body.status === "incomplete" || body.status === "failed") {
-    throw new Error("OpenAI response was not completed");
+    throw new StructuredOutputError(body.status === "incomplete" ? "OPENAI_INCOMPLETE" : "OPENAI_FAILED", {
+      ...metadata,
+      reason: safeMetadata(body.incomplete_details?.reason ?? body.error?.code),
+    });
   }
   if (request.requireSearch && !body.output?.some(item => item.type === "web_search_call")) {
-    throw new Error("OpenAI did not perform the required website research");
+    throw new StructuredOutputError("OPENAI_SEARCH_MISSING", metadata);
+  }
+  if (body.output?.some(item => item.content?.some(content => content.type === "refusal"))) {
+    throw new StructuredOutputError("OPENAI_REFUSAL", metadata);
   }
   const outputText = extractOutputText(body);
-  if (!outputText) throw new Error("OpenAI response did not contain structured output");
+  if (!outputText) throw new StructuredOutputError("OPENAI_OUTPUT_MISSING", metadata);
+  let value: T;
+  try { value = JSON.parse(outputText) as T; }
+  catch { throw new StructuredOutputError("OPENAI_INVALID_JSON", metadata); }
   return {
-    value: JSON.parse(outputText) as T,
+    value,
     sourceUrls: extractSourceUrls(body),
   };
 }
 
 interface OpenAiResponse {
   status?: string;
+  incomplete_details?: { reason?: string };
+  error?: { code?: string };
   output_text?: string;
   output?: Array<{
     type?: string;
@@ -135,9 +174,6 @@ function extractOutputText(response: OpenAiResponse): string {
     for (const content of item.content ?? []) {
       if (content.type === "output_text" && typeof content.text === "string") {
         return content.text;
-      }
-      if (content.type === "refusal") {
-        throw new Error(content.refusal || "OpenAI refused the request");
       }
     }
   }
