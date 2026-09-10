@@ -1144,3 +1144,90 @@
 .discovery-contact-privacy a {
   text-decoration: underline;
 }
+
+.discovery-delivery-layout {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  align-items: center;
+  min-height: calc(100svh - var(--header-height) - 7rem);
+  padding-block: 3rem 5rem;
+}
+
+.discovery-delivery-message h1 {
+  max-width: 12ch;
+  margin: 0 0 1.5rem;
+  font-size: clamp(2rem, 3.5vw, 3.75rem);
+  line-height: 1.08;
+  letter-spacing: -0.035em;
+  font-weight: var(--type-weight-medium);
+}
+
+.discovery-delivery-message p {
+  font-size: var(--discovery-type-size-body);
+  line-height: 1.5;
+}
+
+.discovery-delivery-preview {
+  position: relative;
+  container-type: inline-size;
+  width: min(100%, 29rem);
+  margin: 1rem auto;
+  padding: 0 1.5rem 1.5rem 0;
+  pointer-events: none;
+  user-select: none;
+}
+
+.discovery-delivery-paper {
+  position: relative;
+  aspect-ratio: 210 / 297;
+  padding: 9%;
+  background: var(--discovery-white);
+  color: var(--discovery-black);
+  border: 1px solid var(--discovery-grey);
+  box-shadow: 0 0.75rem 2rem rgb(0 0 0 / 8%);
+}
+
+.discovery-delivery-paper:first-child { z-index: 1; }
+.discovery-delivery-paper:last-child {
+  position: absolute;
+  inset: 1.5rem 0 0 1.5rem;
+  z-index: 0;
+}
+
+.discovery-delivery-paper-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  border-bottom: 2px solid currentColor;
+  padding-bottom: 1rem;
+  font-size: clamp(0.65rem, 1.2vw, 1rem);
+}
+.discovery-delivery-paper-header img { width: 2rem; height: auto; }
+.discovery-delivery-paper-content { filter: blur(4px); padding-top: 6cqw; }
+.discovery-delivery-placeholder { margin-bottom: 6cqw; }
+.discovery-delivery-placeholder span {
+  display: block;
+  height: 1cqw;
+  margin-bottom: 1.6cqw;
+  background: currentColor;
+  opacity: 0.45;
+}
+.discovery-delivery-placeholder span:last-child { width: 65%; }
+.discovery-delivery-placeholder .discovery-delivery-placeholder-title {
+  height: 1.7cqw;
+  width: 45%;
+  margin-bottom: 3cqw;
+  opacity: 0.8;
+}
+.discovery-delivery-paper-footer {
+  display: flex;
+  justify-content: space-between;
+  border-top: 1px solid currentColor;
+  padding-top: 0.5rem;
+  font-size: 0.6rem;
+}
+@media screen and (max-width: 900px) {
+  .discovery-delivery-layout { grid-template-columns: minmax(0, 1fr); gap: 2rem; padding-top: 2rem; }
+  .discovery-delivery-message h1 { max-width: 18ch; }
+  .discovery-delivery-preview { width: min(85%, 25rem); }
+}

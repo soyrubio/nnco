@@ -25,9 +25,10 @@ Current allowances: [Supabase pricing](https://supabase.com/docs/guides/function
   `marek@nnco.ai` as Reply-To. The default sender is
   `NNCo Discovery <discovery@nnco.ai>`.
 - Earlier records are not backfilled by these migrations. Previously completed
-  version-one reports keep their browser export and are not automatically emailed.
+  version-one reports are not automatically emailed; start a new Discovery instead.
 
-The website can show the report before email arrives. The schedule processes one
+The website shows an email-delivery confirmation with a decorative blurred preview.
+It does not receive the generated report content or provide a download button. The schedule processes one
 job each minute while work is waiting. Two report-related emails normally need
 about two schedule ticks; a backlog or retries can take longer.
 

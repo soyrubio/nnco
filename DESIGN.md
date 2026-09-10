@@ -560,15 +560,13 @@ The structure is deliberately blocky:
   The persistent Privacy policy link provides retention and processor details.
 - Analysis is a full black transition with the hard-cut block loader and the
   approved activity statement. Do not use simulated timers or invented stages.
-- The on-screen result retains the questionnaire's left/right grid and shared
-  content rail. A sticky left column contains only the Save PDF and Contact NNCo
-  buttons, without arrows, a heading or helper text; report
-  text flows down the right column with normal document scrolling, without
-  paper panels, page numbers, repeated logos or a nested scroll container.
-  There is one action group, never a repeated set. At the questionnaire's 900px
-  breakpoint, it moves into normal flow below the report. One on-screen
-  disclaimer follows the report text at every size. PDF preparation errors
-  appear there only when needed, outside the action column.
+- The on-screen result shows an email-delivery message on the left and a
+  decorative blurred two-page PDF preview on the right. The heading is “We’re
+  sending your report to your email.” The supporting sentence is “It should
+  arrive within a few minutes.” The columns stack on mobile. The preview uses
+  placeholder lines, is hidden from assistive technology, and contains no
+  generated report content. There is no download or print action. The API returns
+  only an acknowledgement; the full report is delivered by email.
 - The report explains its purpose and supplied context before discussing AI.
   New reports have five sections across two pages. Page one contains About this
   report, the fixed explanation; Provided context, one AI-written paragraph
@@ -594,14 +592,9 @@ The structure is deliberately blocky:
   does not claim current adoption. Website enrichment remains a separate,
   earlier step. After Controls, both intake paths go directly to contact;
   the competitor-comparison question is no longer offered.
-- Browser print is the interactive PDF exporter. Users select Save as PDF in the print
-  dialog. Save PDF waits for the site fonts and report logos,
-  then opens the print dialog. A named print page produces two A4 sheets with
-  20mm insets and excludes the site header, loader, action group, on-screen disclaimer and progress
-  footer. Responsive screen breakpoints do not affect the paper layout.
-- Emailed PDFs use the same content and two-page A4 design, with embedded Geist
-  fonts and the official logo. Their server renderer runs in Supabase. This does
-  not alter the website's report layout or browser print action.
+- PDFs are delivered by email, with two A4 pages, 20mm insets, embedded Geist
+  fonts and the official logo. Their renderer runs in Supabase. The website
+  confirmation does not expose report content or offer a browser PDF exporter.
 - Each report page has a large bold title on the left and the official mark on
   the right. The only horizontal rules are below the header and above the
   footer. Each numbered item is one paragraph with an inline bold lead-in and

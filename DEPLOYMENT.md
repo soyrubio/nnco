@@ -13,8 +13,9 @@ The release discovery flow calls two same-origin routes:
 
 - `POST /api/discovery-enrichment` researches the public company website with
   AI web search and returns editable questionnaire suggestions.
-- `POST /api/discovery-analysis` stores the consented lead and returns the
-  structured two-page report.
+- `POST /api/discovery-analysis` stores the submission and generated report,
+  queues email delivery through the database trigger, and returns only a success
+  acknowledgement.
 
 The earlier `/api/lead-requests` contract remains available for the legacy
 diagnostic implementation. Contact uses `/api/contact-requests`.
@@ -295,12 +296,12 @@ The public contracts are:
   `answers.context` optionally holds up to 1,000 characters for each multi-select
   answer (`workflow`, `friction`, `systems`, `controls`); it can supplement or
   replace selections. All six answers still require review in the interface.
-- Analysis success: `{ ok: true, report }`. New reports use `schemaVersion: 2`,
+- Analysis success: `{ ok: true }`; generated report content stays server-side
+  and is delivered by email. Stored new reports use `schemaVersion: 2`,
   server-owned `generatedAt` and `title`, and the content fields `providedContext`,
   `sectorOpportunities`, `areasIntro`, `areas: [{ name, explanation }]`, and
   `detail: { areaName, paragraphs }`. Storage mode and handoff identifiers are
-  not browser-facing response fields. Version-one stored reports still replay
-  and render. `includeCompetitors` remains in the request for compatibility;
+  not browser-facing response fields. Version-one stored reports cannot be emailed; retries ask for a new Discovery. `includeCompetitors` remains in the request for compatibility;
   it cannot enable report research.
 - Failures retain `{ ok: false, error: { code, message, retryable } }`.
 
@@ -346,10 +347,10 @@ match an area. Invalid copy gets at most one rewrite within the existing
 retains the 2,500-token ceiling. A second invalid result fails with the existing
 retry-safe error; text is not silently truncated and no rules report is used.
 
-Browser print exports exactly two A4 pages after the contact gate and excludes
-the report toolbar. Email attachments use the separate server-side PDF renderer
-in `src/server/email/report-pdf.ts`, with the same report content, Geist fonts,
-logo and A4 design. No static sample PDF is deployed.
+The website shows an email-delivery confirmation and a decorative blurred PDF
+preview, without generated report text or a download button. The Supabase email
+renderer produces the PDF using stored report content, embedded Geist fonts,
+the official logo and the two-page A4 design. No static sample PDF is deployed.
 
 ## Email delivery
 

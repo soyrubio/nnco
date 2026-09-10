@@ -4,6 +4,7 @@ import {
   isCompanyContext,
   isDiscoverySubmission,
   isDiscoveryReleasePayload,
+  isDiscoveryReleaseReport,
   normalizeWebsiteInput,
   reclassifyCompanyContext,
   type DiscoveryReleaseErrorResponse,
@@ -420,7 +421,7 @@ export async function handleDiscoveryAnalysisRequest(
       );
     }
 
-    const completed = await saveLeadAnalysis(
+    await saveLeadAnalysis(
       record.requestId,
       record.requestHash,
       claim.claimToken,
@@ -432,7 +433,6 @@ export async function handleDiscoveryAnalysisRequest(
     );
     const responseBody: DiscoveryReleaseResponse = {
       ok: true,
-      report: completed.report as DiscoveryReleaseReport,
     };
     return Response.json(responseBody, {
       status: persisted.created ? 201 : 200,
@@ -480,10 +480,10 @@ function canonicalJson(value: unknown): string {
 function completedAnalysisResponse(
   replay: LeadAnalysisReplay,
 ): Response {
-  const responseBody: DiscoveryReleaseResponse = {
-    ok: true,
-    report: replay.report as DiscoveryReleaseReport,
-  };
+  if (!isDiscoveryReleaseReport(replay.report) || replay.report.schemaVersion !== 2) {
+    return errorResponse(409, "ANALYSIS_UNAVAILABLE", "This older report cannot be emailed. Start a new Discovery.", false);
+  }
+  const responseBody: DiscoveryReleaseResponse = { ok: true };
   return Response.json(responseBody, {
     status: 200,
     headers: { "Cache-Control": "no-store" },

@@ -151,7 +151,8 @@ test("analysis uses non-stored strict Responses output with a token ceiling", as
     const body = await response.json();
 
     assert.equal(response.status, 201);
-    assert.deepEqual(Object.keys(body).sort(), ["ok", "report"]);
+    assert.deepEqual(body, { ok: true });
+    const storedReport = globalThis.__nncoEphemeralLeadAnalyses.get(payload.requestId).report;
     assert.equal(String(upstream.input), "https://api.example.test/v1/responses");
     assert.equal(upstream.body.model, "test-model");
     assert.equal(upstream.body.store, false);
@@ -169,11 +170,11 @@ test("analysis uses non-stored strict Responses output with a token ceiling", as
     assert.equal(upstream.body.text.format.schema.properties.providedContext.maxLength, 900);
     assert.equal(upstream.body.text.format.schema.properties.areas.items.properties.explanation.maxLength, 420);
     assert.equal(upstream.body.text.format.schema.properties.detail.properties.paragraphs.items.maxLength, 450);
-    assert.equal(body.report.schemaVersion, 2);
-    assert.equal(body.report.generatedAt, generatedAt);
-    assert.equal(body.report.title, "Opportunity Discovery");
-    assert.equal(body.report.providedContext, report.providedContext);
-    assert.equal(body.report.pageTwo, undefined);
+    assert.equal(storedReport.schemaVersion, 2);
+    assert.equal(storedReport.generatedAt, generatedAt);
+    assert.equal(storedReport.title, "Opportunity Discovery");
+    assert.equal(storedReport.providedContext, report.providedContext);
+    assert.equal(storedReport.pageTwo, undefined);
   });
 });
 
@@ -217,7 +218,7 @@ test("analysis replays a completed request without a second model call", async (
     assert.equal(replays.every((response) => response.status === 200), true);
     assert.equal(expiredTokenReplay.status, 200);
     assert.equal(upstreamCalls, 1);
-    assert.deepEqual((await replays[4].json()).report, (await first.json()).report);
+    assert.deepEqual(await replays[4].json(), await first.json());
   });
 });
 
@@ -271,7 +272,7 @@ test("concurrent identical submissions acquire one analysis claim", async () => 
     assert.equal(competing.every((response) => response.headers.get("retry-after") === "2"), true);
     assert.equal(replay.status, 200);
     assert.equal(upstreamCalls, 1);
-    assert.deepEqual((await replay.json()).report, (await first.json()).report);
+    assert.deepEqual(await replay.json(), await first.json());
   });
 });
 
@@ -291,7 +292,8 @@ test("report generation never searches even for an older competitor opt-in", asy
     assert.equal(upstream.tools, undefined);
     assert.equal(upstream.tool_choice, undefined);
     assert.equal(JSON.parse(upstream.input[1].content).competitorView, undefined);
-    assert.equal((await response.json()).report.competitorNotes, undefined);
+    assert.equal((await response.json()).report, undefined);
+    assert.equal(globalThis.__nncoEphemeralLeadAnalyses.get(payload.requestId).report.competitorNotes, undefined);
   });
 });
 
@@ -315,7 +317,8 @@ test("analysis repairs overlong copy once without truncating evidence or changin
     assert.deepEqual(drafts[0].providedInputs, drafts[1].providedInputs);
     assert.ok(drafts[1].revisionIssues.some(issue => issue.includes("providedContext")));
     assert.equal(drafts[1].previousDraft.providedContext.length > 900, true);
-    assert.equal((await response.json()).report.providedContext, report.providedContext);
+    assert.deepEqual(await response.json(), { ok: true });
+    assert.equal(globalThis.__nncoEphemeralLeadAnalyses.get(payload.requestId).report.providedContext, report.providedContext);
     const replay = await handleDiscoveryAnalysisRequest(analysisRequest(payload), crypto.randomUUID(), options);
     assert.equal(replay.status, 200);
     assert.equal(drafts.length, 2);
@@ -333,7 +336,8 @@ for (const count of [2, 3]) {
         fetchImpl: async () => Response.json({ output_text: JSON.stringify(report) }),
       });
       assert.equal(response.status, 201);
-      const result = (await response.json()).report;
+      assert.deepEqual(await response.json(), { ok: true });
+      const result = globalThis.__nncoEphemeralLeadAnalyses.get(payload.requestId).report;
       assert.equal(result.areas.length, count);
       assert.deepEqual(result.detail, report.detail);
     });
@@ -506,5 +510,25 @@ test("personal response request is explicit and changes stored replay identity",
     assert.equal((await handleDiscoveryAnalysisRequest(analysisRequest(payload), crypto.randomUUID(), options)).status, 200);
     delete payload.personalResponseRequested;
     assert.equal((await handleDiscoveryAnalysisRequest(analysisRequest(payload), crypto.randomUUID(), options)).status, 409);
+  });
+});
+
+test("legacy saved reports never expose report content or promise an unsupported email", async () => {
+  await withLocalRepository(async () => {
+    const payload = validPayload();
+    const options = {
+      env: { NODE_ENV: "test", OPENAI_API_KEY: "test-key" },
+      fetchImpl: async () => Response.json({ output_text: JSON.stringify(opportunityReportFixture(payload.company.name)) }),
+    };
+    const first = await handleDiscoveryAnalysisRequest(analysisRequest(payload), crypto.randomUUID(), options);
+    assert.deepEqual(await first.json(), { ok: true });
+    const saved = globalThis.__nncoEphemeralLeadAnalyses.get(payload.requestId);
+    saved.report = buildFallbackReleaseReport(payload);
+    const replay = await handleDiscoveryAnalysisRequest(analysisRequest(payload), crypto.randomUUID(), options);
+    const body = await replay.json();
+    assert.equal(replay.status, 409);
+    assert.equal(body.report, undefined);
+    assert.equal(body.error.retryable, false);
+    assert.match(body.error.message, /Start a new Discovery/);
   });
 });

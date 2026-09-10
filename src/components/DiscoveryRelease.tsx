@@ -12,15 +12,12 @@ import { DiscoveryBlockArrow as BlockArrow } from "./discovery/DiscoveryBlockArr
 import { DiscoveryBlockLoader as BlockLoader } from "./discovery/DiscoveryBlockLoader";
 import { AutoExpandingTextarea } from "./discovery/AutoExpandingTextarea";
 import { PRIMARY_LOGO } from "@/lib/brand-assets";
-import { prepareReportPrint } from "@/lib/prepare-report-print";
 import { discoveryIntro, discoveryCopy, discoveryReportCopy } from "@/data/discovery";
 import { emptyDiscoveryAnswers, prefillDiscoveryAnswers, discoveryWorkflowOptions, answersAfterSectorChange } from "@/lib/discovery-questionnaire";
 import { discoveryProgress, type DiscoveryScreen } from "@/lib/discovery-progress";
 import {
   DISCOVERY_RELEASE_CONSENT_VERSION,
   DISCOVERY_RELEASE_LIMITS,
-  DISCOVERY_REPORT_LIMITS as reportLimits,
-  limitReportText,
   RELEASE_CONTROL_CHOICES,
   RELEASE_SCALE_CHOICES,
   RELEASE_SYSTEM_CHOICES,
@@ -31,12 +28,10 @@ import {
   type DiscoverySubmission,
   type MultiAnswerId,
   type DiscoveryEnrichmentResponse,
-  type DiscoveryReleaseReport,
   type DiscoveryReleaseResponse,
   type ReleaseAnswers,
   type ReleaseChoice,
   type ReleaseSector,
-  type ReleaseSource,
 } from "@/lib/discovery-release";
 import {
   CONTACT_EMAIL_PATTERN_SOURCE,
@@ -91,7 +86,6 @@ export function DiscoveryRelease({ introGlyph }: { introGlyph: ReactNode }) {
   const [contact, setContact] = useState({ workEmail: "" });
   const [direction, setDirection] = useState<"forward" | "back">("forward");
   const [analysisError, setAnalysisError] = useState("");
-  const [report, setReport] = useState<DiscoveryReleaseReport | null>(null);
   const reviewedAnswersRef = useRef(new Set<keyof ReleaseAnswers>());
   const researchedWebsiteRef = useRef("");
   const confirmedSectorRef = useRef<ReleaseSector | "">("");
@@ -322,7 +316,6 @@ export function DiscoveryRelease({ introGlyph }: { introGlyph: ReactNode }) {
         setScreen("contact");
         return;
       }
-      setReport(result.report);
       setScreen("report");
     } catch {
       setAnalysisError("The report could not be completed. Your answers remain on this page.");
@@ -355,15 +348,7 @@ export function DiscoveryRelease({ introGlyph }: { introGlyph: ReactNode }) {
       );
     }
 
-    if (screen === "report" && report) {
-      return (
-        <DiscoveryReleaseReportView
-          companyName={companyName}
-          report={report}
-          sources={research?.sources}
-        />
-      );
-    }
+    if (screen === "report") return <DiscoveryReleaseReportView />;
 
     if (screen === "intro") {
       return (
@@ -743,32 +728,8 @@ function DiscoveryProgress({
   );
 }
 
-export function DiscoveryReleaseReportView({
-  companyName,
-  report,
-  sources = [],
-}: {
-  companyName: string;
-  report: DiscoveryReleaseReport;
-  sources?: ReleaseSource[];
-}) {
+export function DiscoveryReleaseReportView() {
   const reportHeadingRef = useRef<HTMLHeadingElement>(null);
-  const reportPagesRef = useRef<HTMLDivElement>(null);
-  const [preparingPrint, setPreparingPrint] = useState(false);
-  const [printError, setPrintError] = useState("");
-  const printReport = async () => {
-    if (!reportPagesRef.current || preparingPrint) return;
-    setPreparingPrint(true);
-    setPrintError("");
-    try {
-      await prepareReportPrint(reportPagesRef.current);
-      window.print();
-    } catch {
-      setPrintError(discoveryReportCopy.pdfError);
-    } finally {
-      setPreparingPrint(false);
-    }
-  };
   useEffect(() => {
     const frame = window.requestAnimationFrame(() => {
       reportHeadingRef.current?.focus({ preventScroll: true });
@@ -776,137 +737,37 @@ export function DiscoveryReleaseReportView({
     });
     return () => window.cancelAnimationFrame(frame);
   }, []);
-  const current = report.schemaVersion === 2 ? report : null;
-  const legacy = report.schemaVersion === 1 ? report : null;
-  const areas = current?.areas ?? legacy!.pageTwo.opportunities.slice(0, reportLimits.points).map(opportunity => ({
-    name: limitReportText(opportunity.title, reportLimits.heading),
-    explanation: limitReportText(opportunity.action, reportLimits.action),
-  }));
-  const preparedDate = new Intl.DateTimeFormat("en", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  }).format(new Date(report.generatedAt));
   return (
-    <main className="discovery-app discovery-preview discovery-release-report">
+    <main className="discovery-app discovery-delivery">
       <div className="discovery-canvas">
-        <div className="discovery-interaction discovery-report-layout">
-          <div className="discovery-form-column discovery-report-reading">
-            <div className="discovery-report-pages" ref={reportPagesRef}>
-              <article className="discovery-report-page" aria-label={discoveryReportCopy.title}>
-                <DiscoveryReportHeader label={discoveryReportCopy.title} reportHeadingRef={reportHeadingRef} />
-                <p className="discovery-report-prepared">Prepared for {limitReportText(companyName, reportLimits.company)}, {preparedDate}</p>
-                <section className="discovery-report-summary" aria-labelledby="discovery-summary-heading">
-                  <h2 id="discovery-summary-heading">{discoveryReportCopy.summary}</h2>
-                  <p>{discoveryReportCopy.purpose}</p>
-                </section>
-                <section className="discovery-report-summary" aria-labelledby="discovery-context-heading">
-                  <h2 id="discovery-context-heading">{discoveryReportCopy.context}</h2>
-                  <p>{current?.providedContext ?? limitReportText(legacy!.executiveSummary, reportLimits.summary)}</p>
-                  {legacy && sources.length > 0 && <p className="discovery-report-sources">
-                    {discoveryReportCopy.sources}:{" "}
-                    {sources.slice(0, 3).map((source, index) => <span key={source.url}>
-                      {index > 0 && "; "}<a href={source.url}>{limitReportText(source.label, reportLimits.sourceLabel)}</a>
-                    </span>)}.
-                  </p>}
-                  {legacy && legacy.pageTwo.competitorNotes.length > 0 && (
-                    <div className="discovery-release-market" aria-label={discoveryReportCopy.publicContext}>
-                      {legacy.pageTwo.competitorNotes.slice(0, reportLimits.points).map((note, index) => (
-                        <p key={index}>
-                          {limitReportText(note.company, reportLimits.competitorName)}: {limitReportText(note.finding, reportLimits.competitorFinding)}{" "}
-                          <a href={note.sourceUrl}>{limitReportText(new URL(note.sourceUrl).hostname, reportLimits.sourceLabel)}</a>
-                        </p>
-                      ))}
-                    </div>
-                  )}
-                  {legacy?.pageTwo.competitorStatus === "not-found" && (
-                    <p className="discovery-report-note">No reliable public comparison was found in the available sources.</p>
-                  )}
-                </section>
-                {current && <section className="discovery-report-summary" aria-labelledby="discovery-sector-heading">
-                  <h2 id="discovery-sector-heading">{discoveryReportCopy.sectorOpportunities}</h2>
-                  <p>{current.sectorOpportunities}</p>
-                </section>}
-                <DiscoveryReportFooter page={1} />
-              </article>
-              <article className="discovery-report-page discovery-report-page--final" aria-label={discoveryReportCopy.title}>
-                <DiscoveryReportHeader label={discoveryReportCopy.title} />
-                <section className="discovery-report-summary" aria-labelledby="discovery-opportunities-heading">
-                  <h2 id="discovery-opportunities-heading">{discoveryReportCopy.opportunities}</h2>
-                  {current && <p>{current.areasIntro}</p>}
-                  <div className="discovery-release-market">
-                    {areas.length > 0 ? <ol className="discovery-priorities">
-                      {areas.map((area, index) => (
-                        <li key={index}>
-                          <p><strong>{area.name.replace(/[.!?:;]+$/, "")}.</strong>{" "}{area.explanation}</p>
-                        </li>
-                      ))}
-                    </ol> : <p>{discoveryReportCopy.noOpportunity}</p>}
-                  </div>
-                </section>
-                <section className="discovery-report-summary" aria-labelledby="discovery-suitability-heading">
-                  <h2 id="discovery-suitability-heading">{current ? `${discoveryReportCopy.detail}: ${current.detail.areaName}` : areas.length > 0 ? discoveryReportCopy.closerLook : discoveryReportCopy.suitability}</h2>
-                  {current ? current.detail.paragraphs.map((paragraph, index) => <p key={index}>{paragraph}</p>) : <>
-                    <ol className="discovery-priorities">
-                      {legacy!.pageOne.findings.slice(0, reportLimits.points).map((finding, index) => (
-                        <li key={index}>
-                          <p><strong>{limitReportText(finding.title, reportLimits.heading).replace(/[.!?:;]+$/, "")}.</strong>{" "}
-                            {limitReportText(finding.explanation, reportLimits.explanation)}</p>
-                        </li>
-                      ))}
-                    </ol>
-                    <p className="discovery-report-conclusion">{limitReportText(legacy!.pageTwo.constraints, reportLimits.constraints)} {limitReportText(legacy!.pageTwo.firstMove, reportLimits.firstMove)}</p>
-                  </>}
-                </section>
-                <p className="discovery-report-assessment">
-                  {discoveryReportCopy.assessment}{" "}
-                  <a href={`mailto:${discoveryReportCopy.assessmentEmail}`}>{discoveryReportCopy.assessmentEmail}</a>.
-                </p>
-                <DiscoveryReportFooter page={2} />
-              </article>
-            </div>
-            <div className="discovery-report-end">
-              <p className="discovery-report-disclaimer">{discoveryReportCopy.disclaimer}</p>
-              {printError && <p className="discovery-report-error" role="alert">{printError}</p>}
-            </div>
+        <div className="discovery-interaction discovery-delivery-layout">
+          <div className="discovery-delivery-message">
+            <h1 ref={reportHeadingRef} tabIndex={-1}>{discoveryCopy.delivery.title}</h1>
+            <p>{discoveryCopy.delivery.description}</p>
           </div>
-          <aside className="discovery-report-sidebar" aria-label="Report actions">
-            <DiscoveryReportActions onPrint={printReport} preparingPrint={preparingPrint} />
-          </aside>
+          <div className="discovery-delivery-preview" aria-hidden="true">
+            {[1, 2].map(page => (
+              <div className="discovery-delivery-paper" key={page}>
+                <div className="discovery-delivery-paper-header">
+                  <strong>{discoveryReportCopy.title}</strong>
+                  <img src={PRIMARY_LOGO.src} width={PRIMARY_LOGO.width} height={PRIMARY_LOGO.height} alt="" />
+                </div>
+                <div className="discovery-delivery-paper-content">
+                  {[1, 2, 3].map(section => (
+                    <div className="discovery-delivery-placeholder" key={section}>
+                      <span className="discovery-delivery-placeholder-title" />
+                      {[1, 2, 3, 4, 5].map(line => <span key={line} />)}
+                    </div>
+                  ))}
+                </div>
+                <div className="discovery-delivery-paper-footer">NNCo <span>{page} / 2</span></div>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     </main>
   );
-}
-
-function DiscoveryReportActions({ onPrint, preparingPrint }: {
-  onPrint: () => void;
-  preparingPrint: boolean;
-}) {
-  return (
-    <div className="discovery-report-actions">
-      <button className="discovery-primary" type="button" onClick={onPrint} disabled={preparingPrint}>
-        {preparingPrint ? discoveryReportCopy.preparingPdf : discoveryReportCopy.savePdf}
-      </button>
-      <a className="discovery-release-review-link" href="/contact">{discoveryReportCopy.contact}</a>
-    </div>
-  );
-}
-
-function DiscoveryReportHeader({ label, reportHeadingRef }: {
-  label: string;
-  reportHeadingRef?: React.RefObject<HTMLHeadingElement | null>;
-}) {
-  return (
-    <header className="discovery-report-title">
-      {reportHeadingRef ? <h1 ref={reportHeadingRef} tabIndex={-1}>{label}</h1> : <h2>{label}</h2>}
-      <img src={PRIMARY_LOGO.src} width={PRIMARY_LOGO.width} height={PRIMARY_LOGO.height} alt="NNCo" />
-    </header>
-  );
-}
-
-function DiscoveryReportFooter({ page }: { page: 1 | 2 }) {
-  return <footer><span>{discoveryReportCopy.disclaimer}</span><span>{page} / 2</span></footer>;
 }
 
 function handleRadioKeyDown(

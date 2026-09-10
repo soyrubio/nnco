@@ -169,7 +169,6 @@ export type DiscoveryReleaseReport = LegacyDiscoveryReleaseReport | OpportunityD
 
 export interface DiscoveryReleaseSuccessResponse {
   ok: true;
-  report: DiscoveryReleaseReport;
 }
 
 export interface DiscoveryReleaseErrorResponse {

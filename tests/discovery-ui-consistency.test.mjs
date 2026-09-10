@@ -14,19 +14,15 @@ const release = await readFile(
 );
 const copy = await readFile(new URL("../src/data/discovery.ts", import.meta.url), "utf8");
 
-test("the report explains its purpose and evidence before offering AI opportunities", () => {
-  const report = release.slice(release.indexOf("function DiscoveryReleaseReportView"), release.indexOf("function DiscoveryReportActions"));
-  const order = ["discoveryReportCopy.purpose", "discoveryReportCopy.context", "current?.providedContext", "discoveryReportCopy.sectorOpportunities", "<DiscoveryReportFooter page={1}", "discoveryReportCopy.opportunities", "current.areasIntro", "areas.map", "current.detail.paragraphs"];
-  const positions = order.map((item) => report.indexOf(item));
-  assert.ok(positions.every((position, index) => position >= 0 && (index === 0 || position > positions[index - 1])));
-  assert.match(copy, /summary: "About this report"/);
-  assert.match(copy, /context: "Provided context"/);
-  assert.match(copy, /sectorOpportunities: "Sector opportunities"/);
-  assert.match(copy, /opportunities: "Potential areas for improvement"/);
-  assert.match(report, /discoveryReportCopy.detail}: \$\{current.detail.areaName}/);
-  assert.equal(report.match(/<DiscoveryReportHeader label=\{discoveryReportCopy.title\}/g)?.length, 2);
-  assert.match(copy, /closerLook: "One area in more detail"/);
-  assert.match(copy, /suitability: "What we still need to know"/);
+test("delivery confirmation contains no report content or browser download", () => {
+  const view = release.slice(release.indexOf("function DiscoveryReleaseReportView"), release.indexOf("function handleRadioKeyDown"));
+  assert.match(view, /discoveryCopy.delivery.title/);
+  assert.match(view, /discoveryCopy.delivery.description/);
+  assert.match(view, /className="discovery-delivery-preview" aria-hidden="true"/);
+  assert.doesNotMatch(release, /window\.print|prepareReportPrint|result\.report|setReport\(/);
+  assert.doesNotMatch(view, /<iframe|<embed|<button|providedContext|sectorOpportunities/);
+  assert.match(copy, /We’re sending your report to your email\./);
+  assert.match(copy, /It should arrive within a few minutes\./);
 });
 
 test("discovery error notices span the form column instead of inheriting the prose width", () => {
@@ -183,28 +179,11 @@ test("release moves focus through loading states and onto the final report", () 
   assert.match(release, /<h1 ref=\{reportHeadingRef\} tabIndex=\{-1\}>/);
 });
 
-test("report uses the shared left-right grid with one responsive action group", () => {
-  const reportView = release.slice(release.indexOf("function DiscoveryReleaseReportView"), release.indexOf("function DiscoveryReportHeader"));
-  assert.match(reportView, /className="discovery-canvas"/);
-  assert.match(reportView, /className="discovery-interaction discovery-report-layout"/);
-  assert.match(reportView, /<aside className="discovery-report-sidebar" aria-label="Report actions"/);
-  assert.match(reportView, /className="discovery-form-column discovery-report-reading"/);
-  assert.match(reportView, /className="discovery-report-end">\s*<p className="discovery-report-disclaimer">\{discoveryReportCopy.disclaimer\}<\/p>/);
-  assert.equal(reportView.match(/<DiscoveryReportActions onPrint=\{printReport\}/g)?.length, 1);
-  assert.ok(reportView.indexOf('className="discovery-report-end"') < reportView.indexOf('<aside className="discovery-report-sidebar"'));
-  assert.match(reportView, /href="\/contact">\{discoveryReportCopy.contact\}/);
-  assert.doesNotMatch(reportView, /discovery-preview-toolbar|<iframe|<embed/);
-  assert.match(release, /await prepareReportPrint\(reportPagesRef\.current\);\s+window\.print\(\);/);
-  assert.match(release, /<img src=\{PRIMARY_LOGO\.src\}/);
-});
-
-test("report sidebar contains only the two text-only actions", () => {
-  const reportView = release.slice(release.indexOf("function DiscoveryReleaseReportView"), release.indexOf("function DiscoveryReportHeader"));
-  assert.match(reportView, /<aside className="discovery-report-sidebar" aria-label="Report actions">\s*<DiscoveryReportActions onPrint=\{printReport\} preparingPrint=\{preparingPrint\} \/>\s*<\/aside>/);
-  const actions = reportView.slice(reportView.indexOf("function DiscoveryReportActions"));
-  assert.doesNotMatch(actions, /BlockArrow|<svg|<img/);
-  assert.doesNotMatch(reportView, /discoveryReportCopy\.(?:actionsTitle|pdfHelp)/);
-  assert.match(reportView, /className="discovery-report-end">[\s\S]*?\{printError && <p className="discovery-report-error" role="alert">\{printError\}<\/p>\}/);
+test("delivery confirmation places the message beside a decorative blurred preview", () => {
+  assert.match(release, /discovery-interaction discovery-delivery-layout/);
+  assert.match(styles, /\.discovery-delivery-layout\s*\{\s*grid-template-columns: minmax\(0, 1fr\) minmax\(0, 1fr\)/);
+  assert.match(styles, /\.discovery-delivery-paper-content\s*\{ filter: blur\(4px\)/);
+  assert.match(styles, /\.discovery-delivery-layout \{ grid-template-columns: minmax\(0, 1fr\); gap: 2rem;/);
 });
 
 test("screen report is normal dark-page text while its actions remain reachable", () => {

@@ -34,6 +34,10 @@ export const discoveryCopy = {
   },
   prefill: "Suggested from your website. Review or change the selected answers.",
   sources: "Research sources",
+  delivery: {
+    title: "We’re sending your report to your email.",
+    description: "It should arrive within a few minutes.",
+  },
   buildingReport: "Building the diagnostic.",
   contact: {
     title: "What is your work email?",
