@@ -1,3 +1,4 @@
+import { bookingLink } from "./site.ts";
 import type { FaqPageKey } from "./faq";
 import { cardGlyphSets } from "./glyphs.ts";
 import type { ModularGlyphDefinition } from "@/lib/modular-glyph";
@@ -112,7 +113,7 @@ export const programmePage: MarketingPageData = {
   title: "AI-First Enterprise",
   introduction:
     "A large organisation does not become AI-first by buying a tool. It happens when a sequence of workflows moves into systems that run every day, on infrastructure that survives an audit, with someone accountable for each one. This is that sequence.",
-  primaryAction: { href: "/contact", label: "Book a 30-minute call" },
+  primaryAction: { href: bookingLink.href, label: "Book a 30-minute call" },
   secondaryAction: {
     href: "/ai-first-enterprise/ai-audit",
     label: "Start with the audit",
@@ -238,7 +239,7 @@ export const programmeSubpages = {
     title: "AI audit",
     introduction:
       "An AI audit goes through your operations and returns a map: which workflows AI can take over, in what order, what each one is worth, and where your data and your regulator allow deployment. It ends with the first use case going into a pilot.",
-    primaryAction: { href: "/contact", label: "Book a 30-minute call" },
+    primaryAction: { href: bookingLink.href, label: "Book a 30-minute call" },
     secondaryAction: { href: "/discovery", label: "Start the diagnostic" },
     sections: [
       {

@@ -18,6 +18,7 @@ test("delivery confirmation contains no report content or browser download", () 
   const view = release.slice(release.indexOf("function DiscoveryReleaseReportView"), release.indexOf("function handleRadioKeyDown"));
   assert.match(view, /discoveryCopy.delivery.title/);
   assert.match(view, /discoveryCopy.delivery.description/);
+  assert.match(view, /href=\{bookingLink.href\}>\{bookingLink.label\}/);
   assert.match(view, /className="discovery-delivery-preview" aria-hidden="true"/);
   assert.doesNotMatch(release, /window\.print|prepareReportPrint|result\.report|setReport\(/);
   assert.doesNotMatch(view, /<iframe|<embed|<button|providedContext|sectorOpportunities/);

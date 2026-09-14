@@ -73,7 +73,7 @@ test("footer data preserves group, label, href, and link order", () => {
       {
         label: "Contact",
         links: [
-          { href: "/contact", label: "Book a call" },
+          { href: "https://cal.com/marek-kriz", label: "Book a call" },
           { href: "/discovery", label: "Start the diagnostic" },
           {
             href: "mailto:general@nnco.ai",

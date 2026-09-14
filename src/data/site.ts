@@ -1,3 +1,5 @@
+export const bookingLink = { href: "https://cal.com/marek-kriz", label: "Book a call" } as const;
+
 interface NavigationLink {
   href: string;
   label: string;
@@ -104,7 +106,7 @@ export const footerGroups = [
   {
     label: "Contact",
     links: [
-      { href: "/contact", label: "Book a call" },
+      bookingLink,
       { href: "/discovery", label: "Start the diagnostic" },
       { href: "mailto:general@nnco.ai", label: "general@nnco.ai" },
     ],

@@ -11,6 +11,7 @@ import {
 import { DiscoveryBlockArrow as BlockArrow } from "./discovery/DiscoveryBlockArrow";
 import { DiscoveryBlockLoader as BlockLoader } from "./discovery/DiscoveryBlockLoader";
 import { AutoExpandingTextarea } from "./discovery/AutoExpandingTextarea";
+import { bookingLink } from "@/data/site";
 import { PRIMARY_LOGO } from "@/lib/brand-assets";
 import { discoveryIntro, discoveryCopy, discoveryReportCopy } from "@/data/discovery";
 import { emptyDiscoveryAnswers, prefillDiscoveryAnswers, discoveryWorkflowOptions, answersAfterSectorChange } from "@/lib/discovery-questionnaire";
@@ -744,6 +745,7 @@ export function DiscoveryReleaseReportView() {
           <div className="discovery-delivery-message">
             <h1 ref={reportHeadingRef} tabIndex={-1}>{discoveryCopy.delivery.title}</h1>
             <p>{discoveryCopy.delivery.description}</p>
+            <a className="discovery-release-review-link" href={bookingLink.href}>{bookingLink.label}</a>
           </div>
           <div className="discovery-delivery-preview" aria-hidden="true">
             {[1, 2].map(page => (

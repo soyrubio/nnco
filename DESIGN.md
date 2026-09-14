@@ -566,7 +566,9 @@ The structure is deliberately blocky:
   arrive within a few minutes.” The columns stack on mobile. The preview uses
   placeholder lines, is hidden from assistive technology, and contains no
   generated report content. There is no download or print action. The API returns
-  only an acknowledgement; the full report is delivered by email.
+  only an acknowledgement; the full report is delivered by email. A “Book a call”
+  link below the message opens Marek’s calendar, using the shared booking link
+  also used by the footer and programme calls to action.
 - The report explains its purpose and supplied context before discussing AI.
   New reports have five sections across two pages. Page one contains About this
   report, the fixed explanation; Provided context, one AI-written paragraph
