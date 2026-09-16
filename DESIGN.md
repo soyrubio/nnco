@@ -440,6 +440,10 @@ The structure is deliberately blocky:
   renders its three latest posts without pagination and ends with the same row
   treatment linking to `/blog` as `See the blog`. Each article places its title
   alone in the shared PageHero.
+  Posts may define an optional cover image, displayed above the text in the
+  article content column at its original aspect ratio without cropping. The same
+  asset supplies the article's social-sharing image. Covers have explicit
+  dimensions and descriptive alt text; posts without covers keep their layout.
   The ruled content rail below uses two desktop columns: publication date
   and an All posts button with a backward arrow on the left, and only
   Markdown on the right. At 767px and below metadata moves above the full-width

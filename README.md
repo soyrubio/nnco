@@ -44,6 +44,17 @@ One-sentence article summary.
 Article content.
 ```
 
+To add a cover above the article text and use it for social sharing, add optional
+frontmatter (dimensions must match the image):
+
+```yaml
+cover:
+  src: /assets/blog/clinic-empty-hour.jpg
+  alt: An empty examination room with sunlight falling across the wall.
+  width: 1672
+  height: 941
+```
+
 Use `.md` for ordinary articles and `.mdx` to embed components. Keep blog-specific
 components in `src/components/blog/`: `.astro` for presentation, `.tsx` for
 stateful React interaction. Put reusable calculation logic in `src/lib/`.

@@ -12,6 +12,12 @@ const blog = defineCollection({
       publishedAt: z.iso.date(),
       updatedAt: z.iso.date(),
       summary: z.string().min(1),
+      cover: z.object({
+        src: z.string().startsWith("/assets/"),
+        alt: z.string().min(1),
+        width: z.number().int().positive(),
+        height: z.number().int().positive(),
+      }).optional(),
     })
     .refine((data) => data.updatedAt >= data.publishedAt, {
       message: "updatedAt must be on or after publishedAt",

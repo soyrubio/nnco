@@ -63,6 +63,7 @@ const breadcrumbSchema = {
   title={`${post.data.title} | NNCo`}
   description={post.data.summary}
   canonicalPath={`/blog/${post.id}`}
+  image={post.data.cover?.src}
   schemas={[blogSchema, breadcrumbSchema]}
   ogType="article"
   articlePublishedTime={post.data.publishedAt}
@@ -82,6 +83,16 @@ const breadcrumbSchema = {
         </header>
 
         <div class="news-article__content">
+          {post.data.cover && (
+            <img
+              class="news-article__cover"
+              src={post.data.cover.src}
+              alt={post.data.cover.alt}
+              width={post.data.cover.width}
+              height={post.data.cover.height}
+              decoding="async"
+            />
+          )}
           <ArticleProse>
             <Content />
           </ArticleProse>

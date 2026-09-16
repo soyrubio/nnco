@@ -1815,6 +1815,13 @@ legend {
   grid-column: 2;
 }
 
+.news-article__cover {
+  display: block;
+  width: 100%;
+  height: auto;
+  margin-bottom: clamp(2rem, 4vw, 3rem);
+}
+
 @media (max-width: 767px) {
   .news-row {
     min-height: 11rem;

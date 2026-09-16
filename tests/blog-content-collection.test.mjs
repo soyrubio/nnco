@@ -218,7 +218,7 @@ test("article routes render frontmatter titles in the hero and Markdown on the r
   );
   assert.match(
     sourceEntries.route,
-    /const publishedLabel = formatBlogDate\(post\.data\.publishedAt\);[\s\S]*?<article class="news-article__layout">\s*<header class="news-article__meta" aria-label="Publication details">\s*<time datetime=\{post\.data\.publishedAt\}>\{publishedLabel\}<\/time>\s*<Button href="\/blog" variant="secondary">\s*<BlockArrow direction="left" \/> All posts\s*<\/Button>\s*<\/header>\s*<div class="news-article__content">\s*<ArticleProse>\s*<Content \/>/,
+    /const publishedLabel = formatBlogDate\(post\.data\.publishedAt\);[\s\S]*?<article class="news-article__layout">\s*<header class="news-article__meta" aria-label="Publication details">\s*<time datetime=\{post\.data\.publishedAt\}>\{publishedLabel\}<\/time>\s*<Button href="\/blog" variant="secondary">\s*<BlockArrow direction="left" \/> All posts\s*<\/Button>\s*<\/header>\s*<div class="news-article__content">[\s\S]*?<ArticleProse>\s*<Content \/>/,
   );
   assert.doesNotMatch(sourceEntries.route, /post\.data\.author|"@type": "Person"/);
   assert.match(
