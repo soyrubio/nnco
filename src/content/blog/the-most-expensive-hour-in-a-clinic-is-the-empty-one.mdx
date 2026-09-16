@@ -13,6 +13,8 @@ summary: The empty hour is one of many things we keep running into when we work 
 ---
 
 import EmptyHoursCalculator from "@/components/blog/EmptyHoursCalculator";
+import ModularGlyph from "@/components/ModularGlyph.astro";
+import { clinicSetupGlyphs } from "@/data/glyphs";
 
 The empty hour is one of many things we keep running into when we work with clinics. It is a useful way in because it can be counted.
 
@@ -117,33 +119,31 @@ Many clinic networks also fall under the Czech Cybersecurity Act (No. 264/2025 C
 
 *This is how we read the rules. It is not legal advice. In each blueprint we map the rules for the specific clinic together with its data protection officer.*
 
-## The setup
-
 <aside className="clinic-setup" aria-labelledby="clinic-setup-title">
-  <h3 id="clinic-setup-title">Our $10k solution</h3>
+  <h2 id="clinic-setup-title">Our $10k solution</h2>
   <p>The whole agent runs on one machine inside the clinic. No cloud, no per-call fee, patient data never leaves the building.</p>
   <dl>
     <div>
-      <dt>Hardware</dt>
+      <dt><ModularGlyph {...clinicSetupGlyphs.hardware} />Hardware</dt>
       <dd>1× Mac Studio M5 Ultra, 256 GB RAM.</dd>
     </div>
     <div>
-      <dt>Model</dt>
+      <dt><ModularGlyph {...clinicSetupGlyphs.model} />Model</dt>
       <dd>Qwen3.8-Flash-Next, open weights. A 125B mixture-of-experts model answers fast and reasons like a large model. 8-bit MLX, 192 GB, full-precision quality.</dd>
     </div>
     <div>
-      <dt>Intelligence</dt>
+      <dt><ModularGlyph {...clinicSetupGlyphs.intelligence} />Intelligence</dt>
       <dd>Same tier as Gemini 3.8 Flash and Claude Sonnet 5, the models behind today's cloud assistants, running fully offline.</dd>
     </div>
     <div>
-      <dt>Serving</dt>
+      <dt><ModularGlyph {...clinicSetupGlyphs.serving} />Serving</dt>
       <dd>oMLX server: all calls share one model pass, the clinic's instructions stay cached. Parakeet speech-to-text, MLX text-to-speech.</dd>
     </div>
-    <div>
-      <dt>What the clinic gets</dt>
-      <dd>Overbooking scheduler for 1,000+ patients with deep reasoning about every case, every alert starting in under a second.</dd>
-    </div>
   </dl>
+  <div className="clinic-setup__outcome">
+    <h3>What the clinic gets</h3>
+    <p>Overbooking scheduler for 1,000+ patients with deep reasoning about every case, every alert starting in under a second.</p>
+  </div>
 </aside>
 
 ## How we would start
@@ -154,4 +154,4 @@ If there is, the next step is two weeks of work inside your operation. The resul
 
 If the honest answer is that you need to fix your data before anything else, the blueprint will say so.
 
-*Marek Kříž*
+<p className="clinic-byline"><em>- Marek Kříž, CEO</em></p>

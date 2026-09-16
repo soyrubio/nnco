@@ -1811,7 +1811,6 @@ legend {
 
 .news-article__content {
   min-width: 0;
-  max-width: 52rem;
   grid-column: 2;
 }
 

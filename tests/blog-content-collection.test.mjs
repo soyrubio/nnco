@@ -240,6 +240,7 @@ test("article routes render frontmatter titles in the hero and Markdown on the r
     /\.news-article__meta \.button\s*\{[^}]*margin-top:\s*1\.5rem;/s,
   );
   assert.match(sourceEntries.styles, /\.news-article__content\s*\{[^}]*grid-column:\s*2;/s);
+  assert.doesNotMatch(sourceEntries.styles, /\.news-article__content\s*\{[^}]*max-width:/s);
   assert.match(
     sourceEntries.styles,
     /@media \(max-width: 767px\)[\s\S]*?\.news-article__layout\s*\{[^}]*grid-template-columns:\s*1fr;[\s\S]*?\.news-article__meta\s*\{[^}]*grid-column:\s*1;[\s\S]*?\.news-article__content\s*\{[^}]*grid-column:\s*1;/s,

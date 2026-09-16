@@ -447,7 +447,9 @@ The structure is deliberately blocky:
   The ruled content rail below uses two desktop columns: publication date
   and an All posts button with a backward arrow on the left, and only
   Markdown on the right. At 767px and below metadata moves above the full-width
-  body. The shared Start here terminal section and footer follow the article.
+  body. Article content fills its grid column without a separate width cap,
+  aligning its right edge with the shared rail and section dividers.
+  The shared Start here terminal section and footer follow the article.
   The clinic article's empty-capacity calculator uses labelled numeric inputs,
   a padded grey surface with dark text throughout. Stacked result values use
   light text on black backgrounds that hug each number, below their labels.
@@ -466,8 +468,14 @@ The structure is deliberately blocky:
   retaining direct number entry and the shared form focus treatment.
   Step controls appear on field hover or focus without moving the layout, and
   remain visible on devices without hover.
-  The clinic article's setup passage uses a grey inset with a heading and
-  stacked specification labels and descriptions, without internal divider rules.
+  The clinic article's setup passage uses an ink inset with a paper heading,
+  labels matching the calculator inputs and softer off-white descriptions. Technical
+  specifications form one column, with an existing decorative site glyph beside
+  each technical item, vertically centred beside the copy at 3rem wide on desktop
+  and 2.25rem on mobile. The outcome is a separate full-width closing paragraph
+  without a glyph, introduced by the standard article `h3` typography.
+  All descriptions, including the outcome, use the same body size.
+  Use 4rem vertical padding and 3rem between items, without internal divider rules.
   It calculates only in the browser and distinguishes potential revenue from
   profit or recoverable revenue. Its regulatory table remains a semantic table
   inside a labelled, keyboard-focusable horizontal scroll region on small screens.

@@ -160,35 +160,84 @@
 }
 
 .clinic-setup {
-  margin-block: 2rem;
-  padding: clamp(1.5rem, 4vw, 3rem);
-  background: var(--surface);
+  margin-block: clamp(3.5rem, 7vw, 6rem);
+  padding: 4rem clamp(1.5rem, 4vw, 3rem);
+  background: var(--ink);
+  color: var(--paper);
 }
 
-.article-prose .clinic-setup h3 {
+.article-prose p.clinic-byline {
+  margin-top: 3rem;
+}
+
+.article-prose .clinic-setup h2 {
   margin: 0 0 1.5rem;
-  color: var(--ink);
+  color: var(--paper);
   font-size: var(--type-size-section-title);
 }
 
 .clinic-setup dl {
   display: grid;
-  gap: 2rem;
-  margin: 2.5rem 0 0;
+  gap: 3rem;
+  margin: 4rem 0 0;
+}
+
+.clinic-setup dl > div {
+  position: relative;
+  padding-left: 5rem;
+}
+
+.article-prose .clinic-setup .modular-glyph {
+  position: absolute;
+  width: 3rem;
+  top: 50%;
+  left: 0;
+  transform: translateY(-50%);
 }
 
 .clinic-setup dt {
-  margin-bottom: 0.5rem;
-  color: var(--ink);
+  margin-bottom: 0.4rem;
+  color: var(--paper);
   font-size: var(--type-size-control);
   font-weight: var(--type-weight-medium);
+  line-height: 1.4;
 }
 
 .clinic-setup dd {
   margin: 0;
-  color: var(--muted);
+  color: var(--dark-body);
   font-size: var(--type-size-body-large);
   line-height: var(--type-leading-relaxed);
+}
+
+.article-prose .clinic-setup > p {
+  color: var(--dark-body);
+}
+
+.clinic-setup__outcome {
+  margin-top: 4rem;
+}
+
+.article-prose .clinic-setup__outcome h3 {
+  margin: 0 0 1rem;
+  color: var(--paper);
+  font-size: clamp(1.3rem, 2vw, 1.75rem);
+  font-weight: var(--type-weight-medium);
+  line-height: var(--type-leading-item);
+}
+
+.article-prose .clinic-setup__outcome p {
+  color: var(--dark-body);
+}
+
+@media (max-width: 767px) {
+  .clinic-setup dl > div {
+    padding-left: 3.5rem;
+  }
+
+  .article-prose .clinic-setup .modular-glyph {
+    width: 2.25rem;
+  }
 }
 
 .clinic-rules-table table {

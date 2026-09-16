@@ -24,6 +24,19 @@ const transforms: readonly GlyphTransform[] = [
 ];
 
 const libraryById = new Map(glyphLibrary.map((glyph) => [glyph.id, glyph]));
+
+export const clinicSetupGlyphs = Object.fromEntries(
+  Object.entries({
+    hardware: "core-perimeter",
+    model: "interlock",
+    intelligence: "paired-modules",
+    serving: "relay",
+  }).map(([role, id]) => {
+    const glyph = libraryById.get(id);
+    if (!glyph) throw new Error(`Missing clinic setup glyph ${id}.`);
+    return [role, glyph];
+  }),
+);
 const allocatedSignatures = new Set<string>();
 const supportedSymmetries: readonly GlyphSymmetry[] = [
   "horizontal",
