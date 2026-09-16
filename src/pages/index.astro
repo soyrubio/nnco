@@ -29,7 +29,7 @@ const websiteSchema = {
   "@type": "WebSite",
   "@id": "https://nnco.ai/#website",
   url: "https://nnco.ai",
-  name: "NNCo.",
+  name: "NNCo",
   publisher: { "@id": "https://nnco.ai/#organization" },
   inLanguage: "en",
 };
@@ -37,8 +37,8 @@ const faqSchema = buildFaqSchema(faq, "/");
 ---
 
 <BaseLayout
-  title="AI consulting and development for large institutions | NNCo."
-  description="NNCo. designs, integrates and operates AI systems for banks, insurers and healthcare providers. We start with an AI audit and take the first use case into production."
+  title="AI consulting and development for large institutions | NNCo"
+  description="NNCo designs, integrates and operates AI systems for banks, insurers and healthcare providers. We start with an AI audit and take the first use case into production."
   canonicalPath="/"
   schemas={[websiteSchema, faqSchema]}
   preloadImages={[
@@ -191,7 +191,7 @@ const faqSchema = buildFaqSchema(faq, "/");
       <SectionAnatomy title="In practice" titleId="blog-title">
         <BlogPostList
           posts={latestPosts}
-          ariaLabel="Latest NNCo. blog posts"
+          ariaLabel="Latest NNCo blog posts"
           variant="latest"
         />
       </SectionAnatomy>

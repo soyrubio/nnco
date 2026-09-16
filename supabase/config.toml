@@ -1,0 +1,5 @@
+[functions.deliver-emails]
+# Authentication uses EMAIL_DISPATCH_SECRET, checked before any database or email call.
+verify_jwt = false
+entrypoint = "./functions/deliver-emails/index.ts"
+import_map = "./functions/deliver-emails/deno.json"

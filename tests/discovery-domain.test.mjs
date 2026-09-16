@@ -14,7 +14,7 @@ import {
   getQuestions,
   isDiscoverySnapshot,
   proposeChatPatches,
-} from "../src/lib/discovery.ts";
+} from "../src/lib/discovery-domain.ts";
 
 function answer(snapshot, questionId, value, source = "form") {
   return discoveryReducer(snapshot, {

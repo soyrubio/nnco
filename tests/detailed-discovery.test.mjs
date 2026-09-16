@@ -7,7 +7,7 @@ import {
   createInitialSnapshot,
   discoveryReducer,
   getQuestions,
-} from "../src/lib/discovery.ts";
+} from "../src/lib/discovery-domain.ts";
 
 function answer(snapshot, questionId, value) {
   return discoveryReducer(snapshot, {

@@ -8,7 +8,6 @@ import {
   isExactNavigationPage,
   isNavigationSection,
 } from "@/lib/navigation";
-import { isDiscoveryEnabled } from "@/lib/feature-flags";
 
 interface Props {
   currentPath?: string;
@@ -22,12 +21,7 @@ const {
   variant = "default",
 } = Astro.props;
 const isDiscovery = variant === "discovery";
-const discoveryEnabled = isDiscoveryEnabled(
-  import.meta.env.DISCOVERY_ENABLED,
-);
-const headerAction = discoveryEnabled
-  ? { href: "/discovery", label: "Start diagnosis" }
-  : { href: "/contact", label: "Book a call" };
+const headerAction = { href: "/discovery", label: "Start diagnosis" };
 const isExactPage = (href: string) => isExactNavigationPage(currentPath, href);
 const isAncestorSection = (href: string) =>
   !isExactPage(href) && isNavigationSection(currentPath, href);

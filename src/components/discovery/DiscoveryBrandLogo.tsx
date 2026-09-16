@@ -17,7 +17,7 @@ export function DiscoveryBrandLogo({
     <a
       className="wordmark"
       href="/"
-      aria-label="NNCo. home"
+      aria-label="NNCo home"
       style={{ animation: "none", transform: "none", transition: "none" }}
     >
       <span

@@ -11,10 +11,11 @@ asset bindings.
 
 The release discovery flow calls two same-origin routes:
 
-- `POST /api/discovery-enrichment` reads a bounded set of public company pages
-  and returns conservative company context.
-- `POST /api/discovery-analysis` stores the consented lead and returns the
-  structured two-page report.
+- `POST /api/discovery-enrichment` researches the public company website with
+  AI web search and returns editable questionnaire suggestions.
+- `POST /api/discovery-analysis` stores the submission and generated report,
+  queues email delivery through the database trigger, and returns only a success
+  acknowledgement.
 
 The earlier `/api/lead-requests` contract remains available for the legacy
 diagnostic implementation. Contact uses `/api/contact-requests`.
@@ -26,14 +27,32 @@ Copy `.env.example` to `.env` and keep:
 ```dotenv
 PUBLIC_APP_URL=http://localhost:4321
 LEAD_HANDOFF_MODE=local
+DISCOVERY_RATE_LIMIT_MODE=local
 DISCOVERY_ENABLED=false
 OPENAI_API_KEY=
 OPENAI_DISCOVERY_MODEL=gpt-5.6-luna
 OPENAI_API_BASE_URL=https://api.openai.com
 ```
 
-Local mode stores idempotent lead requests in process memory. It requires no
-secret and is disabled when `NODE_ENV=production`.
+Start the app with `pnpm dev`. This command selects `CLOUDFLARE_ENV=local`,
+the development-only profile in `wrangler.jsonc`. It supplies
+`NODE_ENV=development`, a localhost origin, local lead storage and local rate
+limiting. Restart an already running dev server after switching to this command.
+Plain `astro dev` does not select the local profile and will inherit the
+production defaults, which require Supabase and protection secrets.
+
+Local mode stores idempotent lead requests and rate-limit counters in process
+memory. These local services require no secrets and reset when the dev server
+restarts. Website research and report generation still require the server-only
+`OPENAI_API_KEY` from `.env`. Do not create `.dev.vars` alongside `.env`, because
+Cloudflare would stop loading `.env`. Environment-specific overrides, when
+needed, go in an ignored `.env.local` file.
+
+The `local` profile is for development only; do not deploy it. Production and
+stage builds continue to select their existing profiles and require durable
+Supabase storage, shared rate limiting and independent signing secrets. Local
+storage remains disabled when `NODE_ENV=production`. Profile selection follows
+the [Cloudflare Vite environment contract](https://developers.cloudflare.com/workers/vite-plugin/reference/cloudflare-environments/).
 
 Local development uses the Cloudflare adapter's `workerd` runtime so server
 routes behave like their deployed Worker equivalents. The Vite configuration
@@ -67,13 +86,13 @@ finally from `stage` to `main`. The `CI` workflow checks `development` pushes
 and pull requests into the two release branches. Only pushes to `stage` or
 `main` build and deploy a Worker.
 
-`DISCOVERY_ENABLED` is a build-time, strict opt-in flag for public Discovery
-entry points. Only the exact value `true` shows Discovery in the homepage hero,
-shared page heroes, header or footer navigation. A missing, empty or different
-value resolves to `false`. Configure it as a GitHub Environment variable on
-`stage` or `production` only when that environment is ready to expose those
-links. The direct `/discovery` route and its APIs remain available for private
-testing while the flag is off.
+`DISCOVERY_ENABLED` is a build-time, strict opt-in flag for Discovery links in
+the homepage hero, shared page heroes and footer navigation. Only the exact
+value `true` shows those links; a missing, empty or different value resolves to
+`false`. Configure it as a GitHub Environment variable on `stage` or
+`production` to expose those additional entry points. The shared header always
+links to `/discovery` as `Start diagnosis`, independently of the flag. The route
+and its APIs also remain available in either state.
 
 ### One-time GitHub setup
 
@@ -87,8 +106,8 @@ testing while the flag is off.
    matching branch. Keep a required reviewer on `production` through the first
    DNS cutover; it can be removed later if fully automatic production releases
    are preferred.
-5. Leave the optional `DISCOVERY_ENABLED` variable unset in both environments
-   until Discovery should be linked publicly, then set it to exactly `true`.
+5. Set the optional `DISCOVERY_ENABLED` variable to exactly `true` to add
+   Discovery links in heroes and the footer. The header link is always visible.
 6. Protect `stage` and `main` with pull requests and the `CI / Test and build`
    required check. `development` does not need protection.
 
@@ -206,14 +225,15 @@ The endpoints preserve:
 
 - same-origin validation;
 - bounded request bodies and upstream timeouts;
-- SSRF protection and same-company redirects for website fetching;
-- no more than three public HTML pages and 512 KiB per page;
+- public DNS/IP validation before research, domain-restricted search and
+  same-host citation validation (the Worker does not crawl company HTML);
+- at most three search tool calls and three retained public source URLs;
 - ten website checks per IP per ten minutes;
 - five reports per IP per hour, 20 per IP per day and three per email per day;
 - project-wide circuit breakers of 300 website reads and 100 reports per day;
 - versioned consent;
 - strict schema validation and idempotent lead storage;
-- a 2,500-token report output ceiling;
+- 2,500-token output ceilings for research and reports;
 - an eight-second Supabase timeout;
 - generic retry-safe error responses.
 
@@ -225,7 +245,8 @@ the underlying events are deleted after no more than two days.
 
 ## Discovery analysis
 
-Production requires these server-only values:
+Research and report generation require these server-only values, including
+when testing with the local lead repository:
 
 ```dotenv
 OPENAI_API_KEY=server-only-value
@@ -235,19 +256,65 @@ OPENAI_API_BASE_URL=https://api.openai.com
 
 The OpenAI requests use Structured Outputs, disable response storage with
 `store: false`, and apply bounded timeouts and output-token ceilings. Public
-web search is enabled only when the user requests the optional competitor view.
-Production fails closed when the analysis key is absent or the analysis call
-fails. Local development returns a visibly labelled deterministic rules
-preview when no key is configured.
+web search is mandatory for company research, scoped to the submitted domain.
+Report generation has no search tools, including for older submissions with
+`includeCompetitors: true`. It uses the supplied company context and reviewed
+answers; sector possibilities use general knowledge without claiming current
+adoption. The competitor-comparison question is no longer offered. Research
+has a 45-second upstream timeout. Report generation has a shared 48-second
+budget for the initial response and, if needed, one content-validation rewrite. Both fail when the key is absent, the call fails or
+the structured result is incomplete. There is no runtime rules fallback.
+Failed research offers retry or manual questionnaire entry.
 
-Website enrichment keeps its public-page corpus in process memory for no more
+Report-generation failures log `discovery_analysis_failed` in Cloudflare Workers
+Observability, alongside the submission request ID and a technical error code.
+Upstream failures include HTTP status and OpenAI request ID when available;
+incomplete responses include their reason, and rejected drafts include validation
+rules. Logs exclude prompts, answers, email addresses, generated text, upstream
+error messages and credentials. The browser still receives a generic retry-safe
+error. Response storage remains disabled, so use these Worker diagnostics rather
+than relying on stored responses in the OpenAI dashboard.
+
+Website enrichment keeps normalized AI research in process memory for no more
 than 24 hours, caps the cache at 100 companies and does not create a lead.
-Each hostname is checked against public DNS before fetching, including after
-redirects, while Cloudflare's outbound proxy rejects private destinations.
-Enriched company context is signed before it is returned to the browser and
-verified again before analysis. The submitted
-diagnostic stores only the normalized inputs, contact handoff and completed
-report response; fetched HTML is not stored in `lead_requests`. The completed
+The submitted hostname is checked against public DNS before research or cache
+reuse. Workers may return CNAME aliases alongside A/AAAA answers; validation
+requires at least one IP address and rejects the hostname if any returned IP is
+private or reserved. Alias names are not treated as IP addresses.
+AI suggestions must cite URLs present in returned search metadata;
+uncertain internal systems, controls, friction and frequency are not guessed.
+The AI receives the questionnaire catalogue and reuses option IDs where they
+fit, with at most three company-specific workflow options.
+
+The public contracts are:
+
+- Enrichment request: `{ website }`.
+- Enrichment success: `{ ok, company: { name, sector }, workflowOptions,
+  prefill: { workflow, systems, controls }, sources, contextToken }`.
+- Analysis request: `{ requestId, contextToken, sector, answers, workEmail,
+  includeCompetitors, consent }`. Manual submissions use `contextToken: null`.
+  `answers.context` optionally holds up to 1,000 characters for each multi-select
+  answer (`workflow`, `friction`, `systems`, `controls`); it can supplement or
+  replace selections. All six answers still require review in the interface.
+- Analysis success: `{ ok: true }`; generated report content stays server-side
+  and is delivered by email. Stored new reports use `schemaVersion: 2`,
+  server-owned `generatedAt` and `title`, and the content fields `providedContext`,
+  `sectorOpportunities`, `areasIntro`, `areas: [{ name, explanation }]`, and
+  `detail: { areaName, paragraphs }`. Storage mode and handoff identifiers are
+  not browser-facing response fields. Version-one stored reports cannot be emailed; retries ask for a new Discovery. `includeCompetitors` remains in the request for compatibility;
+  it cannot enable report research.
+- Failures retain `{ ok: false, error: { code, message, retryable } }`.
+
+Full company context and the valid workflow catalogue are carried in the
+24-hour signed token; this is integrity protection, not encryption. The server
+verifies it and reconstructs the internal snapshot rather than accepting a
+second client-authored company object. User sector corrections resolve against
+the canonical catalogue. A completed, identical request can replay after token
+expiry, but fresh analysis requires an unexpired token. The snapshot retains
+reviewed selections and written context as user-reported evidence, separately
+from researched facts. The request hash includes written answers so changed
+content cannot replay under the same request ID. HTML is never stored.
+The completed
 response is retained with the lead only to replay the same request ID without
 paying for or returning a different analysis.
 
@@ -269,9 +336,34 @@ store recordings or transcript text.
 
 ## Report export
 
-Browser print is the only PDF path. It exports exactly two A4 pages after the
-contact gate and excludes the report toolbar. No report-generation service or
-static sample PDF is deployed.
+New report content is validated before storage. Each paragraph must finish its
+sentences, and each sentence is limited to 25 words. Character caps are 900 for
+context and sector paragraphs, 220 for the areas introduction, 56 for area
+names, 420 for area explanations, and 450 per detail paragraph. Two to three
+areas and two to three detail paragraphs share a 2,400-character page-two
+budget, including their names and introduction. The selected detail name must
+match an area. Invalid copy gets at most one rewrite within the existing
+48-second budget, with the same inputs, schema and no search tools. Each call
+retains the 2,500-token ceiling. A second invalid result fails with the existing
+retry-safe error; text is not silently truncated and no rules report is used.
+
+The website shows an email-delivery confirmation and a decorative blurred PDF
+preview, without generated report text or a download button. The Supabase email
+renderer produces the PDF using stored report content, embedded Geist fonts,
+the official logo and the two-page A4 design. No static sample PDF is deployed.
+
+## Email delivery
+
+Resend delivery runs in the `deliver-emails` Supabase Edge Function, not in the
+Cloudflare Worker. Migrations `0005` and `0006` add a transactional email queue
+and a Vault-authenticated schedule. New leads and completed reports enqueue
+separate messages. No existing leads are backfilled. Delivery is disabled until
+the Supabase function secrets and schedule credentials are configured.
+
+Follow [EMAIL-DELIVERY.md](./EMAIL-DELIVERY.md) for deployment, Resend setup,
+activation, status checks and retries. A normal website deployment does not
+apply these migrations or deploy the Edge Function. `RESEND_API_KEY` belongs in
+Supabase's Edge Function secrets; Cloudflare needs no new email credential.
 
 ## Privacy launch gate
 

@@ -13,7 +13,7 @@ import SectionAnatomy from "@/components/SectionAnatomy.astro";
 import SectionFrame from "@/components/SectionFrame.astro";
 import { faqByPage } from "@/data/faq";
 import { cardGlyphSets } from "@/data/glyphs";
-import { team, waysOfWorking } from "@/data/site";
+import { team, teamIntro, waysOfWorking } from "@/data/site";
 import { buildFaqSchema } from "@/lib/schema";
 
 export const prerender = true;
@@ -23,8 +23,8 @@ const faqSchema = buildFaqSchema(faq, "/company");
 ---
 
 <BaseLayout
-  title="Company: who we are and how we work | NNCo."
-  description="NNCo. is an AI consulting and development company. The people behind it have built, sold and operated software and regulated fintech businesses before starting it."
+  title="Company: who we are and how we work | NNCo"
+  description="NNCo is an AI consulting and development company. The people behind it have built, sold and operated software and regulated fintech businesses before starting it."
   canonicalPath="/company"
   schemas={[faqSchema]}
 >
@@ -65,7 +65,7 @@ const faqSchema = buildFaqSchema(faq, "/company");
             being wrong.
           </p>
           <p class="editorial-section__body">
-            So NNCo. does the whole arc. We find where AI is worth building, we
+            So NNCo does the whole arc. We find where AI is worth building, we
             build it, we deploy it inside your constraints, and we run it after
             launch. Strategy without deployment is a document. Deployment
             without an understanding of the rules is a pilot that gets stopped.
@@ -76,19 +76,29 @@ const faqSchema = buildFaqSchema(faq, "/company");
 
     <SectionFrame id="team" labelledBy="team-title" class="team-section">
       <SectionAnatomy title="Meet the team" titleId="team-title">
+        <p class="editorial-section__body">{teamIntro}</p>
         <div class="team-grid team-grid--detailed">
           {
             team.map((person) => (
               <article class="team-card">
                 <div class="team-card__portrait">
-                  <img
-                    src={person.image}
-                    alt={`Portrait of ${person.name}`}
-                    width="1254"
-                    height="1254"
-                    loading="lazy"
-                    decoding="async"
-                  />
+                  <picture>
+                    <source
+                      type="image/webp"
+                      srcset={[480, 800, 1254]
+                        .map((width) => `${person.image.replace(/\.png$/, `-${width}.webp`)} ${width}w`)
+                        .join(", ")}
+                      sizes="(max-width: 767px) calc(100vw - 4rem), (max-width: 1439px) 29vw, 420px"
+                    />
+                    <img
+                      src={person.image}
+                      alt={`Portrait of ${person.name}`}
+                      width="1254"
+                      height="1254"
+                      loading="lazy"
+                      decoding="async"
+                    />
+                  </picture>
                 </div>
                 <div class="team-card__content">
                   <h3>{person.name}</h3>

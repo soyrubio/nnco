@@ -10,6 +10,7 @@ const sourceEntries = Object.fromEntries(
   await Promise.all(
     Object.entries({
       config: "../src/content.config.ts",
+      astroConfig: "../astro.config.mjs",
       layout: "../src/layouts/BaseLayout.astro",
       prose: "../src/components/ArticleProse.astro",
       helper: "../src/lib/blog.ts",
@@ -95,14 +96,16 @@ async function localLinkExists(href, slugs) {
   return false;
 }
 
-test("blog uses Astro 7 content collections with a glob-backed Markdown loader", async () => {
+test("blog supports Markdown and MDX through the shared content collection", async () => {
+  assert.match(sourceEntries.astroConfig, /import mdx from "@astrojs\/mdx"/);
+  assert.match(sourceEntries.astroConfig, /integrations: \[[\s\S]*?mdx\(\)/);
   assert.match(
     sourceEntries.config,
     /import \{ defineCollection \} from "astro:content";\s*import \{ glob \} from "astro\/loaders";\s*import \{ z \} from "astro\/zod";/,
   );
   assert.match(
     sourceEntries.config,
-    /defineCollection\(\{\s*loader: glob\(\{ base: "\.\/src\/content\/blog", pattern: "\*\*\/\*\.md" \}\),/,
+    /defineCollection\(\{\s*loader: glob\(\{ base: "\.\/src\/content\/blog", pattern: "\*\*\/\*\.\{md,mdx\}" \}\),/,
   );
   assert.doesNotMatch(sourceEntries.config, /related:|reference\("blog"\)/);
   assert.match(sourceEntries.config, /publishedAt: z\.iso\.date\(\)/);
@@ -125,7 +128,9 @@ test("every Markdown post satisfies authoring and local-reference contracts", as
     .filter((file) => file.endsWith(".md"))
     .sort();
   assert.ok(files.length > 0);
-  const slugs = new Set(files.map((file) => file.replace(/\.md$/, "")));
+  const slugs = new Set((await readdir(contentDirectory, { recursive: true }))
+    .filter((file) => /\.mdx?$/.test(file))
+    .map((file) => file.replace(/\.mdx?$/, "")));
   for (const migratedSlug of migratedSlugs) {
     assert.ok(slugs.has(migratedSlug), `migrated slug ${migratedSlug}`);
   }

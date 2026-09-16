@@ -44,7 +44,7 @@ test("Company separates its highlighted thesis from the standard Implementation 
   ].map((match) => match[1].replace(/\s+/g, " ").trim());
   assert.deepEqual(paragraphs, [
     "That gap is an implementation problem, and it looks exactly like the problems we spent the last decade solving: integrating with systems nobody wants to touch, shipping into an environment with real users and real consequences, and staying responsible for it afterwards. We had done that inside a licensed lending platform, inside a software company delivering for banks and insurers, and in security audits where being approximately right is the same as being wrong.",
-    "So NNCo. does the whole arc. We find where AI is worth building, we build it, we deploy it inside your constraints, and we run it after launch. Strategy without deployment is a document. Deployment without an understanding of the rules is a pilot that gets stopped.",
+    "So NNCo does the whole arc. We find where AI is worth building, we build it, we deploy it inside your constraints, and we run it after launch. Strategy without deployment is a document. Deployment without an understanding of the rules is a pilot that gets stopped.",
   ]);
   assert.match(section, /class="company-about__supporting"/);
   assert.equal(section.match(/class="editorial-section__body"/g)?.length, 2);

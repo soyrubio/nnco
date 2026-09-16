@@ -33,7 +33,7 @@ test("contact fields compose reusable labelled Astro controls", () => {
   assert.doesNotMatch(sources.checkbox, /<label[^>]*>[\s\S]*?<slot \/>[\s\S]*?<\/label>/);
   assert.match(
     sources.contact,
-    /<FormCheckbox\s+id="contact-consent"[\s\S]*?<Fragment slot="label">I agree that NNCo\. may use these details to respond to my enquiry\.<\/Fragment>\s*<a href="\/privacy">Privacy<\/a>/,
+    /<FormCheckbox\s+id="contact-consent"[\s\S]*?<Fragment slot="label">I agree that NNCo may use these details to respond to my enquiry\.<\/Fragment>\s*<a href="\/privacy">Privacy<\/a>/,
   );
 
   for (const name of ["name", "email", "institution", "sector", "area", "message"]) {

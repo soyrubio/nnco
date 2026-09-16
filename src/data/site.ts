@@ -1,3 +1,5 @@
+export const bookingLink = { href: "https://cal.com/marek-kriz", label: "Book a call" } as const;
+
 interface NavigationLink {
   href: string;
   label: string;
@@ -104,7 +106,7 @@ export const footerGroups = [
   {
     label: "Contact",
     links: [
-      { href: "/contact", label: "Book a call" },
+      bookingLink,
       { href: "/discovery", label: "Start the diagnostic" },
       { href: "mailto:general@nnco.ai", label: "general@nnco.ai" },
     ],
@@ -134,35 +136,38 @@ export const waysOfWorking = [
   },
 ] as const;
 
+export const teamIntro =
+  "No account managers, no delivery layer between you and the people who build.";
+
 export const team = [
   {
     name: "Marek Kříž",
-    role: "Co-Founder & CEO",
+    role: "CEO",
     bio: "Founder, CEO or CGO at Investown and Zaloto, and at the software house Devx. Most of that decade was spent inside licensed financial businesses, which is where the questions a supervisor actually asks stop being theoretical.",
     image: "/assets/team/marek-kriz-reframed.png",
   },
   {
-    name: "Dominik Veselý",
-    role: "Co-Founder & COO",
-    bio: "COO at the software house Ackee, which was sold to Expandia. Ran delivery for a company whose clients were banks, insurers and public institutions, where the deployment is the product.",
-    image: "/assets/team/dominik-vesely-reframed.png",
-  },
-  {
-    name: "Josef Gattermayer",
-    role: "Co-Founder, AI & R&D",
-    bio: "CTO at Ackee, then founder of Ackee Blockchain, a security audit firm. Audit work is the discipline of proving that a system does what it claims, which is the same discipline an AI system needs before a regulator looks at it.",
-    image: "/assets/team/josef-gattermayer-reframed.png",
-  },
-  {
     name: "Josef Bazal",
-    role: "Co-Founder",
-    bio: "Turns complex business and operational problems into clear direction. Connects client needs, user workflows and delivery so that AI systems solve real problems and work in everyday practice.",
+    role: "AI Product",
+    bio: "Managed technical audits of global fintech systems - the engagement side of proving that software holds up under outside scrutiny. Connects client needs, user workflows and delivery so that AI systems solve real problems and work in everyday practice.",
     image: "/assets/team/josef-bazal-reframed.png",
   },
   {
     name: "Lukáš Rajnoha",
-    role: "Co-Founder",
+    role: "AI Engineering",
     bio: "Previously a security engineer at Ackee Blockchain, securing high-value DeFi protocols and building a top-performing AI security analysis system for automated code security analysis. Now helps build AI systems end to end, from architecture and infrastructure to production.",
     image: "/assets/team/lukas-rajnoha-reframed.png",
+  },
+  {
+    name: "Dominik Veselý",
+    role: "Operations",
+    bio: "Founder, CTO and COO at the software house Ackee. Ran delivery for a company whose clients were banks, insurers, media houses and public institutions, where the deployment is the product.",
+    image: "/assets/team/dominik-vesely-reframed.png",
+  },
+  {
+    name: "Josef Gattermayer",
+    role: "Technology & Security",
+    bio: "Co-Founder at Ackee and CEO of Ackee Blockchain, a security audit firm that audited global fintech companies. Audit work is the discipline of proving that a system does what it claims, which is the same discipline an AI system needs before a regulator looks at it.",
+    image: "/assets/team/josef-gattermayer-reframed.png",
   },
 ] as const;

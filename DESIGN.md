@@ -1,12 +1,12 @@
-# NNCo. Astro design system
+# NNCo Astro design system
 
-This is the canonical visual and interaction system for the NNCo. Astro site.
+This is the canonical visual and interaction system for the NNCo Astro site.
 It governs the marketing pages, editorial Blog surface, discovery canvas, and
 print report.
 
 ## Design read
 
-NNCo. is an AI implementation company for regulated institutions in Czech and
+NNCo is an AI implementation company for regulated institutions in Czech and
 Slovak markets. The visual language is restrained, editorial and institutional.
 BrainCo is a category reference for proportion, typography and calm, not a
 source to copy page by page.
@@ -69,8 +69,9 @@ responsive sizes, but they inherit the shared weight, tracking and leading
 roles.
 
 Discovery owns a compact scoped scale: 14px medium for small interface text,
-16px regular for body text and 17px for emphasized body copy. Its on-screen
-report uses 13px labels, 14px metadata and 15px body copy. The print report is
+16px regular for body text and 19px medium for introduction copy and
+question subtext. Its on-screen report uses 14px metadata and the shared
+17–19px large-body scale. The print report is
 the deliberate exception: its fixed A4 measurements and pagination geometry
 remain explicit and must not inherit screen-size changes. Its typeface still
 inherits the shared `--font-sans` token.
@@ -164,9 +165,8 @@ The structure is deliberately blocky:
   non-animated swap.
   The initial page cover does not replay between routes, and client-side
   behaviors reinitialize after each swap.
-- `Header`: large official NNCo. mark, single-line navigation and one CTA.
-  It links to Discovery as `Start diagnosis` when the feature is enabled and
-  falls back to `Book a call` at `/contact` when it is disabled. The action uses
+- `Header`: large official NNCo mark, single-line navigation and one CTA.
+  It always links to Discovery as `Start diagnosis`. The action uses
   the shared bordered secondary-button treatment.
   Primary navigation labels use the 16px control size at regular weight; the
   active tab remains regular because its inverted surface supplies emphasis.
@@ -220,12 +220,12 @@ The structure is deliberately blocky:
 - `BrandLogo`: the canonical primary identity is the static 700×700 Group 97
   SVG. Compact placements retain the previous 720×700 outer footprint without
   stretching the square artwork: 60px high in the desktop header, 40px in the
-  mobile header and 48px in the footer. The discovery report toolbar keeps its
-  existing fixed box. Dark placements invert the same black source mark.
+  mobile header and 48px in the footer. Each discovery report page uses the same mark above its structural rule;
+  the on-screen report has no repeated logo or navigation header. Dark placements invert the same black source mark.
 - Header, footer, discovery and Organization metadata use that one versioned
-  primary asset. Favicons keep the same geometry as a paper mark on an ink
-  tile, with a small safe area so the mark remains legible at tab size and
-  survives platform masks. SVG is the primary browser asset, backed by a
+  primary asset. Favicons use the approved LinkedIn identity: a white square
+  with a centred dark circular cutout on a #222222 tile. The square occupies
+  half the tile width, retaining safe space for platform masks. SVG is the primary browser asset, backed by a
   multi-size ICO, 32px PNG, 180px Apple touch icon and manifest icons.
   Alternate legacy marks remain separate and are not primary fallbacks.
 - `BlockArrow`: official arrow asset used as a current-color CSS mask.
@@ -242,6 +242,9 @@ The structure is deliberately blocky:
   140ms to 300ms so the sequence settles progressively toward its final state.
   The sequence is independent of scroll and never loops. Never ship the source
   MP4 or encode image bytes in JavaScript.
+  In viewports at most 600px tall, copy participates in normal document flow
+  so the hero can grow to keep its text and actions clear of the header and
+  bottom edge.
 - `SectionFrame`: full-width paper or dark background plus the shared content
   rail. A dark frame remains full-bleed horizontally, adds the shared paper
   margin above and below, and uses the larger dark-section content padding.
@@ -407,13 +410,15 @@ The structure is deliberately blocky:
   Request an NDA use the shared right-arrow treatment; changing the Send state
   updates only its label and preserves the arrow.
 - `Blog`: an editorial feature and ruled reading queue backed by the typed
-  `blog` content collection. Each post is a Markdown file loaded through
+  `blog` content collection. Each post is a Markdown or MDX file loaded through
   Astro's glob loader. The filename defines the slug, while required `title`
   frontmatter is the single source for the hero `h1`, page metadata, lists and
   schema. Required `summary` frontmatter is repeated as the
   opening Markdown paragraph. The Markdown body contains no `h1` and continues
   with normal `h2`/`h3` hierarchy and links. `ArticleProse` scopes Markdown
-  element typography. Article paragraphs, lists and quotes use the shared
+  element typography. MDX uses the same layout and metadata, and may import
+  components from `src/components/blog/`. Use Astro for presentational components
+  and React islands for stateful interaction. Article paragraphs, lists and quotes use the shared
   large-body scale for sustained reading, while the opening statement retains
   its larger lead treatment. Queue
   rows stay flush to the content rail with no movement, transition or surface
@@ -436,7 +441,10 @@ The structure is deliberately blocky:
   and an All posts button with a backward arrow on the left, and only
   Markdown on the right. At 767px and below metadata moves above the full-width
   body. The shared Start here terminal section and footer follow the article.
-- `Meet the team`: one vertical stack of wide editorial profile cards. Each desktop card
+- `Meet the team`: a shared introduction about direct access to the people who
+  build, followed by one vertical stack of wide editorial profile cards.
+  Public role labels use CEO, AI Product, AI Engineering, Operations and
+  Technology & Security, without interim or advisory qualifiers. Each desktop card
   divides evenly into a square monochrome portrait on the left and the name,
   role and biography on the right. The card stack occupies the full available
   content column. The complete name, role and biography group aligns to the
@@ -451,34 +459,83 @@ The structure is deliberately blocky:
   quiet outlined metadata capsule built from the small type token, button radius
   and the same fine, softer border as a secondary button. The role capsule has
   no hover or interactive state.
+  Portraits offer 480px, 800px and 1254px WebP sources matched to their rendered
+  width, retain the transparent PNG fallback and explicit square dimensions,
+  and load lazily below the fold.
 
 ## Discovery and report
 
 - Public Discovery entry points in the homepage hero, shared page heroes and
   footer navigation render only when the build-time `DISCOVERY_ENABLED` value
   is exactly `true`. Missing or different values keep those links hidden while
-  preserving direct route access for private testing. The shared header keeps
-  its CTA in either state and falls back to `Book a call` at `/contact`.
+  preserving direct route access. The shared header always links to Discovery
+  through its `Start diagnosis` CTA, independently of this flag.
 - Discovery is one calm diagnostic canvas, not a dashboard or cockpit.
 - The discovery workspace is canonical ink `#111111` with paper text
-  `#f5f5f5`. Report pages remain paper artifacts on the dark workspace.
+  `#f5f5f5`, including the on-screen report. Paper pages appear only in print.
+- Discovery opens with a short introduction in the existing right-hand content
+  column, explaining what Opportunity Discovery is and what information it uses.
+  It introduces the report before describing possible uses of AI, in plain language.
+  Its heading places `NNCo` on its own line above `Opportunity Discovery`.
+  A static, symmetric Core perimeter glyph from the shared modular library sits
+  above the heading at the standard card-glyph size. It is decorative, uses paper on ink
+  and appears only on the introduction. It moves with the intro's existing
+  transition, without a separate animation.
+  The step index and progress text are absent on this screen. The bottom rule
+  starts at full width, with a grey Privacy policy link aligned to its right
+  below the rule. The link matches the progress text's size and weight.
+  `Start Discovery` opens the website step with the same 300ms forward entry
+  as the questionnaire.
+  The step index and progress text fade in over the same 300ms while the rule
+  contracts to the current progress with a 300ms ease-in-out width transition.
+  Progress starts at 0% and counts completed
+  steps, reaching 100% only after Controls. The rule keeps a 2rem minimum width
+  at zero without changing the displayed or accessible percentage.
+  The website step includes
+  `Back` to return to the explainer with the standard backward entry, preserving
+  any entered website.
+  On smaller screens the introduction uses the shared single-column layout.
 - The public company website is the preferred first input, not a requirement.
-  The server reads no more than three public same-host pages and then shows the
-  interpreted company name, sector, public context and pages read on a calm
-  confirmation screen before the questionnaire begins.
+  The server uses sourced AI research to suggest questionnaire answers. A short
+  intermediary notice names the company and asks the user to review the
+  prefilled information in the following questions. Source links remain
+  available here. Continuing from this notice does not confirm any answers.
 - A user who does not provide a website selects a sector instead. The manual
-  path contains Sector, Workflow, Friction, Frequency, Systems and Controls;
-  the website path contains Website followed by the same five diagnostic
-  questions. Both paths therefore stay within six steps.
-- Sector is inferred from public context or selected on the manual path and
+  and researched paths both review Sector, Workflow, Friction, Frequency,
+  Systems and Controls. Website entry and the intermediary notice precede
+  these six review steps; prefilled questions are never silently skipped.
+- Sector is suggested from public context or selected on the manual path and
   routes Banking, Insurance, Healthcare, Capital Markets and general workflows
-  into their relevant options.
-- One dominant question and exactly one choice surface are visible at a time.
+  into their relevant options. A sector correction removes incompatible
+  selected options while preserving the user's written context.
+- One dominant question is visible at a time. Titles are simple, professional
+  questions addressed to the user, without "we". Helpful subtext uses the
+  larger medium-weight paragraph style; omit subtext that only explains
+  implementation. Website and email fields
+  keep screen-reader labels, but visually use clear placeholders. Extra helper
+  paragraphs are omitted; validation errors appear only when needed. Error
+  notices span the full form column, without the prose paragraph width cap.
+  Discovery placeholders give instructions, such as "Provide your company URL",
+  rather than example values. Across the introduction and questionnaire,
+  titles and supporting paragraphs use the full form width. Titles retain
+  natural word spacing. All introduction and question text is start-aligned,
+  without justification. Leave 2rem between each title and its supporting
+  paragraph; subsequent introduction paragraphs retain their 1.3rem gap.
 - Workflow accepts one or two related processes and assesses them together as
-  one operating scope.
-- Required free text is deliberately absent from the diagnostic. The website
-  is the only text entry before the contact gate; the remaining five answers
-  use single-select or multi-select options.
+  one operating scope. Research reuses canonical options when possible and may
+  add up to three short company-specific process labels. Suggested selections
+  remain editable and become reported answers only after the user reviews them.
+- Every multi-select question includes an optional text area below its choices,
+  separated by a quiet rule labelled "Or add your own answer". Users can select
+  options, write an answer, or do both. Nonblank text can satisfy the question
+  without a selection, with a 1,000-character limit. Frequency stays single-select.
+  These fields start at one line, matching the website and email fields' type
+  size, weight and minimum height. They grow as text wraps or adds line breaks,
+  and shrink when text is removed. Recalculate their height when returning to
+  an answer, resizing the viewport or loading the font. Do not show an internal
+  scrollbar or a manual resize handle.
+  Leave 3rem before choices, before the additional-answer block and before
+  navigation, with 1.5rem between the separator and text area.
 - Single-select choice sets are one connected ruled stack: no gaps, no radio
   dots and no doubled borders. Multi-select choice sets wrap as compact,
   content-width pills so their selection model is visually distinct.
@@ -490,21 +547,89 @@ The structure is deliberately blocky:
   rail: a stable six-step progress view on the left and the single active input
   or choice set on the right. Left-side step labels never carry subtitles. The
   5px bottom rule follows the active step, with progress text below the rule.
+  This bottom area stays fixed and visible throughout Discovery, including
+  loading and the on-screen report. Content reserves space above it on desktop
+  and mobile. Its one Privacy policy link replaces repeated links and detailed
+  processing notices in questions. Returning
+  to the explainer expands the rule to full width and hides progress text.
+  The bottom area is excluded from the printed report.
 - Work email is required only after all six diagnostic steps. Organisation is
   taken from enriched context when available and recorded as not provided on
   the manual path. A public competitor comparison is an optional selection-only
   screen on the website path after the diagnostic; there is no competitor-name
   text field. The following contact screen contains only the work-email input.
-  Its submit acknowledgement states the processing purpose, one-result
-  follow-up, 90-day retention and the role of OpenAI before submission.
+  Its subtext acknowledges the processing purpose and one-result follow-up.
+  The persistent Privacy policy link provides retention and processor details.
 - Analysis is a full black transition with the hard-cut block loader and the
   approved activity statement. Do not use simulated timers or invented stages.
-- The result is exactly two useful pages: what NNCo. understood and where to act.
-  Report claims distinguish reported answers, public facts and inference.
-  Competitor notes appear only when requested and include direct public sources.
-- Browser print is the only PDF exporter. Print CSS produces exactly two A4
-  pages and excludes intake, toolbar and contact controls. Displayed copy is
-  bounded for A4 without changing the stored diagnostic.
+- The on-screen result shows an email-delivery message on the left and a
+  decorative blurred two-page PDF preview on the right. The heading is “We’re
+  sending your report to your email.” The supporting sentence is “It should
+  arrive within a few minutes.” The columns stack on mobile. The preview uses
+  placeholder lines, is hidden from assistive technology, and contains no
+  generated report content. There is no download or print action. The API returns
+  only an acknowledgement; the full report is delivered by email. A “Book a call”
+  link below the message opens Marek’s calendar, using the shared booking link
+  also used by the footer and programme calls to action.
+- The report explains its purpose and supplied context before discussing AI.
+  New reports have five sections across two pages. Page one contains About this
+  report, the fixed explanation; Provided context, one AI-written paragraph
+  based solely on supplied company facts and reviewed answers; and Sector
+  opportunities, one paragraph about relevant general possibilities. Name the
+  company in the context when provided; never invent a name on the manual path.
+  Retain relevant existing guidance and support so possibilities are not
+  presented as confirmed gaps. State material unknowns once in context.
+  Page two contains Potential areas for improvement, with a short introduction
+  and two or three distinct numbered paragraphs. Each has a concrete task,
+  relevant information, understandable result and practical use. Detail:
+  [selected area] then develops that area in two or three plain paragraphs,
+  without numbering or extra internal headings. Explain a recognisable input,
+  a specific possible result, its use and a relevant limit. Clearly label
+  hypothetical examples and the information they assume. When similar cases
+  or items are compared, explain the particular assumed difference.
+  Detailed answers determine the focus; sparse answers support clearly framed
+  sector possibilities rather than invented company problems. Acknowledge
+  existing capability. AI cannot recover absent facts, and a repetitive task
+  or simple lookup alone does not establish value. Do not recommend named
+  tools, vendors, new workflows, pilots or implementation plans, or promise
+  savings, accuracy or compliance. Report generation has no search tools and
+  does not claim current adoption. Website enrichment remains a separate,
+  earlier step. After Controls, both intake paths go directly to contact;
+  the competitor-comparison question is no longer offered.
+- PDFs are delivered by email, with two A4 pages, 20mm insets, embedded Geist
+  fonts and the official logo. Their renderer runs in Supabase. The website
+  confirmation does not expose report content or offer a browser PDF exporter.
+- Each report page has a large bold title on the left and the official mark on
+  the right. The only horizontal rules are below the header and above the
+  footer. Each numbered item is one paragraph with an inline bold lead-in and
+  full stop, never an internal heading. Numbers and prose share the same type
+  size. Print leaves 6mm between numbered paragraphs, 5mm below section titles
+  and 10mm between sections. The footer reads: Prepared by NNCo
+  automated Opportunity Discovery process. Not a formal assessment.
+- Report writing follows Simplified Technical English principles: familiar
+  words, active voice, one topic per paragraph, consistent terms and sentences
+  of at most 25 words. Remove filler and repetition without losing evidence or
+  uncertainty. Explain the work for a reader with no AI knowledge. Prefer
+  concrete examples and ordinary verbs to terms such as retrieval, traceable
+  outputs, target fields or AI suitability. These are writing guidelines, not a claim of STE certification.
+  Add depth through relevant distinctions and the significance of the supplied
+  facts, not repeated caveats or stock sector paragraphs. When input is sparse,
+  a sector example may illustrate a relevant possibility if clearly labelled. Page two ends with
+  a short invitation to a formal assessment and a linked NNCo contact address.
+- New reports use the version-two content contract. Company and sector
+  paragraphs are each capped at 900 characters, the areas introduction at 220,
+  area names at 56, area explanations at 420, and each detail paragraph at 450.
+  Page two has a shared 2,400-character budget across the introduction, all
+  area names and explanations, the detail name and detail paragraphs. The
+  model must fit two or three areas and two or three detail paragraphs within
+  this budget. Sentences are limited to 25 words. The server validates these
+  limits and permits one bounded rewrite of invalid copy; it never silently
+  cuts away incomplete sentences or important limitations. Existing saved
+  version-one reports retain their older validation and display limits.
+  Submitted answers remain unchanged. Print uses fixed A4 sizes and never
+  clips content with hidden overflow or line clamps. Both page headers read
+  Opportunity Discovery. Keep the existing CSS, typography, margins, rules,
+  logo placement, paragraph spacing and contact invitation.
 - Discovery and its print report consume the same Geist-backed `--font-sans`
   token as the marketing site.
 - Structural panels stay square. Interactive action buttons and multi-select
@@ -526,8 +651,9 @@ The structure is deliberately blocky:
   viewport and replays when it reaches the threshold again.
 - Outside those text reveals, fades and crossfades are not used except for the
   shared navigation header's 560ms background-colour transition, its mega-menu
-  content reveal, and the homepage Private AI scene's boundary handoff. Every
-  other surface change remains instant.
+  content reveal, the homepage Private AI scene's boundary handoff, and the
+  Discovery step index and progress text's 300ms entry. Every other surface
+  change remains instant.
 - Discovery questions use a keyed 300ms horizontal entry only: forward
   arrives from the right and Back arrives from the left. There is no opacity,
   scale, bounce, stagger or option-selection motion.
@@ -542,6 +668,8 @@ The structure is deliberately blocky:
 - The page loader remains an independent hard-cut sequence at 240ms per frame.
   It appears only once per browser session, with a 650ms minimum cover and an
   immediate overlay exit.
+  It releases when the document is ready and that minimum has elapsed, without
+  waiting for optional images or the window load event.
 - The hero frame sequence plays once after its active responsive frames have
   loaded and the page cover has exited. Its eleven hard states slow toward the
   end through progressively longer 140ms to 300ms frame holds, without
@@ -563,7 +691,8 @@ The structure is deliberately blocky:
   animation and reinitialises after Astro page swaps. Page-load sequences and
   interaction state transitions keep their own lifecycle.
 - Respect `prefers-reduced-motion`.
-- Keep persistent labels above fields.
-- Never use placeholder text as the only label.
+- Keep persistent labels above marketing fields. Discovery uses visually hidden
+  labels and clear placeholders within its title, subtext and input composition.
+- Never use placeholder text as the only accessible label.
 - Text, borders, focus styles and form states must meet WCAG AA contrast.
 - The form and chat must feed one canonical state. Neither is a second funnel.

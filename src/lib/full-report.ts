@@ -2,7 +2,7 @@ import {
   buildReportPreview,
   type DiscoverySnapshot,
   type ReportProblem,
-} from "./discovery.ts";
+} from "./discovery-domain.ts";
 import type {
   FullDiagnosticReport,
   IndicativeRange,

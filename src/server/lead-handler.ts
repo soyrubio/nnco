@@ -2,7 +2,7 @@ import { createHash, randomUUID } from "node:crypto";
 import {
   calculateCoverage,
   isDiscoverySnapshot,
-} from "../lib/discovery.ts";
+} from "../lib/discovery-domain.ts";
 import {
   CONTACT_FIELD_LIMITS,
   isContactTextWithinLimits,

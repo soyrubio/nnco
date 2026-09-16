@@ -28,8 +28,8 @@ interface Props {
 }
 
 const {
-  title = "AI consulting and development for large institutions | NNCo.",
-  description = "NNCo. designs, integrates and operates AI systems for large institutions, from the initial AI audit through production operation.",
+  title = "AI consulting and development for large institutions | NNCo",
+  description = "NNCo designs, integrates and operates AI systems for large institutions, from the initial AI audit through production operation.",
   image = "/assets/nnco-hero-mosaic-hifi.png",
   tone = "paper",
   themeColor = tone === "dark" ? "#111111" : "#f5f5f5",
@@ -48,11 +48,11 @@ const imageUrl = new URL(image, siteOrigin).toString();
 const organisationSchema = {
   "@type": "Organization",
   "@id": `${siteOrigin}/#organization`,
-  name: "NNCo.",
+  name: "NNCo",
   url: siteOrigin,
   logo: new URL(PRIMARY_LOGO.src, siteOrigin).toString(),
   description:
-    "NNCo. is an AI consulting and development company. It designs, integrates and operates AI systems for large institutions, from an initial AI audit to running the system in production.",
+    "NNCo is an AI consulting and development company. It designs, integrates and operates AI systems for large institutions, from an initial AI audit to running the system in production.",
   email: "general@nnco.ai",
   address: {
     "@type": "PostalAddress",
@@ -89,7 +89,7 @@ const loaderTone =
     {noindex && <meta name="robots" content="noindex, nofollow" />}
     <link rel="canonical" href={canonicalUrl} />
     <meta property="og:type" content={ogType} />
-    <meta property="og:site_name" content="NNCo." />
+    <meta property="og:site_name" content="NNCo" />
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
     <meta property="og:url" content={canonicalUrl} />

@@ -1,3 +1,4 @@
+import { bookingLink } from "./site.ts";
 import type { FaqPageKey } from "./faq";
 import { cardGlyphSets } from "./glyphs.ts";
 import type { ModularGlyphDefinition } from "@/lib/modular-glyph";
@@ -106,13 +107,13 @@ export const programmePhases = [
 
 export const programmePage: MarketingPageData = {
   path: "/ai-first-enterprise",
-  metaTitle: "AI-First Enterprise: the programme | NNCo.",
+  metaTitle: "AI-First Enterprise: the programme | NNCo",
   metaDescription:
     "The cross-industry programme that takes a large organisation from an AI audit to systems running in production: what gets built, in what order, on what infrastructure, and who runs it after launch.",
   title: "AI-First Enterprise",
   introduction:
     "A large organisation does not become AI-first by buying a tool. It happens when a sequence of workflows moves into systems that run every day, on infrastructure that survives an audit, with someone accountable for each one. This is that sequence.",
-  primaryAction: { href: "/contact", label: "Book a 30-minute call" },
+  primaryAction: { href: bookingLink.href, label: "Book a 30-minute call" },
   secondaryAction: {
     href: "/ai-first-enterprise/ai-audit",
     label: "Start with the audit",
@@ -232,13 +233,13 @@ export const programmePage: MarketingPageData = {
 export const programmeSubpages = {
   "ai-audit": {
     path: "/ai-first-enterprise/ai-audit",
-    metaTitle: "AI audit for large institutions | NNCo.",
+    metaTitle: "AI audit for large institutions | NNCo",
     metaDescription:
       "An AI audit maps where AI is worth building in your operation, in what order, and where your data and your regulator allow it. Two to four weeks, ending in a pilot.",
     title: "AI audit",
     introduction:
       "An AI audit goes through your operations and returns a map: which workflows AI can take over, in what order, what each one is worth, and where your data and your regulator allow deployment. It ends with the first use case going into a pilot.",
-    primaryAction: { href: "/contact", label: "Book a 30-minute call" },
+    primaryAction: { href: bookingLink.href, label: "Book a 30-minute call" },
     secondaryAction: { href: "/discovery", label: "Start the diagnostic" },
     sections: [
       {
@@ -378,7 +379,7 @@ export const programmeSubpages = {
   },
   "private-ai": {
     path: "/ai-first-enterprise/private-ai",
-    metaTitle: "On-premise and private AI deployment | NNCo.",
+    metaTitle: "On-premise and private AI deployment | NNCo",
     metaDescription:
       "Models, retrieval, access control and monitoring deployed inside the boundary you govern. On-premise or in your own tenancy, so sensitive data never leaves your network.",
     title: "Private AI",
@@ -493,7 +494,7 @@ export const programmeSubpages = {
   },
   operation: {
     path: "/ai-first-enterprise/operation",
-    metaTitle: "Running AI systems after launch | NNCo.",
+    metaTitle: "Running AI systems after launch | NNCo",
     metaDescription:
       "What happens to an AI system after it goes live: monitoring, quality checks, model replacement and changes when the process or the regulation changes.",
     title: "AI operations",

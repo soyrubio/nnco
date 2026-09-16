@@ -1,4 +1,4 @@
-import type { DiscoverySnapshot } from "./discovery.ts";
+import type { DiscoverySnapshot } from "./discovery-domain.ts";
 
 export const LEAD_CONSENT_VERSION = "2026-07-29";
 

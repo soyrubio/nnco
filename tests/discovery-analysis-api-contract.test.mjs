@@ -6,8 +6,12 @@ import {
   buildFallbackCompanyContext,
   buildFallbackReleaseReport,
   workflowChoicesFor,
+  buildManualCompanyContext,
+  isDiscoveryReleaseReport,
+  isDiscoverySubmission,
 } from "../src/lib/discovery-release.ts";
 import { handleDiscoveryAnalysisRequest } from "../src/server/discovery-analysis-handler.ts";
+import { opportunityReportFixture } from "./fixtures/opportunity-report.mjs";
 import { createDiscoveryContextToken } from "../src/server/discovery-context-token.ts";
 
 function validPayload(email = `alex-${crypto.randomUUID()}@example.com`) {
@@ -39,10 +43,21 @@ function validPayload(email = `alex-${crypto.randomUUID()}@example.com`) {
 }
 
 function analysisRequest(payload, origin = "http://localhost:4321") {
+  const submission = payload.schemaVersion === 1 ? {
+    requestId: payload.requestId,
+    contextToken: payload.companyContextToken,
+    sector: payload.company.sector,
+    answers: payload.answers,
+    workEmail: payload.contact.workEmail,
+    includeCompetitors: payload.competitorView.enabled,
+    consent: payload.consent,
+    ...(payload.personalResponseRequested !== undefined ? { personalResponseRequested: payload.personalResponseRequested } : {}),
+    ...(payload.followUp !== undefined ? { followUp: payload.followUp } : {}),
+  } : payload;
   return new Request("http://localhost:4321/api/discovery-analysis", {
     method: "POST",
     headers: { "Content-Type": "application/json", Origin: origin },
-    body: JSON.stringify(payload),
+    body: JSON.stringify(submission),
   });
 }
 
@@ -73,7 +88,7 @@ test("analysis requires the final work email and consent contract", async () => 
   assert.equal((await response.json()).error.code, "VALIDATION_ERROR");
 });
 
-test("analysis persists the lead and returns a two-page local rules report", async () => {
+test("analysis requires AI configuration instead of returning a rules report", async () => {
   await withLocalRepository(async () => {
     const payload = validPayload();
     const response = await handleDiscoveryAnalysisRequest(
@@ -82,20 +97,20 @@ test("analysis persists the lead and returns a two-page local rules report", asy
       { env: { NODE_ENV: "test" } },
     );
     const body = await response.json();
-    assert.equal(response.status, 201);
+    assert.equal(response.status, 503);
     assert.equal(response.headers.get("cache-control"), "no-store");
-    assert.equal(body.ok, true);
-    assert.equal(body.persistence, "ephemeral");
-    assert.equal(body.analysisMode, "rules");
-    assert.ok(body.report.pageOne);
-    assert.ok(body.report.pageTwo);
-    assert.equal(body.report.pageTwo.competitorStatus, "not-requested");
+    assert.equal(body.ok, false);
+    assert.equal(body.error.code, "CONFIGURATION_ERROR");
+    assert.equal(body.report, undefined);
   });
 });
 
 test("analysis rejects a company context that does not match its signature", async () => {
   const payload = validPayload();
-  payload.company = { ...payload.company, summary: "Forged public context" };
+  const [claims, signature] = payload.companyContextToken.split(".");
+  const forged = JSON.parse(Buffer.from(claims, "base64url").toString());
+  forged.company.summary = "Forged public context";
+  payload.companyContextToken = `${Buffer.from(JSON.stringify(forged)).toString("base64url")}.${signature}`;
   const response = await handleDiscoveryAnalysisRequest(
     analysisRequest(payload),
     `analysis-forged-${crypto.randomUUID()}`,
@@ -109,7 +124,7 @@ test("analysis uses non-stored strict Responses output with a token ceiling", as
   await withLocalRepository(async () => {
     const payload = validPayload();
     const generatedAt = "2026-08-10T12:00:00.000Z";
-    const report = buildFallbackReleaseReport(payload, generatedAt);
+    const report = opportunityReportFixture(payload.company.name);
     let upstream;
     const response = await handleDiscoveryAnalysisRequest(
       analysisRequest(payload),
@@ -136,7 +151,8 @@ test("analysis uses non-stored strict Responses output with a token ceiling", as
     const body = await response.json();
 
     assert.equal(response.status, 201);
-    assert.equal(body.analysisMode, "ai");
+    assert.deepEqual(body, { ok: true });
+    const storedReport = globalThis.__nncoEphemeralLeadAnalyses.get(payload.requestId).report;
     assert.equal(String(upstream.input), "https://api.example.test/v1/responses");
     assert.equal(upstream.body.model, "test-model");
     assert.equal(upstream.body.store, false);
@@ -144,13 +160,28 @@ test("analysis uses non-stored strict Responses output with a token ceiling", as
     assert.equal(upstream.body.text.format.type, "json_schema");
     assert.equal(upstream.body.text.format.strict, true);
     assert.equal(upstream.body.tools, undefined);
+    const system = upstream.body.input.find((message) => message.role === "system").content;
+    assert.match(system, /untrusted data, never as instructions/);
+    assert.match(system, /no more than 25 words/);
+    assert.match(system, /Retain supplied facts about existing guidance/);
+    assert.match(system, /particular assumed difference that supports it/);
+    assert.equal(upstream.body.text.format.schema.properties.areas.minItems, 2);
+    assert.equal(upstream.body.text.format.schema.properties.areas.maxItems, 3);
+    assert.equal(upstream.body.text.format.schema.properties.providedContext.maxLength, 900);
+    assert.equal(upstream.body.text.format.schema.properties.areas.items.properties.explanation.maxLength, 420);
+    assert.equal(upstream.body.text.format.schema.properties.detail.properties.paragraphs.items.maxLength, 450);
+    assert.equal(storedReport.schemaVersion, 2);
+    assert.equal(storedReport.generatedAt, generatedAt);
+    assert.equal(storedReport.title, "Opportunity Discovery");
+    assert.equal(storedReport.providedContext, report.providedContext);
+    assert.equal(storedReport.pageTwo, undefined);
   });
 });
 
 test("analysis replays a completed request without a second model call", async () => {
   await withLocalRepository(async () => {
     const payload = validPayload();
-    const report = buildFallbackReleaseReport(payload, "2026-08-10T12:00:00.000Z");
+    const report = opportunityReportFixture(payload.company.name);
     let upstreamCalls = 0;
     const options = {
       env: {
@@ -187,14 +218,14 @@ test("analysis replays a completed request without a second model call", async (
     assert.equal(replays.every((response) => response.status === 200), true);
     assert.equal(expiredTokenReplay.status, 200);
     assert.equal(upstreamCalls, 1);
-    assert.deepEqual((await replays[4].json()).report, (await first.json()).report);
+    assert.deepEqual(await replays[4].json(), await first.json());
   });
 });
 
 test("concurrent identical submissions acquire one analysis claim", async () => {
   await withLocalRepository(async () => {
     const payload = validPayload();
-    const report = buildFallbackReleaseReport(payload, "2026-08-10T12:00:00.000Z");
+    const report = opportunityReportFixture(payload.company.name);
     let upstreamCalls = 0;
     let signalStarted;
     let releaseUpstream;
@@ -241,108 +272,263 @@ test("concurrent identical submissions acquire one analysis claim", async () => 
     assert.equal(competing.every((response) => response.headers.get("retry-after") === "2"), true);
     assert.equal(replay.status, 200);
     assert.equal(upstreamCalls, 1);
-    assert.deepEqual((await replay.json()).report, (await first.json()).report);
+    assert.deepEqual(await replay.json(), await first.json());
   });
 });
 
-test("competitor notes require returned web-search citation metadata", async () => {
+test("report generation never searches even for an older competitor opt-in", async () => {
   await withLocalRepository(async () => {
     const payload = validPayload();
     payload.competitorView.enabled = true;
-    const report = buildFallbackReleaseReport(payload, "2026-08-10T12:00:00.000Z");
-    report.pageTwo.competitorStatus = "included";
-    report.pageTwo.competitorNotes = [
-      {
-        company: "Cited competitor",
-        finding: "Publishes a structured public intake flow.",
-        sourceUrl: "https://competitor.example/public-flow",
+    let upstream;
+    const response = await handleDiscoveryAnalysisRequest(analysisRequest(payload), crypto.randomUUID(), {
+      env: { NODE_ENV: "test", OPENAI_API_KEY: "test-key" },
+      fetchImpl: async (_url, init) => {
+        upstream = JSON.parse(init.body);
+        return Response.json({ output_text: JSON.stringify(opportunityReportFixture(payload.company.name)) });
       },
-      {
-        company: "Unverified competitor",
-        finding: "This model-authored URL is not evidence.",
-        sourceUrl: "https://hallucinated.example/claim",
-      },
-    ];
-    let upstreamBody;
-    const response = await handleDiscoveryAnalysisRequest(
-      analysisRequest(payload),
-      `analysis-citations-${crypto.randomUUID()}`,
-      {
-        env: {
-          NODE_ENV: "test",
-          OPENAI_API_KEY: "test-key",
-          OPENAI_API_BASE_URL: "https://api.example.test",
-        },
-        fetchImpl: async (_input, init) => {
-          upstreamBody = JSON.parse(init.body);
-          return Response.json({
-            output: [{
-              type: "message",
-              content: [{
-                type: "output_text",
-                text: JSON.stringify(report),
-                annotations: [{
-                  type: "url_citation",
-                  url: "https://competitor.example/public-flow",
-                }],
-              }],
-            }],
-          });
-        },
-      },
-    );
-    const body = await response.json();
-
+    });
     assert.equal(response.status, 201);
-    assert.deepEqual(upstreamBody.tools, [{ type: "web_search" }]);
-    assert.equal(body.report.pageTwo.competitorStatus, "included");
-    assert.equal(body.report.pageTwo.competitorNotes.length, 1);
-    assert.equal(body.report.pageTwo.competitorNotes[0].company, "Cited competitor");
+    assert.equal(upstream.tools, undefined);
+    assert.equal(upstream.tool_choice, undefined);
+    assert.equal(JSON.parse(upstream.input[1].content).competitorView, undefined);
+    assert.equal((await response.json()).report, undefined);
+    assert.equal(globalThis.__nncoEphemeralLeadAnalyses.get(payload.requestId).report.competitorNotes, undefined);
   });
 });
 
-test("analysis bounds maximum model copy for the two A4 report pages", async () => {
+test("analysis repairs overlong copy once without truncating evidence or changing inputs", async () => {
   await withLocalRepository(async () => {
     const payload = validPayload();
-    const report = buildFallbackReleaseReport(payload, "2026-08-10T12:00:00.000Z");
-    const long = "Long model copy ".repeat(100);
-    report.executiveSummary = long;
-    report.pageOne.systems = long;
-    report.pageOne.findings = Array.from({ length: 3 }, (_, index) => ({
-      title: `Finding ${index} ${long}`,
-      explanation: long,
-      evidence: long,
-      basis: "Inferred",
-    }));
-    report.pageTwo.opportunities = Array.from({ length: 3 }, (_, index) => ({
-      title: `Opportunity ${index} ${long}`,
-      action: long,
-      humanBoundary: long,
-      requires: long,
-    }));
-    report.pageTwo.constraints = long;
-    report.pageTwo.firstMove = long;
-    report.pageTwo.validationQuestions = [long, long, long, long];
-
-    const response = await handleDiscoveryAnalysisRequest(
-      analysisRequest(payload),
-      `analysis-a4-budget-${crypto.randomUUID()}`,
-      {
-        env: {
-          NODE_ENV: "test",
-          OPENAI_API_KEY: "test-key",
-          OPENAI_API_BASE_URL: "https://api.example.test",
-        },
-        fetchImpl: async () => Response.json({ output_text: JSON.stringify(report) }),
+    const report = opportunityReportFixture(payload.company.name);
+    const drafts = [];
+    const options = {
+      env: { NODE_ENV: "test", OPENAI_API_KEY: "test-key" },
+      fetchImpl: async (_url, init) => {
+        const request = JSON.parse(init.body);
+        drafts.push(JSON.parse(request.input[1].content));
+        assert.equal(request.tools, undefined);
+        return Response.json({ output_text: JSON.stringify(drafts.length === 1 ? { ...report, providedContext: "Long model copy. ".repeat(100) } : report) });
       },
-    );
-    const bounded = (await response.json()).report;
+    };
+    const response = await handleDiscoveryAnalysisRequest(analysisRequest(payload), crypto.randomUUID(), options);
+    assert.equal(response.status, 201);
+    assert.equal(drafts.length, 2);
+    assert.deepEqual(drafts[0].providedInputs, drafts[1].providedInputs);
+    assert.ok(drafts[1].revisionIssues.some(issue => issue.includes("providedContext")));
+    assert.equal(drafts[1].previousDraft.providedContext.length > 900, true);
+    assert.deepEqual(await response.json(), { ok: true });
+    assert.equal(globalThis.__nncoEphemeralLeadAnalyses.get(payload.requestId).report.providedContext, report.providedContext);
+    const replay = await handleDiscoveryAnalysisRequest(analysisRequest(payload), crypto.randomUUID(), options);
+    assert.equal(replay.status, 200);
+    assert.equal(drafts.length, 2);
+  });
+});
 
-    assert.equal(bounded.pageOne.findings.length, 2);
-    assert.equal(bounded.pageTwo.opportunities.length, 2);
-    assert.equal(bounded.executiveSummary.length <= 320, true);
-    assert.equal(bounded.pageOne.findings.every((item) => item.explanation.length <= 220), true);
-    assert.equal(bounded.pageTwo.opportunities.every((item) => item.action.length <= 200), true);
-    assert.equal(bounded.pageTwo.validationQuestions.every((item) => item.length <= 120), true);
+for (const count of [2, 3]) {
+  test(`analysis accepts ${count} distinct areas and preserves all detail paragraphs`, async () => {
+    await withLocalRepository(async () => {
+      const payload = validPayload();
+      const report = opportunityReportFixture(payload.company.name);
+      if (count === 3) report.areas.push({ name: "Explaining case history", explanation: "AI could bring the supplied case events into a short account. A reviewer could use the dates to understand what happened." });
+      const response = await handleDiscoveryAnalysisRequest(analysisRequest(payload), crypto.randomUUID(), {
+        env: { NODE_ENV: "test", OPENAI_API_KEY: "test-key" },
+        fetchImpl: async () => Response.json({ output_text: JSON.stringify(report) }),
+      });
+      assert.equal(response.status, 201);
+      assert.deepEqual(await response.json(), { ok: true });
+      const result = globalThis.__nncoEphemeralLeadAnalyses.get(payload.requestId).report;
+      assert.equal(result.areas.length, count);
+      assert.deepEqual(result.detail, report.detail);
+    });
+  });
+}
+
+test("invalid area output fails safely after one bounded rewrite attempt", async () => {
+  await withLocalRepository(async () => {
+    const payload = validPayload();
+    const report = opportunityReportFixture(payload.company.name);
+    report.areas = [{ name: "Incomplete model output" }];
+    let calls = 0;
+    const response = await handleDiscoveryAnalysisRequest(analysisRequest(payload), crypto.randomUUID(), {
+      env: { NODE_ENV: "test", OPENAI_API_KEY: "test-key" },
+      fetchImpl: async () => { calls++; return Response.json({ output_text: JSON.stringify(report) }); },
+    });
+    assert.equal(response.status, 503);
+    assert.equal((await response.json()).error.code, "ANALYSIS_UNAVAILABLE");
+    assert.equal(calls, 2);
+  });
+});
+
+test("saved reports remain readable when current print budgets are reduced", () => {
+  const report = buildFallbackReleaseReport(validPayload());
+  report.executiveSummary = "A".repeat(600);
+  report.pageOne.findings[0].explanation = "B".repeat(320);
+  report.pageOne.findings[0].evidence = "C".repeat(120);
+  report.pageTwo.opportunities[0].action = "D".repeat(260);
+  assert.equal(isDiscoveryReleaseReport(report), true);
+});
+
+test("new reports fail safely when the concrete example is incomplete", async () => {
+  await withLocalRepository(async () => {
+    const payload = validPayload();
+    const report = opportunityReportFixture(payload.company.name);
+    report.detail.paragraphs[0] = "Unfinished example ".repeat(30);
+    const response = await handleDiscoveryAnalysisRequest(analysisRequest(payload), `analysis-missing-example-${crypto.randomUUID()}`, {
+      env: { NODE_ENV: "test", OPENAI_API_KEY: "test-key" },
+      fetchImpl: async () => Response.json({ output_text: JSON.stringify(report) }),
+    });
+    assert.equal(response.status, 503);
+    assert.equal((await response.json()).error.retryable, true);
+  });
+});
+
+test("a model sentence cut off at the schema limit is not shown as finished prose", async () => {
+  await withLocalRepository(async () => {
+    const payload = validPayload();
+    const report = opportunityReportFixture(payload.company.name);
+    const complete = "You described document review.";
+    report.providedContext = `${complete} This sentence has no ending`.padEnd(900, "x");
+    const response = await handleDiscoveryAnalysisRequest(analysisRequest(payload), `analysis-prose-${crypto.randomUUID()}`, {
+      env: { NODE_ENV: "test", OPENAI_API_KEY: "test-key" },
+      fetchImpl: async () => Response.json({ output_text: JSON.stringify(report) }),
+    });
+    assert.equal(response.status, 503);
+    assert.equal((await response.json()).report, undefined);
+  });
+});
+
+test("compact manual submissions carry text-only answers into AI and replay identity", async () => {
+  await withLocalRepository(async () => {
+    const payload = validPayload();
+    const report = opportunityReportFixture(payload.company.name);
+    payload.company = buildManualCompanyContext("insurance");
+    payload.companyContextToken = null;
+    payload.answers = {
+      workflow: [], friction: [], scale: "daily", systems: [], controls: [],
+      context: { workflow: "  Fleet renewals  ", friction: "Late signatures", systems: "Internal tool", controls: "Legal sign-off" },
+    };
+    let calls = 0;
+    let aiInput;
+    const options = {
+      env: { NODE_ENV: "test", OPENAI_API_KEY: "test-key" },
+      fetchImpl: async (_url, init) => {
+        calls++;
+        aiInput = JSON.parse(JSON.parse(init.body).input[1].content);
+        return Response.json({ output_text: JSON.stringify(report) });
+      },
+    };
+    const first = await handleDiscoveryAnalysisRequest(analysisRequest(payload), crypto.randomUUID(), options);
+    assert.equal(first.status, 201);
+    assert.equal(aiInput.providedInputs.answers.workToExplore.context, "Fleet renewals");
+    assert.deepEqual(aiInput.providedInputs.answers.workToExplore.selected, []);
+    assert.equal(aiInput.providedInputs.companyName, null);
+    assert.match(aiInput.providedInputs.answerContext, /user's reviewed answers/);
+    assert.equal(aiInput.answerOptions, undefined);
+    const replay = await handleDiscoveryAnalysisRequest(analysisRequest(payload), crypto.randomUUID(), options);
+    assert.equal(replay.status, 200);
+    payload.answers.context.workflow = "A different process";
+    const conflict = await handleDiscoveryAnalysisRequest(analysisRequest(payload), crypto.randomUUID(), options);
+    assert.equal(conflict.status, 409);
+    assert.equal((await conflict.json()).error.code, "IDEMPOTENCY_CONFLICT");
+    assert.equal(calls, 1);
+  });
+});
+
+test("analysis retries after an incomplete AI report instead of filling missing sections with rules", async () => {
+  await withLocalRepository(async () => {
+    const payload = validPayload();
+    const report = opportunityReportFixture(payload.company.name);
+    let calls = 0;
+    const options = {
+      env: { NODE_ENV: "test", OPENAI_API_KEY: "test-key" },
+      fetchImpl: async () => Response.json({ output_text: JSON.stringify(++calls <= 2 ? { title: "Incomplete report" } : report) }),
+    };
+    const first = await handleDiscoveryAnalysisRequest(analysisRequest(payload), crypto.randomUUID(), options);
+    assert.equal(first.status, 503);
+    const body = await first.json();
+    assert.equal(body.error.code, "ANALYSIS_UNAVAILABLE");
+    assert.equal(body.error.retryable, true);
+    assert.equal(body.report, undefined);
+    const retry = await handleDiscoveryAnalysisRequest(analysisRequest(payload), crypto.randomUUID(), options);
+    assert.equal(retry.status, 200);
+    assert.equal(calls, 3);
+  });
+});
+
+test("new analysis rejects expired context, unknown choices and redundant client company data", async () => {
+  for (const variant of ["expired", "unknown-choice", "extra-company", "oversized-text"]) {
+    const payload = validPayload();
+    const input = JSON.parse(await analysisRequest(payload).text());
+    if (variant === "expired") input.contextToken = createDiscoveryContextToken(payload.company, { NODE_ENV: "test" }, Date.now() - 25 * 60 * 60 * 1000);
+    if (variant === "unknown-choice") input.answers.workflow = ["custom-forged-workflow"];
+    if (variant === "extra-company") input.company = payload.company;
+    if (variant === "oversized-text") input.answers.context = { workflow: "x".repeat(1001) };
+    const response = await handleDiscoveryAnalysisRequest(analysisRequest(input), crypto.randomUUID(), { env: { NODE_ENV: "test" } });
+    assert.equal(response.status, 400, variant);
+    assert.equal((await response.json()).error.code, "VALIDATION_ERROR", variant);
+  }
+});
+
+test("follow-up permission is optional, boolean-only, and part of replay identity", async () => {
+  await withLocalRepository(async () => {
+    const payload = validPayload();
+    const submission = await analysisRequest(payload).json();
+    for (const value of [undefined, false, true]) {
+      assert.equal(isDiscoverySubmission({ ...submission, followUp: value }), true);
+    }
+    for (const value of ["true", 1, null, {}]) {
+      assert.equal(isDiscoverySubmission({ ...submission, followUp: value }), false);
+    }
+    payload.followUp = false;
+    const options = {
+      env: { NODE_ENV: "test", OPENAI_API_KEY: "test-key" },
+      fetchImpl: async () => Response.json({ output_text: JSON.stringify(opportunityReportFixture(payload.company.name)) }),
+    };
+    assert.equal((await handleDiscoveryAnalysisRequest(analysisRequest(payload), crypto.randomUUID(), options)).status, 201);
+    assert.equal((await handleDiscoveryAnalysisRequest(analysisRequest(payload), crypto.randomUUID(), options)).status, 200);
+    payload.followUp = true;
+    assert.equal((await handleDiscoveryAnalysisRequest(analysisRequest(payload), crypto.randomUUID(), options)).status, 409);
+  });
+});
+
+test("personal response request is explicit and changes stored replay identity", async () => {
+  await withLocalRepository(async () => {
+    const payload = validPayload();
+    const submission = await analysisRequest(payload).json();
+    assert.equal(isDiscoverySubmission({ ...submission, personalResponseRequested: true }), true);
+    for (const value of [false, "true", 1, null]) {
+      assert.equal(isDiscoverySubmission({ ...submission, personalResponseRequested: value }), false);
+    }
+    assert.equal(isDiscoverySubmission({ ...submission, personalResponseRequested: true, followUp: false }), false);
+    payload.personalResponseRequested = true;
+    const options = {
+      env: { NODE_ENV: "test", OPENAI_API_KEY: "test-key" },
+      fetchImpl: async () => Response.json({ output_text: JSON.stringify(opportunityReportFixture(payload.company.name)) }),
+    };
+    assert.equal((await handleDiscoveryAnalysisRequest(analysisRequest(payload), crypto.randomUUID(), options)).status, 201);
+    assert.equal((await handleDiscoveryAnalysisRequest(analysisRequest(payload), crypto.randomUUID(), options)).status, 200);
+    delete payload.personalResponseRequested;
+    assert.equal((await handleDiscoveryAnalysisRequest(analysisRequest(payload), crypto.randomUUID(), options)).status, 409);
+  });
+});
+
+test("legacy saved reports never expose report content or promise an unsupported email", async () => {
+  await withLocalRepository(async () => {
+    const payload = validPayload();
+    const options = {
+      env: { NODE_ENV: "test", OPENAI_API_KEY: "test-key" },
+      fetchImpl: async () => Response.json({ output_text: JSON.stringify(opportunityReportFixture(payload.company.name)) }),
+    };
+    const first = await handleDiscoveryAnalysisRequest(analysisRequest(payload), crypto.randomUUID(), options);
+    assert.deepEqual(await first.json(), { ok: true });
+    const saved = globalThis.__nncoEphemeralLeadAnalyses.get(payload.requestId);
+    saved.report = buildFallbackReleaseReport(payload);
+    const replay = await handleDiscoveryAnalysisRequest(analysisRequest(payload), crypto.randomUUID(), options);
+    const body = await replay.json();
+    assert.equal(replay.status, 409);
+    assert.equal(body.report, undefined);
+    assert.equal(body.error.retryable, false);
+    assert.match(body.error.message, /Start a new Discovery/);
   });
 });
