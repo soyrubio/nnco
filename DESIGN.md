@@ -410,13 +410,15 @@ The structure is deliberately blocky:
   Request an NDA use the shared right-arrow treatment; changing the Send state
   updates only its label and preserves the arrow.
 - `Blog`: an editorial feature and ruled reading queue backed by the typed
-  `blog` content collection. Each post is a Markdown file loaded through
+  `blog` content collection. Each post is a Markdown or MDX file loaded through
   Astro's glob loader. The filename defines the slug, while required `title`
   frontmatter is the single source for the hero `h1`, page metadata, lists and
   schema. Required `summary` frontmatter is repeated as the
   opening Markdown paragraph. The Markdown body contains no `h1` and continues
   with normal `h2`/`h3` hierarchy and links. `ArticleProse` scopes Markdown
-  element typography. Article paragraphs, lists and quotes use the shared
+  element typography. MDX uses the same layout and metadata, and may import
+  components from `src/components/blog/`. Use Astro for presentational components
+  and React islands for stateful interaction. Article paragraphs, lists and quotes use the shared
   large-body scale for sustained reading, while the opening statement retains
   its larger lead treatment. Queue
   rows stay flush to the content rail with no movement, transition or surface

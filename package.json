@@ -19,6 +19,7 @@
   },
   "dependencies": {
     "@astrojs/cloudflare": "14.2.1",
+    "@astrojs/mdx": "7.0.8",
     "@astrojs/react": "6.0.2",
     "@astrojs/sitemap": "^3.7.3",
     "@pdf-lib/fontkit": "^1.1.1",

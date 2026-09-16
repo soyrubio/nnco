@@ -25,7 +25,7 @@ production DNS cutover are documented in [DEPLOYMENT.md](./DEPLOYMENT.md).
 
 ## Blog
 
-Add a `.md` file to `src/content/blog/`; its filename becomes the URL. Complete the frontmatter below, repeat `summary` as the first paragraph, and use `##` for the first heading level. `category` can be `Systems`, `Field notes`, `Regulation`, or `Principles`; posts are automatically sorted newest first by `publishedAt`. Formatting as in classic Markdown file.
+Add a `.md` or `.mdx` file to `src/content/blog/`; its filename becomes the URL. Both formats share the same layout, metadata, and listings. Keep filenames unique across both extensions. Complete the frontmatter below, repeat `summary` as the first paragraph, and use `##` for the first heading level. `category` can be `Systems`, `Field notes`, `Regulation`, or `Principles`; posts are automatically sorted newest first by `publishedAt`.
 
 ```md
 ---
@@ -37,7 +37,29 @@ updatedAt: "2026-08-20"
 summary: One-sentence article summary.
 ---
 
+One-sentence article summary.
+
 ## First section
 
 Article content.
 ```
+
+Use `.md` for ordinary articles and `.mdx` to embed components. Keep blog-specific
+components in `src/components/blog/`: `.astro` for presentation, `.tsx` for
+stateful React interaction. Put reusable calculation logic in `src/lib/`.
+After creating a calculator component, an MDX article can embed it like this
+(below its frontmatter):
+
+```mdx
+import TimeSavingsCalculator from "@/components/blog/TimeSavingsCalculator";
+
+One-sentence article summary.
+
+## Estimate time savings
+
+<TimeSavingsCalculator client:visible />
+```
+
+`client:visible` hydrates the React component when it enters the viewport.
+Static Astro components need no client directive. Images work in either format:
+`![Description of the diagram](/assets/blog/diagram.png)`.
