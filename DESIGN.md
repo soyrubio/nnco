@@ -466,6 +466,8 @@ The structure is deliberately blocky:
   retaining direct number entry and the shared form focus treatment.
   Step controls appear on field hover or focus without moving the layout, and
   remain visible on devices without hover.
+  The clinic article's setup passage uses a grey inset with a heading and
+  stacked specification labels and descriptions, without internal divider rules.
   It calculates only in the browser and distinguishes potential revenue from
   profit or recoverable revenue. Its regulatory table remains a semantic table
   inside a labelled, keyboard-focusable horizontal scroll region on small screens.

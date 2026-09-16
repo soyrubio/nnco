@@ -159,6 +159,38 @@
   margin-block: 2rem;
 }
 
+.clinic-setup {
+  margin-block: 2rem;
+  padding: clamp(1.5rem, 4vw, 3rem);
+  background: var(--surface);
+}
+
+.article-prose .clinic-setup h3 {
+  margin: 0 0 1.5rem;
+  color: var(--ink);
+  font-size: var(--type-size-section-title);
+}
+
+.clinic-setup dl {
+  display: grid;
+  gap: 2rem;
+  margin: 2.5rem 0 0;
+}
+
+.clinic-setup dt {
+  margin-bottom: 0.5rem;
+  color: var(--ink);
+  font-size: var(--type-size-control);
+  font-weight: var(--type-weight-medium);
+}
+
+.clinic-setup dd {
+  margin: 0;
+  color: var(--muted);
+  font-size: var(--type-size-body-large);
+  line-height: var(--type-leading-relaxed);
+}
+
 .clinic-rules-table table {
   width: 100%;
   min-width: 42rem;

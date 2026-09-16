@@ -30,7 +30,10 @@ test("clinic article includes the calculator and excludes internal draft materia
   const { readFile } = await import("node:fs/promises");
   const article = await readFile(new URL("../src/content/blog/the-most-expensive-hour-in-a-clinic-is-the-empty-one.mdx", import.meta.url), "utf8");
   assert.match(article, /<EmptyHoursCalculator client:visible \/>/);
-  assert.match(article, /\*NNCo\*/);
+  assert.match(article, /\*Marek Kříž\*/);
+  assert.match(article, /Our \$10k solution/);
+  assert.match(article, /Overbooking scheduler for 1,000\+ patients/);
+  assert.ok(article.indexOf("## The setup") < article.indexOf("## How we would start"));
   assert.doesNotMatch(article.split("---").slice(2).join("---"), /^---$/m);
-  assert.doesNotMatch(article, /NOT TO PUBLISH|\[BOX|\[PUBLIC|linear-comment|Mac Studio|Qwen|\$10k|Marek Kříž/);
+  assert.doesNotMatch(article, /NOT TO PUBLISH|\[BOX|\[PUBLIC|linear-comment|8 patients on the phone/);
 });
