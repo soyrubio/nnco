@@ -419,8 +419,11 @@ The structure is deliberately blocky:
   element typography. MDX uses the same layout and metadata, and may import
   components from `src/components/blog/`. Use Astro for presentational components
   and React islands for stateful interaction. Article paragraphs, lists and quotes use the shared
-  large-body scale for sustained reading, while the opening statement retains
-  its larger lead treatment. Queue
+  large-body scale for sustained reading. The opening paragraph uses the same
+  size, colour and line-height as every other paragraph, with no special lead treatment.
+  Paragraphs use a 1.35rem gap.
+  Paragraphs after lists use the same gap. The clinic article uses whitespace
+  and headings rather than horizontal rules between sections. Queue
   rows stay flush to the content rail with no movement, transition or surface
   change on hover. The first row relies on the shared content inset and the
   final row uses only a small 0.75rem bottom inset, echoing the compact FAQ list
@@ -441,6 +444,27 @@ The structure is deliberately blocky:
   and an All posts button with a backward arrow on the left, and only
   Markdown on the right. At 767px and below metadata moves above the full-width
   body. The shared Start here terminal section and footer follow the article.
+  The clinic article's empty-capacity calculator uses labelled numeric inputs,
+  a padded grey surface with dark text throughout. Stacked result values use
+  light text on black backgrounds that hug each number, below their labels.
+  Result labels use larger, medium-weight ink-coloured item-heading typography.
+  Leave 4rem above and below the results, and 3rem between result groups;
+  do not stack input and result padding at their boundary.
+  The two-column input grid stacks on mobile. Prominent numeric results follow
+  without a separator rule. Inputs reuse the contact form's shared `form-control`
+  styles and thicker bottom rule on focus; only numeric typography is local.
+  Shared form focus and invalid rules are drawn inside the input without changing
+  its border width or height, so interacting with a field does not move the layout.
+  Percent sits immediately after its value as a non-editable suffix. Currency
+  uses a non-editable CZK prefix and comma-grouped digits, matching the results.
+  Both inputs have accessible unit labels. Calculator
+  inputs replace native spinners with labelled 44px minus/plus controls, while
+  retaining direct number entry and the shared form focus treatment.
+  Step controls appear on field hover or focus without moving the layout, and
+  remain visible on devices without hover.
+  It calculates only in the browser and distinguishes potential revenue from
+  profit or recoverable revenue. Its regulatory table remains a semantic table
+  inside a labelled, keyboard-focusable horizontal scroll region on small screens.
 - `Meet the team`: a shared introduction about direct access to the people who
   build, followed by one vertical stack of wide editorial profile cards.
   Public role labels use CEO, AI Product, AI Engineering, Operations and

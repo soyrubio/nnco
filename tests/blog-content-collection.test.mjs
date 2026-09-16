@@ -246,11 +246,7 @@ test("article routes render frontmatter titles in the hero and Markdown on the r
   );
   assert.match(sourceEntries.prose, /<div class:list=\{\["article-prose", className\]\}>/);
   assert.doesNotMatch(sourceEntries.prose, /:global\(h1/);
-  assert.match(
-    sourceEntries.prose,
-    /\.article-prose > :global\(p:first-child\)\s*\{[^}]*margin-bottom:\s*clamp\(3\.5rem, 7vw, 6rem\);[^}]*font-size:\s*clamp\(1\.2rem, 2vw, 1\.6rem\);/s,
-  );
-  assert.match(sourceEntries.prose, /\.article-prose :global\(h2\)/);
+  assert.doesNotMatch(sourceEntries.prose, /p:first-child/);  assert.match(sourceEntries.prose, /\.article-prose :global\(h2\)/);
   assert.match(sourceEntries.prose, /\.article-prose :global\(h3\)/);
   assert.match(sourceEntries.prose, /\.article-prose :global\(h4\)/);
   assert.match(sourceEntries.prose, /\.article-prose :global\(h5\)/);

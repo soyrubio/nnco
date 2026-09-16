@@ -1220,17 +1220,20 @@ h1 {
 
 .form-control > :is(input, select, textarea):focus-visible {
   border-bottom-color: var(--ink);
-  border-bottom-width: 3px;
+  --form-focus-color: var(--ink);
+  box-shadow: inset 0 -2px 0 var(--form-focus-color);
   outline: 0;
 }
 
 .form-control > [aria-invalid="true"] {
   border-bottom-color: var(--danger);
-  border-bottom-width: 3px;
+  --form-focus-color: var(--danger);
+  box-shadow: inset 0 -2px 0 var(--form-focus-color);
 }
 
 .form-control > [aria-invalid="true"]:focus-visible {
   border-bottom-color: var(--danger);
+  --form-focus-color: var(--danger);
 }
 
 .form-control > :is(input, select, textarea):disabled,
@@ -1244,7 +1247,8 @@ h1 {
 .form-control > input:-webkit-autofill:focus {
   -webkit-text-fill-color: var(--ink);
   caret-color: var(--ink);
-  box-shadow: 0 0 0 1000px var(--surface) inset;
+  box-shadow: inset 0 -2px 0 var(--form-focus-color, transparent),
+    0 0 0 1000px var(--surface) inset;
 }
 
 .form-control small[data-error-for],

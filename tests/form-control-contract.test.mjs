@@ -76,11 +76,11 @@ test("terminal contact form has no outer box and native controls use one bottom 
 test("form controls expose focus, error, disabled and autofill states", () => {
   assert.match(
     sources.styles,
-    /\.form-control > :is\(input, select, textarea\):focus-visible\s*\{[^}]*border-bottom-color:\s*var\(--ink\);[^}]*border-bottom-width:\s*3px;[^}]*outline:\s*0;/s,
+    /\.form-control > :is\(input, select, textarea\):focus-visible\s*\{[^}]*border-bottom-color:\s*var\(--ink\);[^}]*box-shadow:\s*inset 0 -2px 0 var\(--form-focus-color\);[^}]*outline:\s*0;/s,
   );
   assert.match(
     sources.styles,
-    /\.form-control > \[aria-invalid="true"\]\s*\{[^}]*border-bottom-color:\s*var\(--danger\);[^}]*border-bottom-width:\s*3px;/s,
+    /\.form-control > \[aria-invalid="true"\]\s*\{[^}]*border-bottom-color:\s*var\(--danger\);[^}]*box-shadow:\s*inset 0 -2px 0 var\(--form-focus-color\);/s,
   );
   assert.match(
     sources.styles,
@@ -92,7 +92,7 @@ test("form controls expose focus, error, disabled and autofill states", () => {
   );
   assert.match(
     sources.styles,
-    /\.form-control > input:-webkit-autofill,[\s\S]*?-webkit-text-fill-color:\s*var\(--ink\);[^}]*box-shadow:\s*0 0 0 1000px var\(--surface\) inset;/s,
+    /\.form-control > input:-webkit-autofill,[\s\S]*?-webkit-text-fill-color:\s*var\(--ink\);[^}]*box-shadow:\s*inset 0 -2px 0 var\(--form-focus-color, transparent\),\s*0 0 0 1000px var\(--surface\) inset;/s,
   );
   assert.match(sources.contact, /field\.setAttribute\("aria-invalid", "true"\);/);
   assert.match(sources.contact, /target\.textContent = errorMessageFor\(field\);/);

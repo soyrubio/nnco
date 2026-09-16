@@ -11,13 +11,6 @@ const { class: className } = Astro.props;
 </div>
 
 <style>
-  .article-prose > :global(p:first-child) {
-    margin-bottom: clamp(3.5rem, 7vw, 6rem);
-    color: var(--ink-soft);
-    font-size: clamp(1.2rem, 2vw, 1.6rem);
-    line-height: var(--type-leading-body);
-  }
-
   .article-prose :global(h2) {
     margin: clamp(3.5rem, 7vw, 6rem) 0 1.5rem;
     font-size: clamp(1.75rem, 3vw, 2.625rem);
@@ -63,7 +56,9 @@ const { class: className } = Astro.props;
     line-height: var(--type-leading-relaxed);
   }
 
-  .article-prose :global(p + p) {
+  .article-prose :global(p + p),
+  .article-prose :global(ul + p),
+  .article-prose :global(ol + p) {
     margin-top: 1.35rem;
   }
 

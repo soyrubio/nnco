@@ -1,0 +1,184 @@
+.empty-hours {
+  --calculator-padding: clamp(1.5rem, 4vw, 3rem);
+  margin-block: 2rem;
+  background: var(--surface);
+  color: var(--ink);
+  color-scheme: light;
+}
+
+.empty-hours__inputs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 2rem;
+  padding: var(--calculator-padding) var(--calculator-padding) 0;
+  background: var(--surface);
+  color: var(--ink);
+  color-scheme: light;
+}
+
+.empty-hours .form-control {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  color: var(--ink-soft);
+  font-size: var(--type-size-control);
+  line-height: 1.4;
+}
+
+.empty-hours .form-control > input {
+  padding-right: 8rem;
+  appearance: textfield;
+  -moz-appearance: textfield;
+  font-size: 1.5rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.empty-hours input::-webkit-inner-spin-button,
+.empty-hours input::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.empty-hours .form-control > .empty-hours__currency-input {
+  padding-left: 3.2rem;
+}
+
+.empty-hours__steppers {
+  position: absolute;
+  right: 0;
+  bottom: 0.4rem;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.empty-hours .form-control:hover .empty-hours__steppers,
+.empty-hours .form-control:focus-within .empty-hours__steppers {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+@media (hover: none) {
+  .empty-hours__steppers {
+    opacity: 1;
+    pointer-events: auto;
+  }
+}
+
+.empty-hours__unit {
+  position: absolute;
+  left: 0;
+  bottom: calc(0.75rem + 1px);
+  display: flex;
+  gap: 0.35rem;
+  max-width: calc(100% - 6rem);
+  overflow: hidden;
+  white-space: pre;
+  pointer-events: none;
+  color: var(--ink);
+  font-size: 1.5rem;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.4;
+}
+
+.empty-hours__unit > span {
+  visibility: hidden;
+  flex-shrink: 0;
+}
+
+.empty-hours__steppers button {
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  background: transparent;
+  color: var(--ink);
+  font-size: 1.5rem;
+  cursor: pointer;
+}
+
+.empty-hours__steppers button:hover:not(:disabled) {
+  background: var(--surface-strong);
+}
+
+.empty-hours__steppers button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.clinic-rules-table:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 4px;
+}
+
+.empty-hours__result {
+  display: grid;
+  gap: 3rem;
+  padding: 4rem var(--calculator-padding);
+}
+
+.empty-hours__result span {
+  color: var(--ink);
+  font-size: var(--type-size-item-heading);
+  font-weight: var(--type-weight-medium);
+  line-height: var(--type-leading-item);
+}
+
+.empty-hours__result span,
+.empty-hours__result strong {
+  display: block;
+}
+
+.empty-hours__result strong {
+  width: fit-content;
+  max-width: 100%;
+  margin-top: 0.75rem;
+  padding: 0.35em 0.5em;
+  background: var(--ink);
+  color: var(--paper);
+  font-size: clamp(1.75rem, 4vw, 2.5rem);
+  font-weight: 500;
+  line-height: 1.15;
+  letter-spacing: var(--type-tracking-heading);
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+.article-prose .empty-hours p,
+.empty-hours noscript {
+  color: var(--muted);
+  font-size: var(--type-size-small);
+  line-height: 1.55;
+  padding: 0 var(--calculator-padding) var(--calculator-padding);
+}
+
+.clinic-rules-table {
+  overflow-x: auto;
+  margin-block: 2rem;
+}
+
+.clinic-rules-table table {
+  width: 100%;
+  min-width: 42rem;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: var(--type-size-control);
+  line-height: 1.55;
+}
+
+.clinic-rules-table th,
+.clinic-rules-table td {
+  padding: 1rem 1rem 1rem 0;
+  border-bottom: 1px solid var(--rule);
+  vertical-align: top;
+}
+
+.clinic-rules-table th {
+  font-weight: 500;
+}
+
+@media (max-width: 767px) {
+  .empty-hours__inputs { grid-template-columns: 1fr; }
+}

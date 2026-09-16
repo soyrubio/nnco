@@ -1,0 +1,123 @@
+---
+title: The most expensive hour in a clinic is the empty one
+category: Field notes
+readingMinutes: 11
+publishedAt: "2026-09-16"
+updatedAt: "2026-09-16"
+summary: The empty hour is one of many things we keep running into when we work with clinics. It is a useful way in because it can be counted.
+---
+
+import EmptyHoursCalculator from "@/components/blog/EmptyHoursCalculator";
+
+The empty hour is one of many things we keep running into when we work with clinics. It is a useful way in because it can be counted.
+
+The rest of this piece looks at the clinic more broadly: how data gets out of old systems, what we would automate, what we would buy instead of build, and where AI does not belong at all.
+
+*A note on sources: we never name clients unless they have chosen to talk about the work themselves. Details that could identify them, such as size, location or the systems they run, are left out or generalised. The problems and the reasoning are real.*
+
+Ask the owner of a clinic network what a doctor costs and you get a number down to the last crown: salary, contributions, the share of rent, the nurse. Ask what an empty hour in that doctor's calendar costs and the answer is usually a pause.
+
+It is a fair question to struggle with. The empty hour does not appear on any invoice. It shows up as revenue that never happened, spread across dozens of doctors, several locations and a steady stream of late cancellations. Nobody sees it as a line item because nobody can pull it out of the system that holds it.
+
+We have spent time with two networks of outpatient clinics in the Czech Republic. They had different specialties and owners and the same problem. What follows is how we would build the fix, what we would buy instead of build, and what we would deliberately leave alone.
+
+## What the process looks like today
+
+A patient books by phone, online or at the front desk. Some cancel a day ahead, some an hour ahead, some not at all. The front desk tries to fill the gap from memory or from a paper list. Billing to the health insurers happens later, from whatever the system recorded.
+
+Management sees the result at the end of the month, in an Excel export someone assembles by hand. By then the empty hours are history.
+
+The core systems were built long before anyone expected to analyse their data. Most of them had no usable API at all. Exports came in formats nobody designed for analysis, and getting a clean view of one doctor's week cost someone an afternoon.
+
+## What the empty hour is worth
+
+You can estimate your own number in a minute. The figures below are illustrative, not taken from any client.
+
+Take a network with 40 doctors. Each has 30 bookable hours a week. Say 8% of those hours end up empty because of no-shows and late cancellations nobody managed to refill. Say an hour of a doctor's time brings in CZK 2,500.
+
+* 40 doctors × 30 hours × 8% = 96 empty hours a week
+* 96 hours × CZK 2,500 = CZK 240,000 a week
+* × 48 working weeks = roughly CZK 11.5 million a year
+
+Change the inputs and the result moves a lot. The harder question is whether you can fill in the 8% with a real figure at all. That missing number is the first thing worth fixing.
+
+## The math
+
+Change the five inputs below to estimate the revenue represented by empty capacity. The starting figures are illustrative, not client data.
+
+If you had to guess the empty share, replace that guess with a real figure first.
+
+<EmptyHoursCalculator client:visible />
+
+## Where AI actually goes
+
+The order matters. Most AI conversations in healthcare start with a chatbot for patients. It is the most visible option but the hardest to justify. A chatbot takes no responsibility for what it tells a patient, so a person still has to stand behind every answer, and its benefit to patients' health remains hard to put a number on. The empty hour can be counted, and counting it starts with getting the data out.
+
+**1. A data layer on top of the legacy system.** Before anything else, the data has to come out: appointments, cancellations, no-shows, who treated whom and what was billed. This means adapters to a system that was never designed to share, a clean model of the schedule, and a store that stays inside the clinic's infrastructure or at least inside the country. AI helps here in an unglamorous way. It reads messy exports, reconciles inconsistent records and flags what does not add up.
+
+**2. Gap alerts in near real time.** The simplest version is the right place to start. When a slot opens, the front desk gets a signal within minutes, with a short list of patients from the waiting list who fit the slot, the doctor and the time. A person decides whom to call. From there it can go much further, as far as the clinic wants to take it. The system can text the first suitable patients directly, offer them the slot and book whoever confirms first, leaving the front desk to handle only the exceptions.
+
+**3. Revenue and utilisation per doctor and per location.** Once the data layer exists, the monthly Excel gives way to a live view, ideally on a data platform the whole network can build on. Owners see which doctors, days and locations lose the most hours, and whether a change in booking policy moved the number.
+
+**4. A check before claims go to the insurers.** Clinics are paid by health insurers based on what they report: which procedures were performed, for whom and when. Errors in those reports mean rejected claims and money that arrives late or not at all. The same data layer can compare the report with what actually happened in the calendar and the records, and flag mismatches before the batch is sent, while they are still cheap to fix.
+
+## What to build, what to rent, what to leave to people
+
+**Build:** the data layer, the reporting on top of it, and the agents that work with that data. One reads and reconciles exports from the legacy system, another watches the calendar for gaps and prepares the waiting-list offer, a third checks claims before they go out. Each runs on skills written for this particular network: its specialties, its booking rules, its insurers. This is where the clinic's own data turns into an advantage no competitor can copy, and it is specific enough to each network that no off-the-shelf product does it well.
+
+**Rent:** patient notifications, the BI tool, and in most cases the booking front-end itself. Tens of thousands of hours of development have already gone into these products. With AI it has become tempting to vibe-code your own version over a weekend. In a regulated field, where security and the protection of patient data carry the real risk, that is rarely the answer. We assess every application on its own merits, but in most cases an established product costs a fraction of what building one would, and it comes with proven security, compliance and a vendor that answers for it.
+
+**Leave to people:** sensitive conversations with patients and anything clinical, plus who gets a freed slot for as long as the clinic prefers to keep that decision at the front desk. The system suggests. The front desk and the doctors decide.
+
+## Where the line is
+
+Everything above sits in operations and administration. None of it touches diagnosis or treatment decisions. That boundary is deliberate: software that influences clinical decisions is regulated as a medical device under the EU MDR, and that belongs to certified vendors, not to an integration project.
+
+Patient data is a special category under GDPR. It stays inside the clinic's infrastructure or in the country, access is limited to the people who need it, and every automated step leaves a record of what the system did and who confirmed it. When someone asks why a patient got a call, there is an answer.
+
+## What we would not do yet
+
+There are a few things we would advise against, at least for now.
+
+**Replacing the core system first.** It is tempting to start by swapping the old system for a new one. A full migration of a network's core system is a long and risky project, and for all that time nobody knows what the empty hours cost. A data layer on top of the old system gets you that number much sooner, and it makes the eventual migration easier because the data is already clean.
+
+**Automatic overbooking,** where the system books more patients than slots on the assumption that some will not come. It only works if the no-show data is clean and trusted. Without the data layer it is a guess that ends with a full waiting room.
+
+**Sending patient data to public AI services.** Pasting records into a consumer chatbot, or calling a model hosted outside the EU without a data processing agreement, is the fastest way to get AI into a clinic and the fastest way to a GDPR problem. Patient data goes only to models running in the clinic's own infrastructure or under a contract that states where the data lives and what happens to it.
+
+## Cost and timing
+
+The data layer is the bulk of the work, and its cost depends on how hostile the legacy system is. The gap alerts and the reporting are small by comparison once the data is flowing. The first useful output, a real number for the empty hours, comes from the data layer alone, before anything is automated.
+
+## The line
+
+Where each part of this work sits under the rules that apply to a clinic in the Czech Republic.
+
+<div className="clinic-rules-table" role="region" aria-label="Operational scope and regulatory considerations" tabIndex={0}>
+
+| What | Rules it touches | Status | How we handle it |
+| -- | -- | -- | -- |
+| Data layer on top of the core system | GDPR: health data is a special category (Art. 9). A processor needs a contract (Art. 28). | **Go** | Data stays in the clinic's infrastructure or in the country. Access is limited by role, and every read and change is logged. |
+| Gap alerts to the front desk | GDPR: even the fact that someone booked a specialist is health data. | **Go** | The system suggests and a person decides. The log records both. |
+| Automatic offer and booking by text message | GDPR: contacting a patient needs a clear basis. | **Conditions** | We only contact patients who joined the waiting list and agreed to be contacted. The rule for who gets an offer first is written down, so anyone can check why a patient got the message. |
+| Revenue and utilisation reporting | GDPR | **Go** | Dashboards show doctors, days and locations, not patients. |
+| Check before claims go to the insurers | GDPR, plus the insurers' reporting rules | **Go** | The system flags mismatches, and a person corrects the batch and submits it. Nothing is changed automatically. |
+| Chatbot or voice assistant for patients | EU AI Act: people must be told they are talking to AI (Art. 50). There is also a risk of drifting into medical advice. | **Conditions** | Not where we start. If a clinic wants one, it handles booking and practical questions and passes everything else to a person. |
+| Patient records in public AI tools | GDPR: transfers outside the EU, no processor contract | **No** | Patient data only goes to models in the clinic's own infrastructure or under a contract that says where the data lives. |
+| Triage, diagnosis, treatment suggestions | EU MDR: software that informs clinical decisions is a medical device. It is also high-risk under the EU AI Act. | **No** | This belongs to certified vendors. |
+
+</div>
+
+Many clinic networks also fall under the Czech Cybersecurity Act (No. 264/2025 Coll., which implements NIS2). It adds requirements for the systems themselves, such as risk management, incident reporting and supplier security.
+
+*This is how we read the rules. It is not legal advice. In each blueprint we map the rules for the specific clinic together with its data protection officer.*
+
+## How we would start
+
+We start with an hour. In a scoping call we look at how your clinic books, cancels and bills, and whether there is a case worth pursuing.
+
+If there is, the next step is two weeks of work inside your operation. The result is a blueprint for your clinic: the process as it really runs, the regulatory map, three use cases with a business case each, and a fixed-price proposal for the build.
+
+If the honest answer is that you need to fix your data before anything else, the blueprint will say so.
+
+*NNCo*
